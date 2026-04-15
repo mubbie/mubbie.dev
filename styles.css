@@ -448,8 +448,20 @@ footer p {
   .connect-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    justify-items: center;
+  }
+
+  .connect-grid .connect-link {
+    width: 100%;
+    justify-content: center;
   }
 
   .nav-pills { gap: 6px; }
   .nav-pills a { font-size: 12px; padding: 6px 12px; }
+
+  .connect-grid .connect-link:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    max-width: calc(50% - 4px);
+    justify-self: center;
+  }
 }
