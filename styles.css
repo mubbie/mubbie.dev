@@ -215,7 +215,7 @@ section {
   font-family: var(--mono);
 }
 
-.project-icon.gx { background: rgba(34, 197, 94, 0.15); color: var(--accent); }
+.project-icon.gx { background: rgba(6, 182, 212, 0.15); color: #06b6d4; }
 .project-icon.officecat { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
 .project-icon.portctl { background: rgba(249, 115, 22, 0.15); color: var(--orange); }
 .project-icon.chaos { background: rgba(236, 72, 153, 0.15); color: var(--pink); }
