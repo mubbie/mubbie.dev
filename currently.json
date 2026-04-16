@@ -1,0 +1,7 @@
+[
+  { "icon": "📖", "label": "reading", "value": "Designing Data-Intensive Applications", "url": "https://dataintensive.net/" },
+  { "icon": "🎮", "label": "playing", "value": "Red Dead Redemption 2", "url": "https://www.rockstargames.com/reddeadredemption2" },
+  { "icon": "🧠", "label": "learning", "value": "distributed systems & how LLMs/agents work" },
+  { "icon": "📺", "label": "watching", "value": "World on Fire", "url": "https://www.imdb.com/title/tt8001092/" },
+  { "icon": "🎧", "label": "listening", "value": "Rolling Stone's 500 Greatest Albums of All Time", "url": "https://www.rollingstone.com/music/music-lists/best-albums-of-all-time-1062063/" }
+]
