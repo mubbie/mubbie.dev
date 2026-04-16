@@ -5,9 +5,9 @@
   { "item": "Complete at least one full Ironman", "done": false },
   { "item": "Ride STP (Seattle to Portland)", "done": false },
   { "item": "Learn to ride motorcycles", "done": false },
-  { "item": "Learn to fly airplanes", "done": false, "note": "starting in microsoft flight simulator" },
+  { "item": "Learn to fly airplanes", "done": false, "note": "starting in ms flight sim" },
   { "item": "Go skydiving", "done": true, "note": "done 2!" },
   { "item": "Get a skydiving license", "done": false },
-  { "item": "Amateur motor racing or karting", "done": false, "note": "starting in the sim first" },
+  { "item": "Amateur motor racing or karting", "done": false, "note": "starting in a sim" },
   { "item": "Finish GTA 6", "done": false, "note": "obviously :)" }
 ]
