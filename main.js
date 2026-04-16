@@ -1,3 +1,35 @@
+// ─── Time-based greeting ───
+const greetingEl = document.getElementById('greeting-text');
+if (greetingEl) {
+  const hour = new Date().getHours();
+  if (hour < 12) greetingEl.textContent = 'Good morning';
+  else if (hour < 18) greetingEl.textContent = 'Good afternoon';
+  else greetingEl.textContent = 'Good evening';
+}
+
+// ─── Dynamic footer year ───
+const footerYear = document.getElementById('footer-year');
+if (footerYear) footerYear.textContent = new Date().getFullYear();
+
+// ─── Keyboard shortcuts ───
+const shortcuts = {
+  '1': 'projects',
+  '2': 'writing',
+  '3': 'currently',
+  '4': 'races',
+  '5': 'bucketlist',
+  '6': 'connect',
+};
+
+document.addEventListener('keydown', (e) => {
+  // Don't fire if typing in the terminal or any input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  const section = shortcuts[e.key];
+  if (section) {
+    document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
+  }
+});
+
 // Scroll reveal — fade in sections as they enter the viewport
 const reveals = document.querySelectorAll('.reveal');
 
@@ -180,7 +212,13 @@ if (terminal && terminalInput) {
     'connect': 'connect',
   };
 
-  const helpText = 'commands: help, whoami, pwd, ls, cd, cat, clear';
+  const helpText = 'commands: help, whoami, pwd, ls, cd, cat, date, random, clear';
+
+  let fortunes = [];
+  fetch('fortunes.json')
+    .then((res) => res.json())
+    .then((data) => { fortunes = data; })
+    .catch(() => { fortunes = ['no fortunes loaded. try again later.']; });
 
   function addLine(prompt, cmd, output, isError) {
     const line = document.createElement('div');
@@ -263,6 +301,14 @@ if (terminal && terminalInput) {
 
       case 'pwd':
         addLine('$', input, '~/mubbie');
+        break;
+
+      case 'date':
+        addLine('$', input, new Date().toString());
+        break;
+
+      case 'random':
+        addLine('$', input, fortunes[Math.floor(Math.random() * fortunes.length)]);
         break;
 
       case 'sudo':
