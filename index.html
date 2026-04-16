@@ -31,7 +31,8 @@
   <!-- ─── Hero ─── -->
 
   <header>
-    <div class="greeting">~/mubbie <span class="cursor"></span></div>
+    <div class="greeting" id="greeting" style="cursor: pointer;" title="try clicking me">~/mubbie <span class="cursor"></span></div>
+    <div class="easter-egg" id="easter-egg"></div>
     <h1>Hey, I'm Mubbie <span class="wave">👋🏾</span></h1>
     <p class="tagline">
       I'm a software engineer at <strong>Microsoft Security</strong>. I enjoy building software,
@@ -40,7 +41,9 @@
     <nav class="nav-pills">
       <a href="#projects">projects</a>
       <a href="#writing">writing</a>
+      <a href="#currently">currently</a>
       <a href="#races">races</a>
+      <a href="#bucketlist">bucket list</a>
       <a href="#connect">connect</a>
       <a href="https://gx.mubbie.dev" target="_blank">gx docs ↗</a>
     </nav>
@@ -145,6 +148,12 @@
     </div>
   </section>
 
+  <!-- ─── Currently ─── -->
+  <section id="currently" class="reveal">
+    <div class="section-label">// what I'm up to</div>
+    <div class="currently-list" id="currently-list"></div>
+  </section>
+
   <!-- ─── Races ─── -->
 
   <section id="races" class="reveal">
@@ -154,8 +163,14 @@
 
   </section>
 
-  <!-- ─── Connect ─── -->
+  <!-- ─── Bucket List ─── -->
+  <section id="bucketlist" class="reveal">
+    <div class="section-label">// the bucket list</div>
+    <div class="bucket-list" id="bucket-list"></div>
+    <div class="bucket-stats" id="bucket-stats"></div>
+  </section>
 
+  <!-- ─── Connect ─── -->
   <section id="connect" class="reveal">
     <div class="section-label">// say hello</div>
     <div class="connect-grid">
