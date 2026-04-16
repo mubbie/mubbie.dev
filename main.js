@@ -149,64 +149,148 @@ fetch('bucketlist.json')
   .then(renderBucketList)
   .catch((err) => console.error('Failed to load bucket list:', err));
 
-// ─── Easter egg — click the prompt ───
+// ─── Interactive terminal ───
 
-const secrets = [
-  { cmd: 'cat secrets.txt', output: 'uncharted 4 is the greatest game ever made' },
-  { cmd: 'echo $FUEL', output: 'lots of protein, sparkling ice && lifting weights' },
-  { cmd: 'ls ~/goals', output: 'ironman  marathon  pilot-license  startup' },
-  { cmd: 'uptime', output: 'building since 2019, no signs of stopping' },
-  { cmd: 'cat /dev/mood', output: 'optimistic with a chance of debugging' },
-];
+const terminal = document.getElementById('terminal');
+const terminalHistory = document.getElementById('terminal-history');
+const terminalTyped = document.getElementById('terminal-typed');
+const terminalInput = document.getElementById('terminal-input');
 
-let easterEggIndex = 0;
-let easterEggTyping = false;
+if (terminal && terminalInput) {
+  // File system
+  const fs = {
+    '~': ['projects/', 'writing/', 'currently/', 'races/', 'bucketlist/', 'connect/'],
+    '/dev': ['secrets.txt', 'fuel', 'goals', 'mood', 'about.txt'],
+  };
 
-function typeText(element, text, speed) {
-  return new Promise((resolve) => {
-    let i = 0;
-    const interval = setInterval(() => {
-      element.textContent += text[i];
-      i++;
-      if (i >= text.length) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, speed);
+  const files = {
+    '/dev/secrets.txt': 'uncharted 4 is the greatest game ever made',
+    '/dev/fuel': 'lots of protein, sparkling ice && gym training sessions',
+    '/dev/goals': 'ironman  marathon  pilot-license  startup',
+    '/dev/mood': 'optimistic with a chance of debugging',
+    '/dev/about.txt': 'engineer. builder. writer. based in seattle.',
+  };
+
+  const sections = {
+    'projects': 'projects',
+    'writing': 'writing',
+    'currently': 'currently',
+    'races': 'races',
+    'bucketlist': 'bucketlist',
+    'connect': 'connect',
+  };
+
+  const helpText = 'commands: help, whoami, ls, cd, cat, clear';
+
+  function addLine(prompt, cmd, output, isError) {
+    const line = document.createElement('div');
+    line.className = 'terminal-history-line';
+
+    if (prompt !== null) {
+      line.innerHTML = `<span class="terminal-prompt">~/mubbie $&nbsp;</span><span class="terminal-cmd">${cmd}</span>`;
+      terminalHistory.appendChild(line);
+    }
+
+    if (output !== undefined) {
+      const outLine = document.createElement('div');
+      outLine.className = 'terminal-history-line';
+      outLine.innerHTML = `<span class="${isError ? 'terminal-error' : 'terminal-output'}">${output}</span>`;
+      terminalHistory.appendChild(outLine);
+    }
+
+    terminalHistory.scrollTop = terminalHistory.scrollHeight;
+  }
+
+  function processCommand(input) {
+    const parts = input.trim().split(/\s+/);
+    const cmd = parts[0];
+    const arg = parts.slice(1).join(' ');
+
+    switch (cmd) {
+      case '':
+        break;
+
+      case 'help':
+        addLine('$', input, helpText);
+        break;
+
+      case 'whoami':
+        addLine('$', input, 'mubbie idoko');
+        break;
+
+      case 'ls':
+        if (!arg || arg === '~' || arg === '.') {
+          addLine('$', input, fs['~'].join('  '));
+        } else if (arg === '/dev' || arg === '/dev/') {
+          addLine('$', input, fs['/dev'].join('  '));
+        } else {
+          addLine('$', input, `ls: ${arg}: No such file or directory`, true);
+        }
+        break;
+
+      case 'cd':
+        if (!arg || arg === '~') {
+          addLine('$', input, null);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          const section = arg.replace(/\/$/, '');
+          if (sections[section]) {
+            addLine('$', input, null);
+            document.getElementById(sections[section])?.scrollIntoView({ behavior: 'smooth' });
+          } else {
+            addLine('$', input, `cd: ${arg}: No such directory`, true);
+          }
+        }
+        break;
+
+      case 'cat':
+        if (!arg) {
+          addLine('$', input, 'usage: cat <file>', true);
+        } else {
+          const path = arg.startsWith('/dev/') ? arg : `/dev/${arg}`;
+          if (files[path]) {
+            addLine('$', input, files[path]);
+          } else {
+            addLine('$', input, `cat: ${arg}: No such file or directory`, true);
+          }
+        }
+        break;
+
+      case 'clear':
+        terminalHistory.innerHTML = '';
+        break;
+
+      case 'pwd':
+        addLine('$', input, '~/mubbie');
+        break;
+
+      case 'sudo':
+        addLine('$', input, 'nice try 😏', true);
+        break;
+
+      default:
+        addLine('$', input, `command not found: ${cmd}. try 'help'`, true);
+    }
+  }
+
+  // Click terminal to focus input
+  terminal.addEventListener('click', () => {
+    terminalInput.focus();
   });
-}
 
-const greeting = document.getElementById('greeting');
-const easterEgg = document.getElementById('easter-egg');
+  // Mirror typed text
+  terminalInput.addEventListener('input', () => {
+    terminalTyped.textContent = terminalInput.value;
+  });
 
-if (greeting && easterEgg) {
-  greeting.addEventListener('click', async () => {
-    if (easterEggTyping) return;
-    easterEggTyping = true;
-
-    const secret = secrets[easterEggIndex % secrets.length];
-    easterEggIndex++;
-
-    easterEgg.innerHTML = '';
-
-    const line1 = document.createElement('div');
-    const prompt = document.createElement('span');
-    prompt.className = 'ee-prompt';
-    prompt.textContent = '$ ';
-    line1.appendChild(prompt);
-    const cmdSpan = document.createElement('span');
-    line1.appendChild(cmdSpan);
-    easterEgg.appendChild(line1);
-
-    await typeText(cmdSpan, secret.cmd, 50);
-
-    const line2 = document.createElement('div');
-    line2.className = 'ee-output';
-    easterEgg.appendChild(line2);
-
-    await new Promise((r) => setTimeout(r, 300));
-    await typeText(line2, secret.output, 30);
-
-    easterEggTyping = false;
+  // Handle Enter
+  terminalInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const value = terminalInput.value;
+      processCommand(value);
+      terminalInput.value = '';
+      terminalTyped.textContent = '';
+    }
   });
 }
