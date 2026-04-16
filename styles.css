@@ -408,6 +408,20 @@ a.race-item:hover {
   text-decoration-color: var(--text-dim);
 }
 
+/* Skipped / DNS races */
+.race-item.skipped {
+  opacity: 0.5;
+}
+
+.race-item.skipped .race-status {
+  color: #ef4444;
+}
+
+.race-item.skipped .race-name {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-dim);
+}
+
 /* Next race */
 .race-item.next {
   border-color: rgba(34, 197, 94, 0.3);

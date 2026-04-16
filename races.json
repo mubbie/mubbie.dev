@@ -1,0 +1,95 @@
+[
+  {
+    "date": "2026-03-01",
+    "name": "Hot Chocolate 15K",
+    "location": "Seattle",
+    "url": "https://www.hotchocolate15k.com/seattle",
+    "completed": true
+  },
+  {
+    "date": "2026-03-15",
+    "name": "Shamrock Half Marathon",
+    "location": "Portland",
+    "url": "https://www.portlandshamrockrun.com",
+    "completed": true
+  },
+  {
+    "date": "2026-04-18",
+    "name": "Cherry Blossom Half Marathon",
+    "location": "Seattle",
+    "url": "https://www.seattlecherryblossomrun.com"
+  },
+  {
+    "date": "2026-05-03",
+    "name": "Kirkland Half Marathon",
+    "location": "Kirkland",
+    "url": "https://orcarunning.com/kirklandhalf/"
+  },
+  {
+    "date": "2026-06-06",
+    "name": "The Big Run (Brooks)",
+    "location": "Seattle",
+    "url": "https://runsignup.com/Race/WA/Seattle/TBRSeattle"
+  },
+  {
+    "date": "2026-06-20",
+    "name": "Snoqualmie Valley Half Marathon",
+    "location": "Carnation",
+    "url": "https://www.orcarunning.com/snoqualmie-valley-half/"
+  },
+  {
+    "date": "2026-06-27",
+    "name": "Seattle Marathon Summer Half",
+    "location": "Seattle",
+    "url": "https://raceroster.com/events/2026/107529/2026-seattle-marathon-summer-5k10khalf-marathon-and-kids-fun-run"
+  },
+  {
+    "date": "2026-07-26",
+    "name": "Craft Classic Half Marathon",
+    "location": "Redmond",
+    "url": "https://www.orcarunning.com/craft-classic/"
+  },
+  {
+    "date": "2026-08-01",
+    "name": "Bubble Run 5K",
+    "location": "Puyallup",
+    "url": "https://bubblerun.com/locations/seattle-2/"
+  },
+  {
+    "date": "2026-08-30",
+    "name": "Iron Horse Half Marathon",
+    "location": "North Bend",
+    "url": "https://runsignup.com/Race/WA/NorthBend/IronHorseHalfMarathon"
+  },
+  {
+    "date": "2026-09-20",
+    "name": "Orca Half Marathon",
+    "location": "Seattle",
+    "url": "https://www.orcarunning.com/orca-half/"
+  },
+  {
+    "date": "2026-10-10",
+    "name": "Night Nation Run 5K",
+    "location": "Seattle",
+    "url": "https://nightnationrun.com/events/seattle/"
+  },
+  {
+    "date": "2026-10-17",
+    "name": "Lake Washington Half Marathon",
+    "location": "Kirkland",
+    "url": "https://runsignup.com/Race/WA/Kirkland/LakeWashingtonHalf"
+  },
+  {
+    "date": "2026-11-29",
+    "name": "Seattle Full Marathon",
+    "location": "Seattle",
+    "url": "https://www.seattlemarathon.org/marathon-and-half-marathon",
+    "goal": true
+  },
+  {
+    "date": "2026-12-06",
+    "name": "The Electric Cookie 10K",
+    "location": "Seattle",
+    "url": "https://runsignup.com/Race/WA/Redmond/TheElectricCookieRun"
+  }
+]
