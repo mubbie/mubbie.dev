@@ -180,7 +180,7 @@ if (terminal && terminalInput) {
     'connect': 'connect',
   };
 
-  const helpText = 'commands: help, whoami, ls, cd, cat, clear';
+  const helpText = 'commands: help, whoami, pwd, ls, cd, cat, clear';
 
   function addLine(prompt, cmd, output, isError) {
     const line = document.createElement('div');
@@ -249,9 +249,8 @@ if (terminal && terminalInput) {
         if (!arg) {
           addLine('$', input, 'usage: cat &lt;file&gt; — try: ls /dev', true);
         } else {
-          const path = arg.startsWith('/dev/') ? arg : `/dev/${arg}`;
-          if (files[path]) {
-            addLine('$', input, files[path]);
+          if (files[arg]) {
+            addLine('$', input, files[arg]);
           } else {
             addLine('$', input, `cat: ${arg}: No such file or directory`, true);
           }
