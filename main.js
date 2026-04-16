@@ -152,8 +152,8 @@ fetch('bucketlist.json')
 // ─── Easter egg — click the prompt ───
 
 const secrets = [
-  { cmd: 'cat secrets.txt', output: 'mass effect is the greatest game ever made' },
-  { cmd: 'echo $FUEL', output: 'coffee && late-night coding sessions' },
+  { cmd: 'cat secrets.txt', output: 'uncharted 4 is the greatest game ever made' },
+  { cmd: 'echo $FUEL', output: 'lots of protein, sparkling ice && gym training sessions' },
   { cmd: 'ls ~/goals', output: 'ironman  marathon  pilot-license  startup' },
   { cmd: 'uptime', output: 'building since 2019, no signs of stopping' },
   { cmd: 'cat /dev/mood', output: 'optimistic with a chance of debugging' },
