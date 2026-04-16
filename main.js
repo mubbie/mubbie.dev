@@ -191,7 +191,7 @@ if (terminal && terminalInput) {
       terminalHistory.appendChild(line);
     }
 
-    if (output !== undefined) {
+    if (output != null) {
       const outLine = document.createElement('div');
       outLine.className = 'terminal-history-line';
       outLine.innerHTML = `<span class="${isError ? 'terminal-error' : 'terminal-output'}">${output}</span>`;
@@ -232,6 +232,8 @@ if (terminal && terminalInput) {
         if (!arg || arg === '~') {
           addLine('$', input, null);
           window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (arg === '/dev' || arg === '/dev/' || arg === 'dev') {
+          addLine('$', input, 'you found the secret directory. try: ls /dev');
         } else {
           const section = arg.replace(/\/$/, '');
           if (sections[section]) {
@@ -245,7 +247,7 @@ if (terminal && terminalInput) {
 
       case 'cat':
         if (!arg) {
-          addLine('$', input, 'usage: cat <file>', true);
+          addLine('$', input, 'usage: cat &lt;file&gt; — try: ls /dev', true);
         } else {
           const path = arg.startsWith('/dev/') ? arg : `/dev/${arg}`;
           if (files[path]) {
