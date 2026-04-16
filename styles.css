@@ -327,6 +327,122 @@ section {
   color: var(--accent);
 }
 
+/* ─── Races section ─── */
+.races-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.race-item {
+  display: grid;
+  grid-template-columns: 24px 60px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+
+a.race-item:hover {
+  background: var(--surface-hover);
+  border-color: var(--border);
+  transform: translateX(4px);
+}
+
+.race-status {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.race-date {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.race-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.race-location {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.race-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--accent-glow);
+  color: var(--accent);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.race-badge.goal {
+  background: rgba(249, 115, 22, 0.12);
+  color: var(--orange);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+/* Completed races */
+.race-item.completed {
+  opacity: 0.5;
+}
+
+.race-item.completed .race-status {
+  color: var(--accent);
+}
+
+.race-item.completed .race-name {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-dim);
+}
+
+/* Next race */
+.race-item.next {
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.04);
+}
+
+.race-item.next .race-status {
+  color: var(--accent);
+}
+
+.race-item.next .race-name {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Highlighted race (marathon goal) */
+.race-item.highlight .race-name {
+  font-weight: 600;
+}
+
+/* Stats bar */
+.race-stats {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.race-stats-divider {
+  opacity: 0.4;
+}
+
 /* ─── Connect section ─── */
 .connect-grid {
   display: flex;
@@ -458,6 +574,19 @@ footer p {
 
   .nav-pills { gap: 6px; }
   .nav-pills a { font-size: 12px; padding: 6px 12px; }
+
+  .race-item {
+    grid-template-columns: 20px 50px 1fr;
+    gap: 8px;
+    padding: 10px 16px;
+  }
+
+  .race-location { display: none; }
+
+  .race-badge {
+    grid-column: 3;
+    justify-self: start;
+  }
 
   .connect-grid .connect-link:last-child:nth-child(odd) {
     grid-column: 1 / -1;
