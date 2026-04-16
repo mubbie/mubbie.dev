@@ -153,7 +153,7 @@ fetch('bucketlist.json')
 
 const secrets = [
   { cmd: 'cat secrets.txt', output: 'uncharted 4 is the greatest game ever made' },
-  { cmd: 'echo $FUEL', output: 'lots of protein, sparkling ice && gym training sessions' },
+  { cmd: 'echo $FUEL', output: 'lots of protein, sparkling ice && lifting weights' },
   { cmd: 'ls ~/goals', output: 'ironman  marathon  pilot-license  startup' },
   { cmd: 'uptime', output: 'building since 2019, no signs of stopping' },
   { cmd: 'cat /dev/mood', output: 'optimistic with a chance of debugging' },
