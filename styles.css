@@ -123,6 +123,7 @@ header {
 
 .terminal-typed {
   color: var(--text);
+  white-space: pre;
 }
 
 .terminal-hidden-input {
