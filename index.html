@@ -31,8 +31,15 @@
   <!-- ─── Hero ─── -->
 
   <header>
-    <div class="greeting" id="greeting" style="cursor: pointer;" title="try clicking me">~/mubbie <span class="cursor"></span></div>
-    <div class="easter-egg" id="easter-egg"></div>
+    <div class="terminal" id="terminal" title="try typing a command">
+      <div class="terminal-history" id="terminal-history"></div>
+      <div class="terminal-input-line">
+        <span class="terminal-prompt">~/mubbie $&nbsp;</span>
+        <span class="terminal-typed" id="terminal-typed"></span>
+        <span class="cursor"></span>
+      </div>
+      <input type="text" id="terminal-input" class="terminal-hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
     <h1>Hey, I'm Mubbie <span class="wave">👋🏾</span></h1>
     <p class="tagline">
       I'm a software engineer at <strong>Microsoft Security</strong>. I enjoy building software,
