@@ -315,6 +315,10 @@ if (terminal && terminalInput) {
         addLine('$', input, 'nice try 😏', true);
         break;
 
+      case 'claude':
+        addLine('$', input, 'I helped build this site, you\'re welcome 😎');
+        break;
+
       default:
         addLine('$', input, `command not found: ${cmd}. try 'help'`, true);
     }
