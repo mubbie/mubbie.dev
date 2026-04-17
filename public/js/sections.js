@@ -125,7 +125,9 @@ function renderBucketList(items) {
 
   let doneCount = 0;
 
-  items.forEach((item) => {
+  const sorted = [...items].sort((a, b) => (a.done === b.done ? 0 : a.done ? -1 : 1));
+
+  sorted.forEach((item) => {
     const el = document.createElement('div');
     el.className = 'bucket-item' + (item.done ? ' done' : '');
 
