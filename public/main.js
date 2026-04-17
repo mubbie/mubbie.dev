@@ -72,7 +72,7 @@ function renderCurrently(items) {
   });
 }
 
-fetch('currently.json')
+fetch('data/currently.json')
   .then((res) => res.json())
   .then(renderCurrently)
   .catch((err) => console.error('Failed to load currently:', err));
@@ -137,7 +137,7 @@ function renderRaces(races) {
     `<span>${remaining} to go</span>`;
 }
 
-fetch('races.json')
+fetch('data/races.json')
   .then((res) => res.json())
   .then(renderRaces);
 
@@ -176,7 +176,7 @@ function renderBucketList(items) {
     `<span>${remaining} to go</span>`;
 }
 
-fetch('bucketlist.json')
+fetch('data/bucketlist.json')
   .then((res) => res.json())
   .then(renderBucketList)
   .catch((err) => console.error('Failed to load bucket list:', err));
@@ -215,7 +215,7 @@ if (terminal && terminalInput) {
   const helpText = 'commands: help, whoami, pwd, ls, cd, cat, date, random, clear';
 
   let fortunes = [];
-  fetch('fortunes.json')
+  fetch('data/fortunes.json')
     .then((res) => res.json())
     .then((data) => { fortunes = data; })
     .catch(() => { fortunes = ['no fortunes loaded. try again later.']; });
