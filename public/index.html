@@ -25,29 +25,31 @@
 </head>
 <body>
 
-<div class="glow-orb green"></div>
-<div class="glow-orb blue"></div>
+<a href="#projects" class="skip-link">Skip to content</a>
+
+<div class="glow-orb green" aria-hidden="true"></div>
+<div class="glow-orb blue" aria-hidden="true"></div>
 
 <div class="container">
 
   <!-- ─── Hero ─── -->
 
   <header>
-    <div class="terminal" id="terminal" title="try typing a command">
-      <div class="terminal-history" id="terminal-history"></div>
+    <div class="terminal" id="terminal" role="region" aria-label="Interactive terminal — type help for commands">
+      <div class="terminal-history" id="terminal-history" aria-live="polite" aria-relevant="additions"></div>
       <div class="terminal-input-line">
-        <span class="terminal-prompt">~/mubbie $&nbsp;</span>
-        <span class="terminal-typed" id="terminal-typed"></span>
-        <span class="cursor"></span>
+        <label for="terminal-input" class="terminal-prompt">~/mubbie $&nbsp;</label>
+        <span class="terminal-typed" id="terminal-typed" aria-hidden="true"></span>
+        <span class="cursor" aria-hidden="true"></span>
       </div>
-      <input type="text" id="terminal-input" class="terminal-hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <input type="text" id="terminal-input" class="terminal-hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command input — press / to focus">
     </div>
     <h1><span id="greeting-text">Hey</span>, I'm Mubbie <span class="wave">👋🏾</span></h1>
     <p class="tagline">
       I'm a software engineer at <strong>Microsoft Security</strong>. I enjoy building software,
       breaking systems, and <strong>writing about things that make me curious</strong>.
     </p>
-    <nav class="nav-pills">
+    <nav class="nav-pills" aria-label="Site sections">
       <a href="#projects">projects</a>
       <a href="#writing">writing</a>
       <a href="#currently">currently</a>
@@ -225,12 +227,13 @@
       <span class="status-dot"></span>
       building cool things in Seattle
     </div>
+    <div class="footer-meta" id="footer-meta"></div>
     <p>&copy; <span id="footer-year"></span> Mubbie Idoko</p>
   </footer>
 
 </div>
 
-<canvas id="matrix-canvas"></canvas>
+<canvas id="matrix-canvas" aria-hidden="true"></canvas>
 <script type="module" src="js/main.js"></script>
 
 </body>

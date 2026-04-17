@@ -17,6 +17,26 @@
   --sans: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
 }
 
+/* ─── Skip link (accessibility) ─── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-size: 13px;
+  border-radius: 0 0 8px 8px;
+  z-index: 10000;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
 /* ─── Light mode ─── */
 [data-theme="light"] {
   --bg: #f5f5f0;
@@ -705,13 +725,7 @@ a.race-item:hover {
 
 /* Stats bar */
 .race-stats {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
   margin-top: 16px;
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--text-dim);
 }
 
 .race-stats-divider {
@@ -766,6 +780,14 @@ footer p {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--text-dim);
+}
+
+.footer-meta {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
 }
 
 .footer-status {
@@ -984,7 +1006,7 @@ footer p {
 .terminal-help-cmd {
   color: var(--accent);
   font-size: 13px;
-  min-width: 18ch;
+  min-width: 20ch;
   flex-shrink: 0;
 }
 
@@ -1012,4 +1034,144 @@ footer p {
 /* ─── Terminal ok line ─── */
 .terminal-ok {
   color: var(--accent);
+}
+
+/* ─── Back to top button ─── */
+.back-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 50;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s, transform 0.3s, color 0.2s, border-color 0.2s;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.back-to-top:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ─── Keyboard shortcut hint ─── */
+.shortcut-hint {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.4s;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-top: 6px;
+  line-height: 1.8;
+}
+
+.shortcut-hint.visible {
+  opacity: 0.6;
+}
+
+.shortcut-hint kbd {
+  font-size: 11px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  font-family: var(--mono);
+  margin: 0 2px;
+}
+
+/* ─── Race progress blocks ─── */
+.race-blocks {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.race-block {
+  height: 14px;
+  border-radius: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: background 0.4s ease, border-color 0.4s ease;
+  flex: 1;
+  cursor: pointer;
+}
+
+.race-block.filled {
+  background: var(--accent);
+  border-color: var(--accent-dim);
+}
+
+.race-block.highlight {
+  border-color: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+
+.race-item.highlight-row {
+  border-color: var(--accent) !important;
+  background: var(--accent-glow) !important;
+}
+
+.race-summary {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 8px;
+  text-align: center;
+}
+
+
+/* ─── Wave bounce ─── */
+.wave {
+  cursor: pointer;
+}
+
+.wave.bounce {
+  animation: bounce 0.4s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.4); }
+  60% { transform: scale(0.9); }
+}
+
+/* ─── Reduced motion (accessibility) ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
 }

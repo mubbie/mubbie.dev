@@ -7,15 +7,64 @@ function formatDate(dateStr) {
   return `${MONTHS[parseInt(month, 10) - 1]} ${parseInt(day, 10)}`;
 }
 
+// ─── Randomized greetings (4 per time of day) ───
+
+const GREETINGS = {
+  morning: [
+    'Good morning',
+    'Rise and shine',
+    'Top of the morning',
+    'Morning',
+  ],
+  afternoon: [
+    'Good afternoon',
+    'Hey there',
+    'What\'s good',
+    'Afternoon',
+  ],
+  evening: [
+    'Good evening',
+    'Evening',
+    'What\'s poppin\'',
+    'Twilight greetings',
+  ],
+};
+
 // ─── Greeting ───
 
 function initGreeting() {
   const el = document.getElementById('greeting-text');
   if (!el) return;
+
   const hour = new Date().getHours();
-  if (hour < 12) el.textContent = 'Good morning';
-  else if (hour < 18) el.textContent = 'Good afternoon';
-  else el.textContent = 'Good evening';
+  let period;
+  if (hour < 12) period = 'morning';
+  else if (hour < 18) period = 'afternoon';
+  else period = 'evening';
+
+  const options = GREETINGS[period];
+  el.textContent = options[Math.floor(Math.random() * options.length)];
+}
+
+// ─── Wave emoji interaction ───
+
+function initWaveEmoji() {
+  const wave = document.querySelector('.wave');
+  if (!wave) return;
+
+  const hands = ['👋🏾', '💪🏾', '✌🏾', '🤟🏾', '🤙🏾'];
+  let index = 0;
+
+  wave.style.cursor = 'pointer';
+  wave.addEventListener('click', (e) => {
+    e.preventDefault();
+    index = (index + 1) % hands.length;
+    wave.textContent = hands[index];
+    // Restart the wave animation
+    wave.style.animation = 'none';
+    wave.offsetHeight; // force reflow
+    wave.style.animation = '';
+  });
 }
 
 // ─── Footer year ───
@@ -38,6 +87,53 @@ function initScrollReveal() {
     { threshold: 0.1 }
   );
   reveals.forEach((el) => observer.observe(el));
+}
+
+// ─── Back to top button ───
+
+function initBackToTop() {
+  const btn = document.createElement('button');
+  btn.className = 'back-to-top';
+  btn.setAttribute('aria-label', 'Back to top');
+  btn.textContent = '↑';
+  document.body.appendChild(btn);
+
+  btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) {
+      btn.classList.add('visible');
+    } else {
+      btn.classList.remove('visible');
+    }
+  }, { passive: true });
+}
+
+// ─── Keyboard shortcut hint ───
+
+function initShortcutHint() {
+  if (localStorage.getItem('mubbie-hint-dismissed')) return;
+
+  const hint = document.createElement('div');
+  hint.className = 'shortcut-hint';
+  hint.innerHTML = 'press <kbd>/</kbd> to start typing';
+
+  const terminal = document.getElementById('terminal');
+  if (!terminal) return;
+  terminal.appendChild(hint);
+
+  setTimeout(() => hint.classList.add('visible'), 1500);
+
+  function dismiss() {
+    hint.classList.remove('visible');
+    localStorage.setItem('mubbie-hint-dismissed', '1');
+    setTimeout(() => hint.remove(), 300);
+  }
+
+  hint.addEventListener('click', dismiss);
+  document.getElementById('terminal-input')?.addEventListener('focus', dismiss);
 }
 
 // ─── Currently ───
@@ -106,14 +202,70 @@ function renderRaces(races) {
       (i === nextIndex ? '<span class="race-badge">next</span>' : '') +
       (race.goal ? '<span class="race-badge goal">first marathon</span>' : '');
 
+    a.dataset.raceIndex = i;
     list.appendChild(a);
   });
 
-  const remaining = races.length - completedCount;
-  stats.innerHTML =
-    `<span>${completedCount} / ${races.length} completed</span>` +
-    '<span class="race-stats-divider">·</span>' +
-    `<span>${remaining} to go</span>`;
+  // Block progress + stats
+  const total = races.length;
+  const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+  let blocksHtml = '<div class="race-blocks">[ ';
+  races.forEach((race, idx) => {
+    const filled = race.completed === true;
+    blocksHtml += `<span class="race-block${filled ? ' filled' : ''}" data-race-index="${idx}"></span>`;
+  });
+  blocksHtml += ' ]</div>';
+
+  const summaryHtml =
+    `<div class="race-summary">${completedCount}/${total} done · ${pct}%</div>`;
+
+  stats.innerHTML = blocksHtml + summaryHtml;
+
+  // Animate blocks filling in on scroll
+  const blocks = stats.querySelectorAll('.race-block.filled');
+  if (blocks.length > 0) {
+    blocks.forEach((b) => b.classList.remove('filled'));
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          races.forEach((race, i) => {
+            if (race.completed === true) {
+              const block = stats.querySelectorAll('.race-block')[i];
+              setTimeout(() => block.classList.add('filled'), i * 120);
+            }
+          });
+          obs.disconnect();
+        }
+      });
+    }, { threshold: 0.5 });
+    obs.observe(stats);
+  }
+
+  // Cross-highlight: hover block ↔ race row
+  function highlightPair(index, on) {
+    const block = stats.querySelector(`.race-block[data-race-index="${index}"]`);
+    const row = list.querySelector(`.race-item[data-race-index="${index}"]`);
+    if (block) block.classList.toggle('highlight', on);
+    if (row) row.classList.toggle('highlight-row', on);
+  }
+
+  stats.addEventListener('mouseover', (e) => {
+    const block = e.target.closest('.race-block');
+    if (block) highlightPair(block.dataset.raceIndex, true);
+  });
+  stats.addEventListener('mouseout', (e) => {
+    const block = e.target.closest('.race-block');
+    if (block) highlightPair(block.dataset.raceIndex, false);
+  });
+  list.addEventListener('mouseover', (e) => {
+    const row = e.target.closest('.race-item');
+    if (row) highlightPair(row.dataset.raceIndex, true);
+  });
+  list.addEventListener('mouseout', (e) => {
+    const row = e.target.closest('.race-item');
+    if (row) highlightPair(row.dataset.raceIndex, false);
+  });
 }
 
 // ─── Bucket List ───
@@ -147,18 +299,64 @@ function renderBucketList(items) {
   });
 
   const remaining = items.length - doneCount;
+  const someday = Math.round(remaining * 2 / 3);
+  const mystery = remaining - someday;
+
   stats.innerHTML =
-    `<span>${doneCount} / ${items.length} done</span>` +
-    '<span class="bucket-stats-divider">·</span>' +
-    `<span>${remaining} to go</span>`;
+    `<span>${doneCount} done · ${someday} someday · ${mystery} ???</span>`;
+}
+
+// ─── Footer meta (weather + clock) ───
+
+function initFooterMeta() {
+  const el = document.getElementById('footer-meta');
+  if (!el) return;
+
+  let weatherText = '';
+
+  function render() {
+    const time = new Date().toLocaleString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    el.textContent = weatherText
+      ? `${weatherText} · ${time}`
+      : time;
+  }
+
+  fetch('https://wttr.in/Seattle?format=%c+%t')
+    .then((res) => res.text())
+    .then((raw) => {
+      const text = raw.trim();
+      const match = text.match(/([+-]?\d+)°F/);
+      if (match) {
+        const f = parseInt(match[1], 10);
+        const c = Math.round((f - 32) * 5 / 9);
+        weatherText = text.replace(/[+-]?\d+°F/, `${f}°F / ${c}°C`);
+      } else {
+        weatherText = text;
+      }
+      render();
+    })
+    .catch(() => {});
+
+  render();
+  setInterval(render, 1000);
 }
 
 // ─── Init ───
 
 export function initSections() {
   initGreeting();
+  initWaveEmoji();
   initFooter();
+  initFooterMeta();
   initScrollReveal();
+  initBackToTop();
+  initShortcutHint();
 
   fetch('data/currently.json')
     .then((res) => res.json())

@@ -31,17 +31,21 @@ export const HELP_ITEMS = [
   { c: 'help',               d: 'show this list' },
   { c: 'ls [path]',          d: 'list sections or /dev files' },
   { c: 'cd <section>',       d: 'jump to a section' },
-  { c: 'cat <file>',         d: 'read a file (try: ls /dev)' },
+  { c: 'cat <file>',         d: 'read a file' },
   { c: 'open <name>',        d: 'open a project or post by name' },
   { c: 'whoami',             d: 'who is this' },
   { c: 'theme [dark|light]', d: 'switch color theme' },
+  { c: 'weather',            d: 'seattle weather right now' },
   { c: 'sudo hire-me',       d: 'you know you want to' },
   { c: 'matrix',             d: 'take the red pill' },
   { c: 'coffee',             d: 'brew a virtual cup' },
+  { c: 'flip',               d: 'flip a coin' },
+  { c: '8ball <question>',    d: 'ask the magic 8-ball' },
   { c: 'random',             d: 'fortune cookie' },
   { c: 'echo <text>',        d: 'repeat after me' },
   { c: 'date',               d: 'current date & time' },
   { c: 'pwd',                d: 'print working directory' },
+  { c: 'repo',               d: 'open the site repo' },
   { c: 'clear',              d: 'wipe terminal history' },
   { c: 'claude',             d: 'open claude code' },
 ];
@@ -62,7 +66,44 @@ export const OPENABLES = [
 ];
 
 export const ALL_COMMANDS = [
-  'help', 'ls', 'cd', 'cat', 'open', 'whoami', 'theme',
-  'sudo', 'matrix', 'coffee', 'random', 'echo', 'date',
-  'pwd', 'clear', 'claude',
+  'help', 'ls', 'cd', 'cat', 'open', 'whoami', 'theme', 'weather',
+  'sudo', 'matrix', 'coffee', 'flip', '8ball', 'random', 'echo',
+  'date', 'pwd', 'repo', 'clear', 'claude',
+];
+
+// ─── Aliases ───
+// Maps shorthand commands to their canonical form
+export const ALIASES = {
+  'll': 'ls',
+  'la': 'ls',
+  'q': 'quit',
+  'h': 'help',
+  'c': 'clear',
+  'cls': 'clear',
+  'fortune': 'random',
+  'hack': 'matrix',
+  'brew': 'coffee',
+  'coin': 'flip',
+};
+
+// ─── 8-ball responses ───
+export const EIGHT_BALL_RESPONSES = [
+  'it is certain.',
+  'without a doubt.',
+  'you may rely on it.',
+  'yes, definitely.',
+  'as I see it, yes.',
+  'most likely.',
+  'outlook good.',
+  'signs point to yes.',
+  'reply hazy, try again.',
+  'ask again later.',
+  'better not tell you now.',
+  'cannot predict now.',
+  'concentrate and ask again.',
+  'don\'t count on it.',
+  'my reply is no.',
+  'my sources say no.',
+  'outlook not so good.',
+  'very doubtful.',
 ];

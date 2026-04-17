@@ -1,6 +1,6 @@
 // ─── Terminal: init, command processing, event wiring ───
 
-import { FILESYSTEM, FILES, SECTION_MAP, HELP_ITEMS, OPENABLES } from './commands.js';
+import { FILESYSTEM, FILES, SECTION_MAP, HELP_ITEMS, OPENABLES, ALIASES, EIGHT_BALL_RESPONSES } from './commands.js';
 import { createHistory } from './history.js';
 import { createOutput } from './output.js';
 import { tabComplete } from './completer.js';
@@ -31,9 +31,12 @@ export function initTerminal() {
     history.push(trimmed);
 
     const parts = trimmed.split(/\s+/);
-    const cmd = parts[0].toLowerCase();
+    let cmd = parts[0].toLowerCase();
     const arg = parts.slice(1).join(' ');
     const argLower = arg.toLowerCase();
+
+    // Resolve aliases
+    if (ALIASES[cmd]) cmd = ALIASES[cmd];
 
     switch (cmd) {
       case '':
@@ -118,8 +121,29 @@ export function initTerminal() {
         break;
       }
 
+      case 'weather':
+        out.addLine('$', trimmed, null);
+        out.addLine(null, null, 'fetching seattle weather...');
+        fetch('https://wttr.in/Seattle?format=%c+%t+%w+%h+humidity')
+          .then((res) => res.text())
+          .then((raw) => {
+            const text = raw.trim();
+            const match = text.match(/([+-]?\d+)°F/);
+            if (match) {
+              const f = parseInt(match[1], 10);
+              const c = Math.round((f - 32) * 5 / 9);
+              const dual = text.replace(/[+-]?\d+°F/, `${f}°F / ${c}°C`);
+              out.addOk(`seattle: ${dual}`);
+            } else {
+              out.addOk(`seattle: ${text}`);
+            }
+          })
+          .catch(() => {
+            out.addLine(null, null, 'could not fetch weather. try again later.', true);
+          });
+        break;
+
       case 'clear':
-      case 'cls':
         out.clear();
         break;
 
@@ -176,6 +200,24 @@ export function initTerminal() {
         });
         break;
       }
+
+      case 'flip':
+        out.addLine('$', trimmed, Math.random() < 0.5 ? '🪙 heads!' : '🪙 tails!');
+        break;
+
+      case '8ball':
+        if (!arg) {
+          out.addLine('$', trimmed, 'ask me a question. e.g. 8ball will I ship this feature?', true);
+        } else {
+          out.addLine('$', trimmed, `🎱 ${EIGHT_BALL_RESPONSES[Math.floor(Math.random() * EIGHT_BALL_RESPONSES.length)]}`);
+        }
+        break;
+
+      case 'repo':
+        out.addLine('$', trimmed, null);
+        out.addOk('→ opening mubbie/mubbie.dev');
+        setTimeout(() => window.open('https://github.com/mubbie/mubbie.dev', '_blank'), 200);
+        break;
 
       case 'rm':
         if (arg.includes('-rf')) {
