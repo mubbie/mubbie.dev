@@ -241,7 +241,7 @@ if (terminal && terminalInput) {
 
   function processCommand(input) {
     const parts = input.trim().split(/\s+/);
-    const cmd = parts[0];
+    const cmd = parts[0].toLowerCase();
     const arg = parts.slice(1).join(' ');
 
     switch (cmd) {
