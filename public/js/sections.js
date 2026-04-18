@@ -327,9 +327,12 @@ function initFooterMeta() {
       : time;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
+
   fetch('https://wttr.in/Seattle?format=%c+%t+%l', {
     headers: { 'Accept': 'text/plain' },
-    signal: AbortSignal.timeout(3000),
+    signal: controller.signal,
   })
     .then((res) => (res.ok ? res.text() : null))
     .then((raw) => {
@@ -347,7 +350,8 @@ function initFooterMeta() {
       }
       render();
     })
-    .catch(() => {});
+    .catch(() => {})
+    .finally(() => clearTimeout(timeoutId));
 
   render();
   setInterval(render, 1000);
