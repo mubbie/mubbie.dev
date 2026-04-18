@@ -327,10 +327,16 @@ function initFooterMeta() {
       : time;
   }
 
-  fetch('https://wttr.in/Seattle?format=%c+%t')
-    .then((res) => res.text())
+  fetch('https://wttr.in/Seattle?format=%c+%t+%l', {
+    headers: { 'Accept': 'text/plain' },
+    signal: AbortSignal.timeout(3000),
+  })
+    .then((res) => (res.ok ? res.text() : null))
     .then((raw) => {
+      if (!raw) return;
       const text = raw.trim();
+      // wttr.in occasionally serves the HTML page instead of the formatted string
+      if (!text || text.startsWith('<')) return;
       const match = text.match(/([+-]?\d+)°F/);
       if (match) {
         const f = parseInt(match[1], 10);
