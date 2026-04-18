@@ -334,11 +334,16 @@ function initFooterMeta() {
     headers: { 'Accept': 'text/plain' },
     signal: controller.signal,
   })
-    .then((res) => (res.ok ? res.text() : null))
+    .then((res) => {
+      if (!res.ok) return null;
+      const type = res.headers.get('content-type') || '';
+      if (!type.startsWith('text/plain')) return null;
+      return res.text();
+    })
     .then((raw) => {
       if (!raw) return;
       const text = raw.trim();
-      // wttr.in occasionally serves the HTML page instead of the formatted string
+      // Belt-and-suspenders: bail if body still looks like HTML
       if (!text || text.startsWith('<')) return;
       const match = text.match(/([+-]?\d+)°F/);
       if (match) {
