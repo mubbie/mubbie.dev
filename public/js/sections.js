@@ -327,10 +327,24 @@ function initFooterMeta() {
       : time;
   }
 
-  fetch('https://wttr.in/Seattle?format=%c+%t')
-    .then((res) => res.text())
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+  fetch('https://wttr.in/Seattle?format=%c+%t+%l', {
+    headers: { 'Accept': 'text/plain' },
+    signal: controller.signal,
+  })
+    .then((res) => {
+      if (!res.ok) return null;
+      const type = res.headers.get('content-type') || '';
+      if (!type.startsWith('text/plain')) return null;
+      return res.text();
+    })
     .then((raw) => {
+      if (!raw) return;
       const text = raw.trim();
+      // Belt-and-suspenders: bail if body still looks like HTML
+      if (!text || text.startsWith('<')) return;
       const match = text.match(/([+-]?\d+)°F/);
       if (match) {
         const f = parseInt(match[1], 10);
@@ -341,7 +355,8 @@ function initFooterMeta() {
       }
       render();
     })
-    .catch(() => {});
+    .catch(() => {})
+    .finally(() => clearTimeout(timeoutId));
 
   render();
   setInterval(render, 1000);

@@ -121,13 +121,27 @@ export function initTerminal() {
         break;
       }
 
-      case 'weather':
+      case 'weather': {
         out.addLine('$', trimmed, null);
         out.addLine(null, null, 'fetching seattle weather...');
-        fetch('https://wttr.in/Seattle?format=%c+%t+%w+%h+humidity')
-          .then((res) => res.text())
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const fail = () =>
+          out.addLine(null, null, 'could not fetch weather. try again later.', true);
+        fetch('https://wttr.in/Seattle?format=%c+%t+%w+%h+humidity', {
+          headers: { 'Accept': 'text/plain' },
+          signal: controller.signal,
+        })
+          .then((res) => {
+            if (!res.ok) return null;
+            const type = res.headers.get('content-type') || '';
+            if (!type.startsWith('text/plain')) return null;
+            return res.text();
+          })
           .then((raw) => {
+            if (!raw) { fail(); return; }
             const text = raw.trim();
+            if (!text || text.startsWith('<')) { fail(); return; }
             const match = text.match(/([+-]?\d+)°F/);
             if (match) {
               const f = parseInt(match[1], 10);
@@ -138,10 +152,10 @@ export function initTerminal() {
               out.addOk(`seattle: ${text}`);
             }
           })
-          .catch(() => {
-            out.addLine(null, null, 'could not fetch weather. try again later.', true);
-          });
+          .catch(fail)
+          .finally(() => clearTimeout(timeoutId));
         break;
+      }
 
       case 'clear':
         out.clear();
@@ -223,7 +237,7 @@ export function initTerminal() {
         if (arg.includes('-rf')) {
           out.addLine('$', trimmed, "nice try. this isn't that kind of website. 🛡️", true);
         } else {
-          out.addLine('$', trimmed, 'rm: refuses to disappoint', true);
+          out.addLine('$', trimmed, 'rm: i expected better from you', true);
         }
         break;
 
