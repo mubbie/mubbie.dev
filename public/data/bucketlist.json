@@ -1,5 +1,5 @@
 [
-  { "item": "Run a half marathon", "done": true, "note": "done 3!" },
+  { "item": "Run a half marathon", "done": true, "note": "done 4!" },
   { "item": "Run a full marathon", "done": false },
   { "item": "Complete at least two half Ironmans", "done": false },
   { "item": "Complete at least one full Ironman", "done": false },
