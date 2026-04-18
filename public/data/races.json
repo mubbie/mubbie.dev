@@ -17,7 +17,8 @@
     "date": "2026-04-18",
     "name": "Cherry Blossom Half Marathon",
     "location": "Seattle",
-    "url": "https://www.seattlecherryblossomrun.com"
+    "url": "https://www.seattlecherryblossomrun.com",
+    "completed": true
   },
   {
     "date": "2026-05-03",
