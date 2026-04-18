@@ -237,7 +237,7 @@ export function initTerminal() {
         if (arg.includes('-rf')) {
           out.addLine('$', trimmed, "nice try. this isn't that kind of website. 🛡️", true);
         } else {
-          out.addLine('$', trimmed, 'rm: refuses to disappoint', true);
+          out.addLine('$', trimmed, 'rm: i expected better from you', true);
         }
         break;
 
