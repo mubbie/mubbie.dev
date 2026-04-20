@@ -4,6 +4,7 @@ import { initTheme } from './theme.js';
 import { initSections } from './sections.js';
 import { initTerminal } from './terminal/index.js';
 import { isMatrixActive, stopMatrix } from './matrix.js';
+import { scrollToEl } from './scroll.js';
 
 // ─── Init ───
 initTheme();
@@ -35,7 +36,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     const termInput = document.getElementById('terminal-input');
     if (termInput) {
-      document.getElementById('terminal')?.scrollIntoView({ behavior: 'smooth' });
+      scrollToEl(document.getElementById('terminal'));
       setTimeout(() => termInput.focus(), 300);
     }
     return;
@@ -44,6 +45,6 @@ document.addEventListener('keydown', (e) => {
   // Number keys to navigate sections
   const section = NAV_SHORTCUTS[e.key];
   if (section) {
-    document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
+    scrollToEl(document.getElementById(section));
   }
 });

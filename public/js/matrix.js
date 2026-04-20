@@ -31,8 +31,8 @@ export function startMatrix() {
   canvas.height = window.innerHeight;
 
   const fontSize = 14;
-  const cols = Math.floor(canvas.width / fontSize);
-  const drops = Array(cols).fill(1);
+  let cols = Math.floor(canvas.width / fontSize);
+  let drops = Array(cols).fill(1);
 
   function draw() {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
@@ -57,6 +57,13 @@ export function startMatrix() {
   function onResize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    const newCols = Math.floor(canvas.width / fontSize);
+    if (newCols > cols) {
+      drops = drops.concat(Array(newCols - cols).fill(1));
+    } else if (newCols < cols) {
+      drops = drops.slice(0, newCols);
+    }
+    cols = newCols;
   }
   window.addEventListener('resize', onResize);
   canvas._onResize = onResize;

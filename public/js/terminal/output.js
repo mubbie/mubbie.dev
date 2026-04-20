@@ -10,18 +10,27 @@ export function createOutput(historyEl) {
   }
 
   function addLine(prompt, cmd, output, isError) {
-    const line = document.createElement('div');
-    line.className = 'terminal-history-line';
-
     if (prompt !== null) {
-      line.innerHTML = `<span class="terminal-prompt">~/mubbie $&nbsp;</span><span class="terminal-cmd">${cmd}</span>`;
+      const line = document.createElement('div');
+      line.className = 'terminal-history-line';
+      const promptSpan = document.createElement('span');
+      promptSpan.className = 'terminal-prompt';
+      promptSpan.textContent = '~/mubbie $ ';
+      const cmdSpan = document.createElement('span');
+      cmdSpan.className = 'terminal-cmd';
+      cmdSpan.textContent = cmd;
+      line.appendChild(promptSpan);
+      line.appendChild(cmdSpan);
       historyEl.appendChild(line);
     }
 
     if (output != null) {
       const outLine = document.createElement('div');
       outLine.className = 'terminal-history-line';
-      outLine.innerHTML = `<span class="${isError ? 'terminal-error' : 'terminal-output'}">${output}</span>`;
+      const outSpan = document.createElement('span');
+      outSpan.className = isError ? 'terminal-error' : 'terminal-output';
+      outSpan.textContent = output;
+      outLine.appendChild(outSpan);
       historyEl.appendChild(outLine);
     }
 
@@ -31,7 +40,10 @@ export function createOutput(historyEl) {
   function addOk(text) {
     const line = document.createElement('div');
     line.className = 'terminal-history-line';
-    line.innerHTML = `<span class="terminal-ok">${text}</span>`;
+    const span = document.createElement('span');
+    span.className = 'terminal-ok';
+    span.textContent = text;
+    line.appendChild(span);
     historyEl.appendChild(line);
     scrollToBottom();
   }

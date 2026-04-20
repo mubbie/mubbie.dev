@@ -1,6 +1,15 @@
 // ─── Page sections: greeting, footer, scroll reveal, data rendering ───
 
+import { scrollToTop } from './scroll.js';
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function span(cls, text) {
+  const s = document.createElement('span');
+  s.className = cls;
+  s.textContent = text;
+  return s;
+}
 
 function formatDate(dateStr) {
   const [, month, day] = dateStr.split('-');
@@ -55,9 +64,7 @@ function initWaveEmoji() {
   const hands = ['👋🏾', '💪🏾', '✌🏾', '🤟🏾', '🤙🏾'];
   let index = 0;
 
-  wave.style.cursor = 'pointer';
-  wave.addEventListener('click', (e) => {
-    e.preventDefault();
+  wave.addEventListener('click', () => {
     index = (index + 1) % hands.length;
     wave.textContent = hands[index];
     // Restart the wave animation
@@ -99,7 +106,7 @@ function initBackToTop() {
   document.body.appendChild(btn);
 
   btn.addEventListener('click', () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop();
   });
 
   window.addEventListener('scroll', () => {
@@ -150,13 +157,13 @@ function renderCurrently(items) {
     if (item.url) {
       el.href = item.url;
       el.target = '_blank';
+      el.rel = 'noopener noreferrer';
     }
 
-    el.innerHTML =
-      `<span class="currently-icon">${item.icon}</span>` +
-      `<span class="currently-label">${item.label}</span>` +
-      `<span class="currently-value">${item.value}</span>` +
-      (item.url ? '<span class="arrow">→</span>' : '');
+    el.appendChild(span('currently-icon', item.icon));
+    el.appendChild(span('currently-label', item.label));
+    el.appendChild(span('currently-value', item.value));
+    if (item.url) el.appendChild(span('arrow', '→'));
 
     list.appendChild(el);
   });
@@ -167,7 +174,7 @@ function renderCurrently(items) {
 function renderRaces(races) {
   const list = document.getElementById('races-list');
   const stats = document.getElementById('race-stats');
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
 
   const nextIndex = races.findIndex((r) => r.completed === undefined && r.date >= today);
   let completedCount = 0;
@@ -177,6 +184,7 @@ function renderRaces(races) {
     a.className = 'race-item';
     a.href = race.url;
     a.target = '_blank';
+    a.rel = 'noopener noreferrer';
 
     let statusIcon = '○';
 
@@ -194,13 +202,12 @@ function renderRaces(races) {
 
     if (race.goal) a.classList.add('highlight');
 
-    a.innerHTML =
-      `<span class="race-status">${statusIcon}</span>` +
-      `<span class="race-date">${formatDate(race.date)}</span>` +
-      `<span class="race-name">${race.name}</span>` +
-      `<span class="race-location">${race.location}</span>` +
-      (i === nextIndex ? '<span class="race-badge">next</span>' : '') +
-      (race.goal ? '<span class="race-badge goal">first marathon</span>' : '');
+    a.appendChild(span('race-status', statusIcon));
+    a.appendChild(span('race-date', formatDate(race.date)));
+    a.appendChild(span('race-name', race.name));
+    a.appendChild(span('race-location', race.location));
+    if (i === nextIndex) a.appendChild(span('race-badge', 'next'));
+    if (race.goal) a.appendChild(span('race-badge goal', 'first marathon'));
 
     a.dataset.raceIndex = i;
     list.appendChild(a);
@@ -286,14 +293,10 @@ function renderBucketList(items) {
     if (item.done) doneCount++;
 
     const status = item.done ? '✓' : '○';
-    const note = item.note
-      ? `<span class="bucket-note">${item.note}</span>`
-      : '';
 
-    el.innerHTML =
-      `<span class="bucket-status">${status}</span>` +
-      `<span class="bucket-text">${item.item}</span>` +
-      note;
+    el.appendChild(span('bucket-status', status));
+    el.appendChild(span('bucket-text', item.item));
+    if (item.note) el.appendChild(span('bucket-note', item.note));
 
     list.appendChild(el);
   });
@@ -364,6 +367,24 @@ function initFooterMeta() {
 
 // ─── Init ───
 
+function fetchJSON(url) {
+  return fetch(url).then((res) => {
+    if (!res.ok) throw new Error(`${url}: ${res.status}`);
+    const type = res.headers.get('content-type') || '';
+    if (!type.includes('json')) throw new Error(`${url}: unexpected content-type ${type}`);
+    return res.json();
+  });
+}
+
+function showFallback(containerId, message) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const fallback = document.createElement('div');
+  fallback.className = 'section-fallback';
+  fallback.textContent = message;
+  el.appendChild(fallback);
+}
+
 export function initSections() {
   initGreeting();
   initWaveEmoji();
@@ -373,17 +394,15 @@ export function initSections() {
   initBackToTop();
   initShortcutHint();
 
-  fetch('data/currently.json')
-    .then((res) => res.json())
+  fetchJSON('data/currently.json')
     .then(renderCurrently)
-    .catch((err) => console.error('Failed to load currently:', err));
+    .catch(() => showFallback('currently-list', 'could not load data.'));
 
-  fetch('data/races.json')
-    .then((res) => res.json())
-    .then(renderRaces);
+  fetchJSON('data/races.json')
+    .then(renderRaces)
+    .catch(() => showFallback('races-list', 'could not load race data.'));
 
-  fetch('data/bucketlist.json')
-    .then((res) => res.json())
+  fetchJSON('data/bucketlist.json')
     .then(renderBucketList)
-    .catch((err) => console.error('Failed to load bucket list:', err));
+    .catch(() => showFallback('bucket-list', 'could not load bucket list.'));
 }

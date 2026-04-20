@@ -1,5 +1,7 @@
 // ─── Terminal command data & definitions ───
 
+// ─── Filesystem & files ───
+
 export const FILESYSTEM = {
   '~': ['projects/', 'writing/', 'currently/', 'races/', 'bucketlist/', 'connect/'],
   '/dev': ['secrets.txt', 'fuel', 'goals', 'mood', 'about.txt'],
@@ -27,29 +29,6 @@ export const SECTION_MAP = {
   'connect': 'connect',
 };
 
-export const HELP_ITEMS = [
-  { c: 'help',               d: 'show this list' },
-  { c: 'ls [path]',          d: 'list sections or /dev files' },
-  { c: 'cd <section>',       d: 'jump to a section' },
-  { c: 'cat <file>',         d: 'read a file' },
-  { c: 'open <name>',        d: 'open a project or post by name' },
-  { c: 'whoami',             d: 'who is this' },
-  { c: 'theme [dark|light]', d: 'switch color theme' },
-  { c: 'weather',            d: 'seattle weather right now' },
-  { c: 'sudo hire-me',       d: 'you know you want to' },
-  { c: 'matrix',             d: 'take the red pill' },
-  { c: 'coffee',             d: 'brew a virtual cup' },
-  { c: 'flip',               d: 'flip a coin' },
-  { c: '8ball <question>',    d: 'ask the magic 8-ball' },
-  { c: 'random',             d: 'fortune cookie' },
-  { c: 'echo <text>',        d: 'repeat after me' },
-  { c: 'date',               d: 'current date & time' },
-  { c: 'pwd',                d: 'print working directory' },
-  { c: 'repo',               d: 'open the site repo' },
-  { c: 'clear',              d: 'wipe terminal history' },
-  { c: 'claude',             d: 'open claude code' },
-];
-
 export const OPENABLES = [
   { name: 'gx', href: 'https://github.com/mubbie/gx-cli' },
   { name: 'officecat', href: 'https://github.com/mubbie/officecat' },
@@ -65,28 +44,8 @@ export const OPENABLES = [
   { name: 'notebook', href: 'https://notebook.mubbie.dev' },
 ];
 
-export const ALL_COMMANDS = [
-  'help', 'ls', 'cd', 'cat', 'open', 'whoami', 'theme', 'weather',
-  'sudo', 'matrix', 'coffee', 'flip', '8ball', 'random', 'echo',
-  'date', 'pwd', 'repo', 'clear', 'claude',
-];
-
-// ─── Aliases ───
-// Maps shorthand commands to their canonical form
-export const ALIASES = {
-  'll': 'ls',
-  'la': 'ls',
-  'q': 'quit',
-  'h': 'help',
-  'c': 'clear',
-  'cls': 'clear',
-  'fortune': 'random',
-  'hack': 'matrix',
-  'brew': 'coffee',
-  'coin': 'flip',
-};
-
 // ─── 8-ball responses ───
+
 export const EIGHT_BALL_RESPONSES = [
   'it is certain.',
   'without a doubt.',
@@ -107,3 +66,60 @@ export const EIGHT_BALL_RESPONSES = [
   'outlook not so good.',
   'very doubtful.',
 ];
+
+// ─── Neofetch output lines ───
+
+export const NEOFETCH_LINES = [
+  '🖥️ mubbie.dev',
+  '├── os: human 1.0',
+  '├── shell: caffeine-powered',
+  '├── uptime: since \'98',
+  '├── location: seattle, wa',
+  '├── role: software engineer @ microsoft',
+  '└── status: building cool things',
+];
+
+// ─── Command registry ───
+// Single source of truth: name, aliases, help text.
+// Adding a command? Add one entry here + a handler in index.js. That's it.
+
+export const COMMAND_DEFS = [
+  { name: 'help',     aliases: ['?'],                   usage: 'help',               help: 'show this list' },
+  { name: 'ls',       aliases: ['ll', 'la'],            usage: 'ls [path]',          help: 'list sections or /dev files' },
+  { name: 'cd',                                         usage: 'cd <section>',       help: 'jump to a section' },
+  { name: 'cat',                                        usage: 'cat <file>',         help: 'read a file' },
+  { name: 'open',                                       usage: 'open <name>',        help: 'open a project or post by name' },
+  { name: 'whoami',                                     usage: 'whoami',             help: 'who is this' },
+  { name: 'theme',                                      usage: 'theme [dark|light]', help: 'switch color theme' },
+  { name: 'weather',                                    usage: 'weather',            help: 'seattle weather right now' },
+  { name: 'sudo',                                       usage: 'sudo hire-me',       help: 'you know you want to' },
+  { name: 'matrix',   aliases: ['hack'],                usage: 'matrix',             help: 'take the red pill' },
+  { name: 'coffee',   aliases: ['brew'],                usage: 'coffee',             help: 'brew a virtual cup' },
+  { name: 'flip',     aliases: ['coin'],                usage: 'flip',               help: 'flip a coin' },
+  { name: '8ball',                                      usage: '8ball <question>',   help: 'ask the magic 8-ball' },
+  { name: 'random',   aliases: ['fortune'],             usage: 'random',             help: 'fortune cookie' },
+  { name: 'echo',                                       usage: 'echo <text>',        help: 'repeat after me' },
+  { name: 'date',                                       usage: 'date',               help: 'current date & time' },
+  { name: 'pwd',                                        usage: 'pwd',                help: 'print working directory' },
+  { name: 'repo',                                       usage: 'repo',               help: 'open the site repo' },
+  { name: 'clear',    aliases: ['c', 'cls'],            usage: 'clear',              help: 'wipe terminal history' },
+  { name: 'claude',                                     usage: 'claude',             help: 'who built this?' },
+  { name: 'history',                                    usage: 'history',            help: 'recent commands' },
+  { name: 'neofetch',                                   usage: 'neofetch',           help: 'system info' },
+  { name: 'ping',                                       usage: 'ping',               help: 'pong' },
+  // Hidden commands (no help text — won't appear in help table but still tab-complete)
+  { name: 'rm' },
+  { name: 'exit' },
+  { name: 'quit',     aliases: ['q'] },
+];
+
+// ─── Derived exports ───
+
+export const HELP_ITEMS = COMMAND_DEFS
+  .filter((c) => c.help)
+  .map((c) => ({ c: c.usage || c.name, d: c.help }));
+
+export const ALL_COMMANDS = COMMAND_DEFS.flatMap((c) => [c.name, ...(c.aliases || [])]);
+
+export const ALIASES = {};
+COMMAND_DEFS.forEach((c) => (c.aliases || []).forEach((a) => { ALIASES[a] = c.name; }));

@@ -23,7 +23,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script>
-    const t = localStorage.getItem('mubbie-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const t = localStorage.getItem('mubbie-theme-explicit') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', t);
   </script>
 </head>
@@ -45,10 +45,10 @@
         <label for="terminal-input" class="terminal-prompt">~/mubbie $&nbsp;</label>
         <span class="terminal-typed" id="terminal-typed" aria-hidden="true"></span>
         <span class="cursor" aria-hidden="true"></span>
+        <input type="text" id="terminal-input" class="terminal-hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command input — press / to focus">
       </div>
-      <input type="text" id="terminal-input" class="terminal-hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command input — press / to focus">
     </div>
-    <h1><span id="greeting-text">Hey</span>, I'm Mubbie <span class="wave">👋🏾</span></h1>
+    <h1><span id="greeting-text">Hey</span>, I'm Mubbie <button class="wave" aria-label="Wave hello — click to cycle hand gestures">👋🏾</button></h1>
     <p class="tagline">
       I'm a software engineer at <strong>Microsoft Security</strong>. I enjoy building software,
       breaking systems, and <strong>writing about things that make me curious</strong>.
@@ -60,7 +60,7 @@
       <a href="#races">races</a>
       <a href="#bucketlist">bucket list</a>
       <a href="#connect">connect</a>
-      <a href="https://gx.mubbie.dev" target="_blank">gx docs ↗</a>
+      <a href="https://gx.mubbie.dev" target="_blank" rel="noopener noreferrer">gx docs ↗</a>
     </nav>
   </header>
 
@@ -70,7 +70,7 @@
     <div class="section-label">// what I'm building</div>
     <div class="projects-grid">
 
-  <a class="project-card" href="https://github.com/mubbie/gx-cli" target="_blank">
+  <a class="project-card" href="https://github.com/mubbie/gx-cli" target="_blank" rel="noopener noreferrer">
     <div class="project-icon gx">gx</div>
     <div class="project-info">
       <h3>gx</h3>
@@ -82,7 +82,7 @@
     </div>
   </a>
 
-  <a class="project-card" href="https://github.com/mubbie/officecat" target="_blank">
+  <a class="project-card" href="https://github.com/mubbie/officecat" target="_blank" rel="noopener noreferrer">
     <div class="project-icon officecat">oc</div>
     <div class="project-info">
       <h3>officecat</h3>
@@ -94,7 +94,7 @@
     </div>
   </a>
 
-  <a class="project-card" href="https://github.com/mubbie/portctl" target="_blank">
+  <a class="project-card" href="https://github.com/mubbie/portctl" target="_blank" rel="noopener noreferrer">
     <div class="project-icon portctl">pc</div>
     <div class="project-info">
       <h3>portctl</h3>
@@ -106,7 +106,7 @@
     </div>
   </a>
 
-  <a class="project-card" href="https://github.com/mubbie/chaos-pong" target="_blank">
+  <a class="project-card" href="https://github.com/mubbie/chaos-pong" target="_blank" rel="noopener noreferrer">
     <div class="project-icon chaos">cp</div>
     <div class="project-info">
       <h3>chaos-pong</h3>
@@ -118,7 +118,7 @@
     </div>
   </a>
 
-  <a class="project-card" href="https://lena.africa" target="_blank">
+  <a class="project-card" href="https://lena.africa" target="_blank" rel="noopener noreferrer">
     <div class="project-icon lena">L</div>
     <div class="project-info">
       <h3>Lena</h3>
@@ -131,7 +131,7 @@
 
 </div>
 <div class="section-more">
-  <a href="https://github.com/mubbie" target="_blank">view more on github</a>
+  <a href="https://github.com/mubbie" target="_blank" rel="noopener noreferrer">view more on github</a>
 </div>
 
   </section>
@@ -141,25 +141,25 @@
   <section id="writing" class="reveal">
     <div class="section-label">// things I've written</div>
     <div class="writing-list">
-      <a class="writing-item" href="https://open.substack.com/pub/mubbiesnotebook/p/garbage-collection-more-like-recycling" target="_blank">
+      <a class="writing-item" href="https://open.substack.com/pub/mubbiesnotebook/p/garbage-collection-more-like-recycling" target="_blank" rel="noopener noreferrer">
         <h3>Garbage Collection (More Like Recycling)</h3>
         <span class="arrow">→</span>
       </a>
-      <a class="writing-item" href="https://open.substack.com/pub/mubbiesnotebook/p/add-salt-to-the-password-for-taste" target="_blank">
+      <a class="writing-item" href="https://open.substack.com/pub/mubbiesnotebook/p/add-salt-to-the-password-for-taste" target="_blank" rel="noopener noreferrer">
         <h3>Add Salt to the Password for Taste</h3>
         <span class="arrow">→</span>
       </a>
-      <a class="writing-item" href="https://open.substack.com/pub/mubbiesnotebook/p/getting-lean-before-gta-6" target="_blank">
+      <a class="writing-item" href="https://open.substack.com/pub/mubbiesnotebook/p/getting-lean-before-gta-6" target="_blank" rel="noopener noreferrer">
         <h3>Getting Lean Before GTA 6</h3>
         <span class="arrow">→</span>
       </a>
-      <a class="writing-item" href="https://open.substack.com/pub/mubbiesnotebook/p/traffic-jamshtml" target="_blank">
+      <a class="writing-item" href="https://open.substack.com/pub/mubbiesnotebook/p/traffic-jamshtml" target="_blank" rel="noopener noreferrer">
         <h3>Traffic Jams & Phantom Waves</h3>
         <span class="arrow">→</span>
       </a>
     </div>
     <div class="section-more">
-      <a href="https://notebook.mubbie.dev" target="_blank">read more on substack</a>
+      <a href="https://notebook.mubbie.dev" target="_blank" rel="noopener noreferrer">read more on substack</a>
     </div>
   </section>
 
@@ -189,31 +189,31 @@
   <section id="connect" class="reveal">
     <div class="section-label">// say hello</div>
     <div class="connect-grid">
-      <a class="connect-link" href="https://github.com/mubbie" target="_blank">
+      <a class="connect-link" href="https://github.com/mubbie" target="_blank" rel="noopener noreferrer">
         <svg><use href="icons.svg#github"/></svg>
         GitHub
       </a>
-      <a class="connect-link" href="https://twitter.com/imubbiee" target="_blank">
+      <a class="connect-link" href="https://twitter.com/imubbiee" target="_blank" rel="noopener noreferrer">
         <svg><use href="icons.svg#x"/></svg>
         @imubbiee
       </a>
-      <a class="connect-link" href="https://www.linkedin.com/in/mubarak-idoko" target="_blank">
+      <a class="connect-link" href="https://www.linkedin.com/in/mubarak-idoko" target="_blank" rel="noopener noreferrer">
         <svg><use href="icons.svg#linkedin"/></svg>
         LinkedIn
       </a>
-      <a class="connect-link" href="https://notebook.mubbie.dev" target="_blank">
+      <a class="connect-link" href="https://notebook.mubbie.dev" target="_blank" rel="noopener noreferrer">
         <svg><use href="icons.svg#substack"/></svg>
         Substack
       </a>
-      <a class="connect-link" href="https://www.threads.net/@mubbiee" target="_blank">
+      <a class="connect-link" href="https://www.threads.net/@mubbiee" target="_blank" rel="noopener noreferrer">
         <svg><use href="icons.svg#threads"/></svg>
         Threads
       </a>
-      <a class="connect-link" href="https://www.instagram.com/mubbiee" target="_blank">
+      <a class="connect-link" href="https://www.instagram.com/mubbiee" target="_blank" rel="noopener noreferrer">
         <svg><use href="icons.svg#instagram"/></svg>
         Instagram
       </a>
-      <a class="connect-link" href="https://strava.app.link/ySjT1gEwn2b" target="_blank">
+      <a class="connect-link" href="https://strava.app.link/ySjT1gEwn2b" target="_blank" rel="noopener noreferrer">
         <svg><use href="icons.svg#strava"/></svg>
         Strava
       </a>

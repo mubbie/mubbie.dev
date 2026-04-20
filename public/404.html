@@ -10,8 +10,20 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script>
-    const t = localStorage.getItem('mubbie-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', t);
+    (function() {
+      var key = 'mubbie-theme-explicit';
+      function apply(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
+        m.content = theme === 'light' ? '#f5f5f0' : '#0a0a0c';
+      }
+      var saved = localStorage.getItem(key);
+      apply(saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+        if (!localStorage.getItem(key)) apply(e.matches ? 'dark' : 'light');
+      });
+    })();
   </script>
 </head>
 <body>
