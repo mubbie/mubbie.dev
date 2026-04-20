@@ -152,7 +152,7 @@ function createHandlers(out, history, getFortunes) {
         .then((res) => {
           if (!res.ok) return null;
           const type = res.headers.get('content-type') || '';
-          if (!type.startsWith('text/plain')) return null;
+          if (type.includes('html') || type.includes('json')) return null;
           return res.text();
         })
         .then((raw) => {
