@@ -1,6 +1,7 @@
 // ─── Page sections: greeting, footer, scroll reveal, data rendering ───
 
 import { scrollToTop } from './scroll.js';
+import { fetchWeather } from './weather.js';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -330,36 +331,13 @@ function initFooterMeta() {
       : time;
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-  fetch('https://wttr.in/Seattle?format=%c+%t+%l', {
-    headers: { 'Accept': 'text/plain' },
-    signal: controller.signal,
-  })
-    .then((res) => {
-      if (!res.ok) return null;
-      const type = res.headers.get('content-type') || '';
-      if (type.includes('html') || type.includes('json')) return null;
-      return res.text();
-    })
-    .then((raw) => {
-      if (!raw) return;
-      const text = raw.trim();
-      // Belt-and-suspenders: bail if body still looks like HTML
-      if (!text || text.startsWith('<')) return;
-      const match = text.match(/([+-]?\d+)°F/);
-      if (match) {
-        const f = parseInt(match[1], 10);
-        const c = Math.round((f - 32) * 5 / 9);
-        weatherText = text.replace(/[+-]?\d+°F/, `${f}°F / ${c}°C`);
-      } else {
-        weatherText = text;
-      }
+  fetchWeather()
+    .then((w) => {
+      if (!w) return;
+      weatherText = `${w.emoji} ${w.f}°F/${w.c}°C`;
       render();
     })
-    .catch(() => {})
-    .finally(() => clearTimeout(timeoutId));
+    .catch(() => {});
 
   render();
   setInterval(render, 1000);

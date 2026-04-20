@@ -10,6 +10,7 @@ import { tabComplete } from './completer.js';
 import { applyTheme, toggleTheme } from '../theme.js';
 import { startMatrix } from '../matrix.js';
 import { scrollToTop, scrollToEl } from '../scroll.js';
+import { fetchWeather } from '../weather.js';
 
 // ─── Argument parser ───
 
@@ -142,34 +143,12 @@ function createHandlers(out, history, getFortunes) {
     weather(trimmed) {
       out.addLine('$', trimmed, null);
       out.addLine(null, null, 'fetching seattle weather...');
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      const fail = () => out.addLine(null, null, 'could not fetch weather. try again later.', true);
-      fetch('https://wttr.in/Seattle?format=%c+%t+%w+%h+humidity', {
-        headers: { 'Accept': 'text/plain' },
-        signal: controller.signal,
-      })
-        .then((res) => {
-          if (!res.ok) return null;
-          const type = res.headers.get('content-type') || '';
-          if (type.includes('html') || type.includes('json')) return null;
-          return res.text();
+      fetchWeather()
+        .then((w) => {
+          if (!w) { out.addLine(null, null, 'could not fetch weather. try again later.', true); return; }
+          out.addOk(`seattle: ${w.emoji} ${w.f}°F/${w.c}°C · ${w.wind} · ${w.humidity} humidity`);
         })
-        .then((raw) => {
-          if (!raw) { fail(); return; }
-          const text = raw.trim();
-          if (!text || text.startsWith('<')) { fail(); return; }
-          const match = text.match(/([+-]?\d+)°F/);
-          if (match) {
-            const f = parseInt(match[1], 10);
-            const c = Math.round((f - 32) * 5 / 9);
-            out.addOk(`seattle: ${text.replace(/[+-]?\d+°F/, `${f}°F / ${c}°C`)}`);
-          } else {
-            out.addOk(`seattle: ${text}`);
-          }
-        })
-        .catch(fail)
-        .finally(() => clearTimeout(timeoutId));
+        .catch(() => out.addLine(null, null, 'could not fetch weather. try again later.', true));
     },
 
     clear() {
