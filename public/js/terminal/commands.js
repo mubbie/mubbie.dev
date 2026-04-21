@@ -171,7 +171,7 @@ export const HINTS = [
   '"open linkedin" or "open github" to connect',
   'try "grep marathon" to search the site',
   '"history" shows your recent commands',
-  'try "cat /dev/secrets.txt" 👀',
+  'some commands have secrets. explore.',
   '"weather" for live seattle conditions',
   'try "uptime" to see how long you\'ve been here',
   // fun
