@@ -1180,6 +1180,19 @@ footer p {
   padding: 16px 0;
 }
 
+/* ─── Terminal rotating hint (placeholder on input line) ─── */
+.terminal-hint {
+  color: var(--text-dim);
+  font-size: inherit;
+  opacity: 0.5;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
 /* ─── Terminal image (xkcd) ─── */
 .terminal-image {
   max-width: 100%;
@@ -1207,6 +1220,20 @@ footer p {
   margin-left: auto;
   margin-right: 0.5em;
   flex-shrink: 0;
+}
+
+/* ─── Writing reading time ─── */
+.writing-time {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  margin-left: auto;
+  margin-right: 0.5em;
+  flex-shrink: 0;
+}
+
+/* If both badge and time exist, time goes after badge */
+.writing-badge + .writing-time {
+  margin-left: 0.5em;
 }
 
 /* ─── Reduced motion (accessibility) ─── */

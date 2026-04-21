@@ -2,7 +2,7 @@
 
 import {
   FILESYSTEM, FILES, SECTION_MAP, HELP_ITEMS, OPENABLES, ALIASES,
-  EIGHT_BALL_RESPONSES, NEOFETCH_LINES, MAN_PAGES, COMMAND_DEFS,
+  EIGHT_BALL_RESPONSES, NEOFETCH_LINES, MAN_PAGES, COMMAND_DEFS, HINTS,
 } from './commands.js';
 import { createHistory } from './history.js';
 import { createOutput } from './output.js';
@@ -108,9 +108,27 @@ function createHandlers(out, history, getFortunes) {
       if (target === null) return;
       const lower = target.toLowerCase();
       if (!target) {
-        out.addLine('$', trimmed, 'usage: open <project|post> — try: open gx', true);
+        out.addLine('$', trimmed, 'usage: open <project|link> — try: open gx, open latest', true);
         return;
       }
+
+      // Handle "latest", "substack latest", "notebook latest"
+      if (lower === 'latest' || lower === 'substack latest' || lower === 'notebook latest') {
+        out.addLine('$', trimmed, null);
+        out.addLine(null, null, 'fetching latest post...');
+        fetch('https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent('https://notebook.mubbie.dev/api/v1/posts?limit=1'))
+          .then((r) => r.json())
+          .then((posts) => {
+            if (!posts || !posts.length) throw new Error();
+            const post = posts[0];
+            const link = post.canonical_url || `https://notebook.mubbie.dev/p/${post.slug}`;
+            window.open(link, '_blank');
+            out.addOk(`→ opening "${post.title}"`);
+          })
+          .catch(() => out.addLine(null, null, 'could not fetch latest post.', true));
+        return;
+      }
+
       const exact = OPENABLES.find((x) => x.name.toLowerCase() === lower);
       const matches = exact ? [exact] : OPENABLES.filter((x) => x.name.toLowerCase().includes(lower));
       if (matches.length === 1) {
@@ -120,7 +138,7 @@ function createHandlers(out, history, getFortunes) {
       } else if (matches.length > 1) {
         out.addLine('$', trimmed, `open: ambiguous '${target}'. did you mean: ${matches.map((m) => m.name).join(', ')}?`, true);
       } else {
-        out.addLine('$', trimmed, `open: '${target}' not found. try: open gx, open lena, open substack`, true);
+        out.addLine('$', trimmed, `open: '${target}' not found. try: open gx, open latest, open substack`, true);
       }
     },
 
@@ -181,6 +199,23 @@ function createHandlers(out, history, getFortunes) {
         out.addLine(null, null, '[sudo] password for recruiter: ••••••••');
         out.addOk('authenticated. email queued → midoko.dev@gmail.com');
         out.addLine(null, null, 'just kidding — drop a note at midoko.dev@gmail.com 👋🏾');
+      } else if (lower.startsWith('rm') && lower.includes('-r') && lower.includes('-f') || lower.includes('-rf')) {
+        out.addLine('$', trimmed, null);
+        out.addLine(null, null, '[sudo] password for root: ••••••••');
+        const targets = [
+          { text: 'deleting /projects...', delay: 600 },
+          { text: 'deleting /writing...', delay: 1200 },
+          { text: 'deleting /races...', delay: 1800 },
+          { text: 'deleting /bucketlist...', delay: 2400 },
+          { text: 'deleting /connect...', delay: 3000 },
+          { text: 'deleting /dev/secrets.txt...', delay: 3600 },
+        ];
+        targets.forEach((t) => {
+          setTimeout(() => out.addLine(null, null, t.text), t.delay);
+        });
+        setTimeout(() => {
+          out.addOk('just kidding. nice try though. 🛡️');
+        }, 4200);
       } else {
         out.addLine('$', trimmed, 'nice try 😏', true);
       }
@@ -230,13 +265,80 @@ function createHandlers(out, history, getFortunes) {
       out.addOk('→ opening mubbie/mubbie.dev');
     },
 
-    rm(trimmed, arg) {
-      const rmFlags = arg.toLowerCase().split(/\s+/).filter((t) => t.startsWith('-')).join('');
-      if (rmFlags.includes('r') && rmFlags.includes('f')) {
-        out.addLine('$', trimmed, "nice try. this isn't that kind of website. 🛡️", true);
-      } else {
-        out.addLine('$', trimmed, 'rm: i expected better from you', true);
+    rm(trimmed) {
+      out.addLine('$', trimmed, 'rm: permission denied. try sudo?', true);
+    },
+
+    grep(trimmed, arg) {
+      if (!arg.trim()) {
+        out.addLine('$', trimmed, 'usage: grep <term>', true);
+        return;
       }
+      const term = arg.trim().toLowerCase();
+      const results = [];
+      const seen = new Set();
+
+      function add(text) {
+        if (!seen.has(text)) { seen.add(text); results.push(text); }
+      }
+
+      // Search filesystem entries
+      for (const [dir, entries] of Object.entries(FILESYSTEM)) {
+        entries.forEach((e) => {
+          if (e.toLowerCase().includes(term)) add(`${dir}/${e}`);
+        });
+      }
+
+      // Search file contents (skip duplicate about/about.txt)
+      const skipFiles = new Set(['about', 'about.txt']);
+      for (const [path, content] of Object.entries(FILES)) {
+        if (skipFiles.has(path)) continue;
+        if (path.toLowerCase().includes(term) || content.toLowerCase().includes(term)) {
+          add(`${path}`);
+        }
+      }
+
+      // Search openables
+      OPENABLES.forEach((o) => {
+        if (o.name.toLowerCase().includes(term)) add(`open ${o.name}`);
+      });
+
+      // Search sections
+      const seenSections = new Set();
+      for (const [name, id] of Object.entries(SECTION_MAP)) {
+        if (name.includes(term) && !seenSections.has(id)) {
+          seenSections.add(id);
+          add(`cd ${name}`);
+        }
+      }
+
+      out.addLine('$', trimmed, null);
+      if (results.length === 0) {
+        out.addLine(null, null, `no matches for '${arg.trim()}'`, true);
+      } else {
+        results.forEach((r) => out.addLine(null, null, r));
+        out.addOk(`${results.length} match${results.length === 1 ? '' : 'es'}`);
+      }
+    },
+
+    ssh(trimmed, arg) {
+      const host = arg.trim() || 'mubbie.dev';
+      out.addLine('$', trimmed, null);
+      const steps = [
+        { text: `connecting to ${host}...`, delay: 0 },
+        { text: 'establishing secure connection...', delay: 800 },
+        { text: 'authenticating...', delay: 1600 },
+        { text: '', delay: 2400 },
+      ];
+      steps.forEach((step) => {
+        setTimeout(() => {
+          if (step.text === '') {
+            out.addOk(`access granted. welcome back. you're already here. 🏠`);
+          } else {
+            out.addLine(null, null, step.text);
+          }
+        }, step.delay);
+      });
     },
 
     exit(trimmed) {
@@ -322,7 +424,7 @@ function createHandlers(out, history, getFortunes) {
         fetchComic
           .then((data) => {
             out.addOk(`xkcd #${data.num}: ${data.title}`);
-            out.addImage(data.img, data.alt);
+            out.addImage(data.img, data.alt, `https://xkcd.com/${data.num}/`);
           })
           .catch(() => out.addLine(null, null, 'could not fetch xkcd. try again later.', true));
       } else if (!target) {
@@ -362,6 +464,41 @@ export function initTerminal() {
   // quit is an alias for exit at the handler level
   handlers.quit = handlers.exit;
 
+  // ─── Rotating hint placeholder ───
+  let hintEl = document.getElementById('terminal-hint');
+  if (!hintEl) {
+    hintEl = document.createElement('span');
+    hintEl.id = 'terminal-hint';
+    hintEl.className = 'terminal-hint';
+    const inputLine = document.querySelector('.terminal-input-line');
+    if (inputLine) inputLine.appendChild(hintEl);
+  }
+
+  let hintIndex = Math.floor(Math.random() * HINTS.length);
+  let hintInterval = null;
+
+  function showHint() {
+    hintEl.textContent = HINTS[hintIndex];
+    hintEl.style.display = '';
+    hintIndex = (hintIndex + 1) % HINTS.length;
+  }
+
+  function startHintCycle() {
+    if (hintInterval) return;
+    showHint();
+    hintInterval = setInterval(showHint, 5000);
+  }
+
+  function stopHintCycle() {
+    if (hintInterval) {
+      clearInterval(hintInterval);
+      hintInterval = null;
+    }
+    hintEl.style.display = 'none';
+  }
+
+  startHintCycle();
+
   // ─── Command dispatch ───
 
   function processCommand(rawInput) {
@@ -396,6 +533,11 @@ export function initTerminal() {
 
   inputEl.addEventListener('input', () => {
     typedEl.textContent = inputEl.value;
+    if (inputEl.value) {
+      stopHintCycle();
+    } else {
+      startHintCycle();
+    }
   });
 
   inputEl.addEventListener('keydown', (e) => {
@@ -403,14 +545,21 @@ export function initTerminal() {
       e.preventDefault();
       processCommand(inputEl.value);
       setInput('');
+      startHintCycle();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       const val = cmdHistory.up(inputEl.value);
-      if (val !== null) setInput(val);
+      if (val !== null) {
+        setInput(val);
+        stopHintCycle();
+      }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       const val = cmdHistory.down();
-      if (val !== null) setInput(val);
+      if (val !== null) {
+        setInput(val);
+        if (!val) startHintCycle(); else stopHintCycle();
+      }
     } else if (e.key === 'Tab') {
       const result = tabComplete(inputEl.value);
       if (result) {

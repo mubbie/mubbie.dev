@@ -35,13 +35,15 @@ export const OPENABLES = [
   { name: 'portctl', href: 'https://github.com/mubbie/portctl' },
   { name: 'chaos-pong', href: 'https://github.com/mubbie/chaos-pong' },
   { name: 'lena', href: 'https://lena.africa' },
-  { name: 'garbage collection', href: 'https://open.substack.com/pub/mubbiesnotebook/p/garbage-collection-more-like-recycling' },
-  { name: 'salt password', href: 'https://open.substack.com/pub/mubbiesnotebook/p/add-salt-to-the-password-for-taste' },
-  { name: 'lean gta', href: 'https://open.substack.com/pub/mubbiesnotebook/p/getting-lean-before-gta-6' },
-  { name: 'traffic jams', href: 'https://open.substack.com/pub/mubbiesnotebook/p/traffic-jamshtml' },
   { name: 'github', href: 'https://github.com/mubbie' },
   { name: 'substack', href: 'https://notebook.mubbie.dev' },
   { name: 'notebook', href: 'https://notebook.mubbie.dev' },
+  { name: 'linkedin', href: 'https://www.linkedin.com/in/mubarak-idoko' },
+  { name: 'x', href: 'https://twitter.com/imubbiee' },
+  { name: 'twitter', href: 'https://twitter.com/imubbiee' },
+  { name: 'instagram', href: 'https://www.instagram.com/mubbiee' },
+  { name: 'threads', href: 'https://www.threads.net/@mubbiee' },
+  { name: 'strava', href: 'https://strava.app.link/ySjT1gEwn2b' },
 ];
 
 // ─── 8-ball responses ───
@@ -110,6 +112,8 @@ export const COMMAND_DEFS = [
   { name: 'man',                                        usage: 'man <command>',      help: 'show manual for a command' },
   { name: 'uptime',                                     usage: 'uptime',             help: 'time since page load' },
   { name: 'curl',                                       usage: 'curl xkcd',         help: 'fetch & display an xkcd comic' },
+  { name: 'grep',                                       usage: 'grep <term>',       help: 'search site content' },
+  { name: 'ssh',                                        usage: 'ssh',               help: 'connect to a remote host' },
   // Hidden commands (no help text — won't appear in help table but still tab-complete)
   { name: 'rm' },
   { name: 'exit' },
@@ -123,7 +127,7 @@ export const MAN_PAGES = {
   ls:       'List directory contents.\n\n  Paths:\n    ~, .     home directory (site sections)\n    /dev     hidden developer files\n\n  Aliases: ll, la',
   cd:       'Navigate to a site section by name.\n\n  Sections: projects, writing, currently, races, bucketlist, connect\n  Shortcuts: now → currently, running → races, bucket → bucketlist\n  cd ~ scrolls to top.',
   cat:      'Read the contents of a file.\n\n  Try: cat /dev/secrets.txt\n  Run ls /dev to see available files.',
-  open:     'Open a project or blog post in a new tab.\n\n  Projects: gx, officecat, portctl, chaos-pong, lena\n  Posts: garbage collection, salt password, lean gta, traffic jams\n  Links: github, substack, notebook\n\n  Exact matches are preferred. If ambiguous, suggestions are shown.',
+  open:     'Open a project, social link, or post in a new tab.\n\n  Projects: gx, officecat, portctl, chaos-pong, lena\n  Social: github, linkedin, x, twitter, instagram, threads, strava\n  Links: substack, notebook\n  Special: open latest — opens the latest blog post\n\n  Exact matches are preferred. If ambiguous, suggestions are shown.',
   whoami:   'Print the current user identity.',
   theme:    'Toggle or set the color theme.\n\n  theme          toggle between dark and light\n  theme dark     switch to dark mode\n  theme light    switch to light mode\n\n  Explicit choices are persisted. Without one, the site follows your OS preference.',
   weather:  'Fetch current weather for Seattle via wttr.in.\n\n  Displays temperature (°F/°C), wind, and humidity.',
@@ -145,10 +149,45 @@ export const MAN_PAGES = {
   man:      'Show the manual page for a command.\n\n  Usage: man <command>',
   uptime:   'Show how long since the page was loaded.',
   curl:     'Fetch and display content from the web.\n\n  curl xkcd          today\'s xkcd comic\n  curl xkcd random   a random xkcd comic',
+  grep:     'Search across site content: projects, files, and openable links.\n\n  Usage: grep <term>\n  Searches project names, file contents, /dev files, and openable names.',
+  ssh:      'Attempt to connect to a remote host.\n\n  Spoiler: you\'re already here.',
   rm:       'Nice try.',
   exit:     'There is no escape.',
   quit:     'See: man exit',
 };
+
+// ─── MOTD hints ───
+
+export const HINTS = [
+  // useful
+  'try "curl xkcd" for a comic',
+  'type "man open" to see all you can open',
+  'try "open latest" to read my newest post',
+  '"theme" toggles dark/light mode',
+  'press Tab to autocomplete commands',
+  'type "neofetch" for system info',
+  '"open linkedin" or "open github" to connect',
+  'try "grep marathon" to search the site',
+  '"history" shows your recent commands',
+  'try "cat /dev/secrets.txt" 👀',
+  '"weather" for live seattle conditions',
+  'try "uptime" to see how long you\'ve been here',
+  // fun
+  'try "sudo hire-me" 👀',
+  '"8ball is pineapple on pizza ok?" — ask the oracle',
+  'try "curl xkcd random" for a surprise',
+  'try "ssh" and see what happens',
+  'try "matrix" if you dare',
+  'try "sudo rm -rf /" — I dare you',
+  '"flip" when you can\'t decide',
+  'try "coffee" — you look like you need one',
+  '"ping" — just checking',
+  'this terminal has 30+ commands. find them all.',
+  'try "open strava" to see my runs',
+  'you found the secret terminal. congrats.',
+  '"random" for a fortune cookie',
+  'type "help" if you\'re lost. no judgment.',
+];
 
 // ─── Derived exports ───
 

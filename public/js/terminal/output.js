@@ -62,7 +62,7 @@ export function createOutput(historyEl) {
     scrollToBottom();
   }
 
-  function addImage(src, alt) {
+  function addImage(src, alt, href) {
     const line = document.createElement('div');
     line.className = 'terminal-history-line';
     const img = document.createElement('img');
@@ -71,7 +71,16 @@ export function createOutput(historyEl) {
     img.alt = alt || '';
     if (alt) img.title = alt;
     img.loading = 'lazy';
-    line.appendChild(img);
+    if (href) {
+      const link = document.createElement('a');
+      link.href = href;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.appendChild(img);
+      line.appendChild(link);
+    } else {
+      line.appendChild(img);
+    }
     historyEl.appendChild(line);
     img.onload = scrollToBottom;
     scrollToBottom();

@@ -25,11 +25,12 @@ export function tabComplete(input) {
     return hit ? 'cd ' + hit : null;
   }
 
-  // Complete open argument with project/post names
+  // Complete open argument with project/link names + "latest"
   if (cmd === 'open') {
     const prefix = hasTrailingSpace ? arg : (arg || '');
-    const hit = OPENABLES.find((x) => x.name.toLowerCase().startsWith(prefix || ''));
-    return hit ? 'open ' + hit.name : null;
+    const allNames = [...OPENABLES.map((x) => x.name), 'latest'];
+    const hit = allNames.find((n) => n.toLowerCase().startsWith(prefix || ''));
+    return hit ? 'open ' + hit : null;
   }
 
   // Complete cat argument with file paths
