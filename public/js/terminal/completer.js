@@ -47,5 +47,20 @@ export function tabComplete(input) {
     return hit ? 'theme ' + hit : null;
   }
 
+  // Complete man argument with command names
+  if (cmd === 'man') {
+    const prefix = hasTrailingSpace && parts.length === 1 ? '' : (parts[1] || '');
+    const hit = ALL_COMMANDS.find((c) => c.startsWith(prefix));
+    return hit ? 'man ' + hit : null;
+  }
+
+  // Complete curl argument
+  if (cmd === 'curl') {
+    const options = ['xkcd', 'xkcd random'];
+    const prefix = hasTrailingSpace ? arg : (arg || '');
+    const hit = options.find((o) => o.startsWith(prefix || ''));
+    return hit ? 'curl ' + hit : null;
+  }
+
   return null;
 }

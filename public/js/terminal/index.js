@@ -2,7 +2,7 @@
 
 import {
   FILESYSTEM, FILES, SECTION_MAP, HELP_ITEMS, OPENABLES, ALIASES,
-  EIGHT_BALL_RESPONSES, NEOFETCH_LINES,
+  EIGHT_BALL_RESPONSES, NEOFETCH_LINES, MAN_PAGES, COMMAND_DEFS,
 } from './commands.js';
 import { createHistory } from './history.js';
 import { createOutput } from './output.js';
@@ -11,6 +11,8 @@ import { applyTheme, toggleTheme } from '../theme.js';
 import { startMatrix } from '../matrix.js';
 import { scrollToTop, scrollToEl } from '../scroll.js';
 import { fetchWeather } from '../weather.js';
+
+const PAGE_LOAD_TIME = Date.now();
 
 // ─── Argument parser ───
 
@@ -264,6 +266,69 @@ function createHandlers(out, history, getFortunes) {
         all.slice(0, 20).forEach((h, i) => {
           out.addLine(null, null, `  ${i + 1}  ${h}`);
         });
+      }
+    },
+
+    man(trimmed, arg) {
+      const target = rejectFlags(out, trimmed, 'man', arg);
+      if (target === null) return;
+      if (!target) {
+        out.addLine('$', trimmed, 'what manual page do you want? usage: man <command>', true);
+        return;
+      }
+      const resolved = ALIASES[target.toLowerCase()] || target.toLowerCase();
+      const page = MAN_PAGES[resolved];
+      if (!page) {
+        out.addLine('$', trimmed, `no manual entry for '${target}'`, true);
+        return;
+      }
+      const def = COMMAND_DEFS.find((c) => c.name === resolved);
+      out.addLine('$', trimmed, null);
+      out.addLine(null, null, `NAME\n    ${resolved} — ${def?.help || ''}`);
+      out.addLine(null, null, `\nSYNOPSIS\n    ${def?.usage || resolved}`);
+      out.addLine(null, null, `\nDESCRIPTION\n    ${page}`);
+    },
+
+    uptime(trimmed) {
+      const elapsed = Date.now() - PAGE_LOAD_TIME;
+      const seconds = Math.floor(elapsed / 1000);
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      const parts = [];
+      if (h > 0) parts.push(`${h}h`);
+      if (m > 0) parts.push(`${m}m`);
+      parts.push(`${s}s`);
+      out.addLine('$', trimmed, `up ${parts.join(' ')}, since ${new Date(PAGE_LOAD_TIME).toLocaleTimeString()}`);
+    },
+
+    curl(trimmed, arg) {
+      const target = arg.trim().toLowerCase();
+      if (target === 'xkcd' || target === 'xkcd random') {
+        const isRandom = target.includes('random');
+        out.addLine('$', trimmed, null);
+        out.addLine(null, null, 'fetching xkcd...');
+
+        const proxyUrl = (url) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`;
+        const latestUrl = proxyUrl('https://xkcd.com/info.0.json');
+
+        const fetchComic = isRandom
+          ? fetch(latestUrl).then((r) => r.json()).then((data) => {
+              const num = Math.floor(Math.random() * data.num) + 1;
+              return fetch(proxyUrl(`https://xkcd.com/${num}/info.0.json`)).then((r) => r.json());
+            })
+          : fetch(latestUrl).then((r) => r.json());
+
+        fetchComic
+          .then((data) => {
+            out.addOk(`xkcd #${data.num}: ${data.title}`);
+            out.addImage(data.img, data.alt);
+          })
+          .catch(() => out.addLine(null, null, 'could not fetch xkcd. try again later.', true));
+      } else if (!target) {
+        out.addLine('$', trimmed, 'usage: curl xkcd | curl xkcd random', true);
+      } else {
+        out.addLine('$', trimmed, `curl: unsupported target '${target}'. try: curl xkcd`, true);
       }
     },
   };

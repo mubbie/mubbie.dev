@@ -179,6 +179,13 @@ function renderRaces(races) {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
 
   const nextIndex = races.findIndex((r) => r.completed === undefined && r.date >= today);
+  let daysUntilNext = null;
+  if (nextIndex >= 0) {
+    const raceDate = new Date(races[nextIndex].date + 'T00:00:00');
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    daysUntilNext = Math.ceil((raceDate - now) / (1000 * 60 * 60 * 24));
+  }
   let completedCount = 0;
 
   races.forEach((race, i) => {
@@ -208,7 +215,16 @@ function renderRaces(races) {
     a.appendChild(span('race-date', formatDate(race.date)));
     a.appendChild(span('race-name', race.name));
     a.appendChild(span('race-location', race.location));
-    if (i === nextIndex) a.appendChild(span('race-badge', 'next'));
+    if (i === nextIndex) {
+      a.appendChild(span('race-badge', 'next'));
+      if (daysUntilNext === 0) {
+        a.appendChild(span('race-badge countdown', 'today!'));
+      } else if (daysUntilNext === 1) {
+        a.appendChild(span('race-badge countdown', 'tomorrow'));
+      } else if (daysUntilNext !== null) {
+        a.appendChild(span('race-badge countdown', `in ${daysUntilNext} days`));
+      }
+    }
     if (race.goal) a.appendChild(span('race-badge goal', 'first marathon'));
 
     a.dataset.raceIndex = i;
@@ -384,4 +400,51 @@ export function initSections() {
   fetchJSON('data/bucketlist.json')
     .then(renderBucketList)
     .catch(() => showFallback('bucket-list', 'could not load bucket list.'));
+
+  fetchLatestPost();
+}
+
+// ─── Latest Substack post ───
+
+function fetchLatestPost() {
+  const writingList = document.querySelector('.writing-list');
+  if (!writingList) return;
+
+  fetch('https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent('https://notebook.mubbie.dev/api/v1/posts?limit=1'))
+    .then((res) => {
+      if (!res.ok) return null;
+      return res.json();
+    })
+    .then((posts) => {
+      if (!posts || !posts.length) return;
+      const post = posts[0];
+      const title = post.title;
+      const link = post.canonical_url || `https://notebook.mubbie.dev/p/${post.slug}`;
+      if (!title || !link) return;
+
+      // Check if it's already in the hardcoded list
+      const existing = writingList.querySelector(`a[href*="${post.slug}"]`);
+      if (existing) {
+        // Add "new" badge to existing entry
+        const arrow = existing.querySelector('.arrow');
+        if (arrow) existing.insertBefore(span('writing-badge', 'new'), arrow);
+        return;
+      }
+
+      // Create new entry at the top
+      const a = document.createElement('a');
+      a.className = 'writing-item';
+      a.href = link;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+
+      const h3 = document.createElement('h3');
+      h3.textContent = title;
+      a.appendChild(h3);
+      a.appendChild(span('writing-badge', 'new'));
+      a.appendChild(span('arrow', '→'));
+
+      writingList.insertBefore(a, writingList.firstChild);
+    })
+    .catch(() => {});
 }

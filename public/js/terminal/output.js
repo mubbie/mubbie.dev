@@ -62,9 +62,24 @@ export function createOutput(historyEl) {
     scrollToBottom();
   }
 
+  function addImage(src, alt) {
+    const line = document.createElement('div');
+    line.className = 'terminal-history-line';
+    const img = document.createElement('img');
+    img.className = 'terminal-image';
+    img.src = src;
+    img.alt = alt || '';
+    if (alt) img.title = alt;
+    img.loading = 'lazy';
+    line.appendChild(img);
+    historyEl.appendChild(line);
+    img.onload = scrollToBottom;
+    scrollToBottom();
+  }
+
   function clear() {
     historyEl.innerHTML = '';
   }
 
-  return { addLine, addOk, addHelpTable, clear };
+  return { addLine, addOk, addHelpTable, addImage, clear };
 }

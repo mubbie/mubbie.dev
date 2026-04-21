@@ -107,11 +107,48 @@ export const COMMAND_DEFS = [
   { name: 'history',                                    usage: 'history',            help: 'recent commands' },
   { name: 'neofetch',                                   usage: 'neofetch',           help: 'system info' },
   { name: 'ping',                                       usage: 'ping',               help: 'pong' },
+  { name: 'man',                                        usage: 'man <command>',      help: 'show manual for a command' },
+  { name: 'uptime',                                     usage: 'uptime',             help: 'time since page load' },
+  { name: 'curl',                                       usage: 'curl xkcd',         help: 'fetch & display an xkcd comic' },
   // Hidden commands (no help text — won't appear in help table but still tab-complete)
   { name: 'rm' },
   { name: 'exit' },
   { name: 'quit',     aliases: ['q'] },
 ];
+
+// ─── Man pages ───
+
+export const MAN_PAGES = {
+  help:     'Display a list of all available commands with brief descriptions.',
+  ls:       'List directory contents.\n\n  Paths:\n    ~, .     home directory (site sections)\n    /dev     hidden developer files\n\n  Aliases: ll, la',
+  cd:       'Navigate to a site section by name.\n\n  Sections: projects, writing, currently, races, bucketlist, connect\n  Shortcuts: now → currently, running → races, bucket → bucketlist\n  cd ~ scrolls to top.',
+  cat:      'Read the contents of a file.\n\n  Try: cat /dev/secrets.txt\n  Run ls /dev to see available files.',
+  open:     'Open a project or blog post in a new tab.\n\n  Projects: gx, officecat, portctl, chaos-pong, lena\n  Posts: garbage collection, salt password, lean gta, traffic jams\n  Links: github, substack, notebook\n\n  Exact matches are preferred. If ambiguous, suggestions are shown.',
+  whoami:   'Print the current user identity.',
+  theme:    'Toggle or set the color theme.\n\n  theme          toggle between dark and light\n  theme dark     switch to dark mode\n  theme light    switch to light mode\n\n  Explicit choices are persisted. Without one, the site follows your OS preference.',
+  weather:  'Fetch current weather for Seattle via wttr.in.\n\n  Displays temperature (°F/°C), wind, and humidity.',
+  sudo:     'Execute a command as superuser.\n\n  Try: sudo hire-me',
+  matrix:   'Enter the Matrix. Green rain falls.\n\n  Press Esc or tap anywhere to exit.\n  Alias: hack',
+  coffee:   'Brew a virtual cup of coffee.\n\n  Alias: brew',
+  flip:     'Flip a fair coin. Heads or tails.\n\n  Alias: coin',
+  '8ball':  'Ask the Magic 8-Ball a yes/no question.\n\n  Usage: 8ball <question>',
+  random:   'Get a random fortune cookie message.\n\n  Alias: fortune',
+  echo:     'Print text to the terminal.\n\n  Usage: echo <text>',
+  date:     'Print the current date and time.',
+  pwd:      'Print the current working directory.',
+  repo:     'Open the mubbie.dev GitHub repository in a new tab.',
+  clear:    'Clear all terminal history.\n\n  Aliases: c, cls\n  Shortcut: Ctrl+L',
+  claude:   'The AI that helped build this site.',
+  history:  'Show the last 20 commands entered in this session.',
+  neofetch: 'Display system information in a stylized format.',
+  ping:     'Send a ping. Receive a pong.',
+  man:      'Show the manual page for a command.\n\n  Usage: man <command>',
+  uptime:   'Show how long since the page was loaded.',
+  curl:     'Fetch and display content from the web.\n\n  curl xkcd          today\'s xkcd comic\n  curl xkcd random   a random xkcd comic',
+  rm:       'Nice try.',
+  exit:     'There is no escape.',
+  quit:     'See: man exit',
+};
 
 // ─── Derived exports ───
 

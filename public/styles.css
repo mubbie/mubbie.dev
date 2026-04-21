@@ -1180,6 +1180,35 @@ footer p {
   padding: 16px 0;
 }
 
+/* ─── Terminal image (xkcd) ─── */
+.terminal-image {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 4px;
+  margin: 0.5em 0;
+  display: block;
+}
+
+/* ─── Race countdown badge ─── */
+.race-badge.countdown {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* ─── Writing "new" badge ─── */
+.writing-badge {
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.15em 0.5em;
+  border-radius: 3px;
+  margin-left: auto;
+  margin-right: 0.5em;
+  flex-shrink: 0;
+}
+
 /* ─── Reduced motion (accessibility) ─── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
