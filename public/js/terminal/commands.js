@@ -176,9 +176,7 @@ export const HINTS = [
   'try "sudo hire-me" 👀',
   '"8ball is pineapple on pizza ok?" — ask the oracle',
   'try "curl xkcd random" for a surprise',
-  'try "ssh" and see what happens',
   'try "matrix" if you dare',
-  'try "sudo rm -rf /" — I dare you',
   '"flip" when you can\'t decide',
   'try "coffee" — you look like you need one',
   '"ping" — just checking',
@@ -187,6 +185,7 @@ export const HINTS = [
   'you found the secret terminal. congrats.',
   '"random" for a fortune cookie',
   'type "help" if you\'re lost. no judgment.',
+  'there are hidden easter eggs. can you find them?',
 ];
 
 // ─── Derived exports ───
