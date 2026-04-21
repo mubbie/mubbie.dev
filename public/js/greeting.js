@@ -1,5 +1,7 @@
 // ─── Greeting text + wave emoji ───
 
+import { popPopcorn } from './popcorn.js';
+
 const GREETINGS = {
   morning: [
     'Good morning',
@@ -12,6 +14,7 @@ const GREETINGS = {
     'Hey there',
     'What\'s good',
     'Afternoon',
+    'What\'s poppin\'',
   ],
   evening: [
     'Good evening',
@@ -32,7 +35,14 @@ export function initGreeting() {
   else period = 'evening';
 
   const options = GREETINGS[period];
-  el.textContent = options[Math.floor(Math.random() * options.length)];
+  const chosen = options[Math.floor(Math.random() * options.length)];
+  el.textContent = chosen;
+
+  // Easter egg: clicking "What's poppin'" triggers popcorn
+  if (chosen === 'What\'s poppin\'') {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => popPopcorn(el));
+  }
 }
 
 export function initWaveEmoji() {

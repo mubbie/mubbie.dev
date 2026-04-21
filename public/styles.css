@@ -132,6 +132,7 @@ header {
 
 .terminal-history-line {
   line-height: 1.8;
+  white-space: pre-wrap;
 }
 
 .terminal-history-line .terminal-prompt {
@@ -1234,6 +1235,30 @@ footer p {
 /* If both badge and time exist, time goes after badge */
 .writing-badge + .writing-time {
   margin-left: 0.5em;
+}
+
+/* ─── Popcorn explosion ─── */
+.popcorn-kernel {
+  position: fixed;
+  font-size: 1.5rem;
+  pointer-events: none;
+  z-index: 10000;
+  animation: popcorn-pop 1.2s ease-out forwards;
+}
+
+@keyframes popcorn-pop {
+  0% {
+    transform: translate(0, 0) scale(0.3) rotate(0deg);
+    opacity: 1;
+  }
+  20% {
+    transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) scale(1.2) rotate(90deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), calc(var(--dy) + 120px)) scale(0.6) rotate(360deg);
+    opacity: 0;
+  }
 }
 
 /* ─── Reduced motion (accessibility) ─── */

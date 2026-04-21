@@ -113,6 +113,7 @@ export const COMMAND_DEFS = [
   { name: 'uptime',                                     usage: 'uptime',             help: 'time since page load' },
   { name: 'curl',                                       usage: 'curl xkcd',         help: 'fetch & display an xkcd comic' },
   { name: 'grep',                                       usage: 'grep <term>',       help: 'search site content' },
+  { name: 'popcorn',                                     usage: 'popcorn',           help: "what's poppin'" },
   { name: 'ssh',                                        usage: 'ssh',               help: 'connect to a remote host' },
   // Hidden commands (no help text — won't appear in help table but still tab-complete)
   { name: 'rm' },
@@ -149,7 +150,8 @@ export const MAN_PAGES = {
   man:      'Show the manual page for a command.\n\n  Usage: man <command>',
   uptime:   'Show how long since the page was loaded.',
   curl:     'Fetch and display content from the web.\n\n  curl xkcd          today\'s xkcd comic\n  curl xkcd random   a random xkcd comic',
-  grep:     'Search across site content: projects, files, and openable links.\n\n  Usage: grep <term>\n  Searches project names, file contents, /dev files, and openable names.',
+  popcorn:  'What\'s poppin\'! 🍿\n\n  Triggers a popcorn explosion. Because why not.',
+  grep:     'Search across all site content.\n\n  Usage: grep <term>\n  Searches: projects, writing, races, bucket list, currently, connect, /dev.\n  Results grouped by section. Only sections with matches are shown.',
   ssh:      'Attempt to connect to a remote host.\n\n  Spoiler: you\'re already here.',
   rm:       'Nice try.',
   exit:     'There is no escape.',
@@ -187,6 +189,7 @@ export const HINTS = [
   'you found the secret terminal. congrats.',
   '"random" for a fortune cookie',
   'type "help" if you\'re lost. no judgment.',
+  'press / from anywhere to jump here',
   'there are hidden easter eggs. can you find them?',
 ];
 

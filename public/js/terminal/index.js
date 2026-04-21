@@ -11,6 +11,7 @@ import { applyTheme, toggleTheme } from '../theme.js';
 import { startMatrix } from '../matrix.js';
 import { scrollToTop, scrollToEl } from '../scroll.js';
 import { fetchWeather } from '../weather.js';
+import { popPopcorn } from '../popcorn.js';
 
 const PAGE_LOAD_TIME = Date.now();
 
@@ -275,49 +276,86 @@ function createHandlers(out, history, getFortunes) {
         return;
       }
       const term = arg.trim().toLowerCase();
-      const results = [];
-      const seen = new Set();
+      const sections = [];
+      let totalMatches = 0;
 
-      function add(text) {
-        if (!seen.has(text)) { seen.add(text); results.push(text); }
-      }
-
-      // Search filesystem entries
-      for (const [dir, entries] of Object.entries(FILESYSTEM)) {
-        entries.forEach((e) => {
-          if (e.toLowerCase().includes(term)) add(`${dir}/${e}`);
+      function searchSection(name, selector, extractFn) {
+        const els = document.querySelectorAll(selector);
+        const matches = [];
+        els.forEach((el) => {
+          const text = extractFn(el);
+          if (text && text.toLowerCase().includes(term)) matches.push(text);
         });
-      }
-
-      // Search file contents (skip duplicate about/about.txt)
-      const skipFiles = new Set(['about', 'about.txt']);
-      for (const [path, content] of Object.entries(FILES)) {
-        if (skipFiles.has(path)) continue;
-        if (path.toLowerCase().includes(term) || content.toLowerCase().includes(term)) {
-          add(`${path}`);
+        if (matches.length > 0) {
+          sections.push({ name, matches });
+          totalMatches += matches.length;
         }
       }
 
-      // Search openables
-      OPENABLES.forEach((o) => {
-        if (o.name.toLowerCase().includes(term)) add(`open ${o.name}`);
+      // Projects: name + description
+      searchSection('projects/', '.project-card', (el) => {
+        const name = el.querySelector('h3')?.textContent || '';
+        const desc = el.querySelector('p')?.textContent || '';
+        return name.toLowerCase().includes(term) || desc.toLowerCase().includes(term)
+          ? `${name} — ${desc}` : null;
       });
 
-      // Search sections
-      const seenSections = new Set();
-      for (const [name, id] of Object.entries(SECTION_MAP)) {
-        if (name.includes(term) && !seenSections.has(id)) {
-          seenSections.add(id);
-          add(`cd ${name}`);
-        }
+      // Writing: titles
+      searchSection('writing/', '.writing-item', (el) => {
+        const title = el.querySelector('h3')?.textContent || '';
+        return title.toLowerCase().includes(term) ? title : null;
+      });
+
+      // Races: name + location
+      searchSection('races/', '.race-item', (el) => {
+        const name = el.querySelector('.race-name')?.textContent || '';
+        const loc = el.querySelector('.race-location')?.textContent || '';
+        const date = el.querySelector('.race-date')?.textContent || '';
+        return (name + loc).toLowerCase().includes(term)
+          ? `${name} — ${loc}, ${date}` : null;
+      });
+
+      // Bucket list
+      searchSection('bucketlist/', '.bucket-item', (el) => {
+        const text = el.querySelector('.bucket-text')?.textContent || '';
+        if (!text.toLowerCase().includes(term)) return null;
+        const done = el.classList.contains('done');
+        return `${done ? '✓' : '○'} ${text}`;
+      });
+
+      // Currently
+      searchSection('currently/', '.currently-item', (el) => {
+        const label = el.querySelector('.currently-label')?.textContent || '';
+        const value = el.querySelector('.currently-value')?.textContent || '';
+        return (label + value).toLowerCase().includes(term)
+          ? `${label}: ${value}` : null;
+      });
+
+      // Connect
+      searchSection('connect/', '.connect-link', (el) => {
+        const text = el.textContent.trim();
+        return text.toLowerCase().includes(term) ? text : null;
+      });
+
+      // /dev file names only (not contents — keep secrets hidden)
+      const devMatches = [];
+      (FILESYSTEM['/dev'] || []).forEach((f) => {
+        if (f.toLowerCase().includes(term)) devMatches.push(f);
+      });
+      if (devMatches.length > 0) {
+        sections.push({ name: '/dev/', matches: devMatches });
+        totalMatches += devMatches.length;
       }
 
       out.addLine('$', trimmed, null);
-      if (results.length === 0) {
+      if (totalMatches === 0) {
         out.addLine(null, null, `no matches for '${arg.trim()}'`, true);
       } else {
-        results.forEach((r) => out.addLine(null, null, r));
-        out.addOk(`${results.length} match${results.length === 1 ? '' : 'es'}`);
+        sections.forEach((s) => {
+          out.addOk(s.name);
+          s.matches.forEach((m) => out.addLine(null, null, `  ${m}`));
+        });
+        out.addLine(null, null, `\n${totalMatches} match${totalMatches === 1 ? '' : 'es'}`);
       }
     },
 
@@ -352,6 +390,12 @@ function createHandlers(out, history, getFortunes) {
 
     ping(trimmed) {
       out.addLine('$', trimmed, 'pong! 🏓');
+    },
+
+    popcorn(trimmed) {
+      out.addLine('$', trimmed, null);
+      out.addOk("what's poppin'! 🍿");
+      popPopcorn(document.getElementById('terminal'));
     },
 
     neofetch(trimmed) {
