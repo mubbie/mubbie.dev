@@ -63,7 +63,8 @@ function initWaveEmoji() {
   if (!wave) return;
 
   const hands = ['👋🏾', '💪🏾', '✌🏾', '🤟🏾', '🤙🏾'];
-  let index = 0;
+  let index = Math.floor(Math.random() * hands.length);
+  wave.textContent = hands[index];
 
   wave.addEventListener('click', () => {
     index = (index + 1) % hands.length;
