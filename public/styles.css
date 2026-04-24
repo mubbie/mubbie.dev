@@ -325,7 +325,7 @@ section {
 .project-icon.portctl { background: rgba(249, 115, 22, 0.15); color: var(--orange); }
 .project-icon.chaos { background: rgba(236, 72, 153, 0.15); color: var(--pink); }
 .project-icon.lena { background: rgba(34, 197, 94, 0.15); color: var(--accent); }
-.project-icon.sorcery { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+
 
 .project-info h3 {
   font-size: 15px;

@@ -248,6 +248,81 @@ function createHandlers(out, history, getFortunes) {
       });
     },
 
+    cocktail(trimmed, arg) {
+      const SHELVES = ['tavern', 'merchant', 'alchemist', 'archmage'];
+      const PHIALS = ['brooding', 'celebratory', 'contemplative', 'amorous', 'courageous', 'weary'];
+      const args = arg ? arg.trim().split(/\s+/) : [];
+
+      function showGuide(header) {
+        out.addLine('$', trimmed, null);
+        out.addLine(null, null, header);
+        out.addLine(null, null, '');
+        out.addLine(null, null, '  cocktail <shelf> <phial>');
+        out.addLine(null, null, '  cocktail random');
+        out.addLine(null, null, '');
+        out.addLine(null, null, '  shelves (how much you want to spend):');
+        out.addLine(null, null, '    tavern      budget');
+        out.addLine(null, null, '    merchant    mid-range');
+        out.addLine(null, null, '    alchemist   premium');
+        out.addLine(null, null, '    archmage    top-shelf');
+        out.addLine(null, null, '');
+        out.addLine(null, null, '  phials (how are you feeling):');
+        out.addLine(null, null, '    brooding        dark & smoky');
+        out.addLine(null, null, '    celebratory     bubbly & bright');
+        out.addLine(null, null, '    contemplative   smooth & mellow');
+        out.addLine(null, null, '    amorous         sweet & romantic');
+        out.addLine(null, null, '    courageous      bold & strong');
+        out.addLine(null, null, '    weary           easy & comforting');
+      }
+
+      function conjure(url) {
+        out.addLine('$', trimmed, null);
+        const steps = [
+          { text: '🧙 consulting the apothecary...', delay: 0 },
+          { text: '🌿 gathering rare ingredients...', delay: 700 },
+          { text: '⚗️ mixing the elixir...', delay: 1400 },
+          { text: '✨ channeling flavor spirits...', delay: 2100 },
+          { text: '🔮 divining the perfect concoction...', delay: 2800 },
+          { text: '', delay: 3500 },
+        ];
+        steps.forEach((step) => {
+          setTimeout(() => {
+            if (step.text === '') {
+              out.addOk('🍸 your elixir awaits — opening sorcery...');
+              setTimeout(() => window.open(url, '_blank'), 600);
+            } else {
+              out.addLine(null, null, step.text);
+            }
+          }, step.delay);
+        });
+      }
+
+      // No args → show guide
+      if (args.length === 0) {
+        showGuide('🧙 conjure your next drink:');
+        return;
+      }
+
+      // "cocktail random"
+      if (args.length === 1 && args[0] === 'random') {
+        conjure('https://sorcery.lol?random=true');
+        return;
+      }
+
+      // "cocktail <shelf> <phial>"
+      if (args.length === 2) {
+        const shelf = args[0].toLowerCase();
+        const phial = args[1].toLowerCase();
+        if (SHELVES.includes(shelf) && PHIALS.includes(phial)) {
+          conjure(`https://sorcery.lol?tier=${shelf}&mood=${phial}`);
+          return;
+        }
+      }
+
+      // Bad args → detailed guide
+      showGuide('🧙 unknown incantation. try:');
+    },
+
     flip(trimmed) {
       out.addLine('$', trimmed, Math.random() < 0.5 ? '🪙 heads!' : '🪙 tails!');
     },
