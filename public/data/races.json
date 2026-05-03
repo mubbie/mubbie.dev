@@ -24,7 +24,8 @@
     "date": "2026-05-03",
     "name": "Kirkland Half Marathon",
     "location": "Kirkland",
-    "url": "https://orcarunning.com/kirklandhalf/"
+    "url": "https://orcarunning.com/kirklandhalf/",
+    "completed": true
   },
   {
     "date": "2026-06-06",
