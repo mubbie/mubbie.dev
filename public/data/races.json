@@ -46,16 +46,22 @@
     "url": "https://raceroster.com/events/2026/107529/2026-seattle-marathon-summer-5k10khalf-marathon-and-kids-fun-run"
   },
   {
-    "date": "2026-07-26",
-    "name": "Craft Classic Half Marathon",
+    "date": "2026-07-24",
+    "name": "Microsoft Redmond 5K",
     "location": "Redmond",
-    "url": "https://www.orcarunning.com/craft-classic/"
+    "url": "https://raceroster.com/events/2026/116454/2026-microsoft-redmond-5k"
   },
   {
     "date": "2026-08-01",
     "name": "Bubble Run 5K",
     "location": "Puyallup",
     "url": "https://bubblerun.com/locations/seattle-2/"
+  },
+  {
+    "date": "2026-08-02",
+    "name": "Craft Classic Half Marathon",
+    "location": "Redmond",
+    "url": "https://www.orcarunning.com/craft-classic/"
   },
   {
     "date": "2026-08-30",
@@ -89,7 +95,7 @@
     "goal": true
   },
   {
-    "date": "2026-12-06",
+    "date": "2026-12-05",
     "name": "The Electric Cookie 10K",
     "location": "Seattle",
     "url": "https://runsignup.com/Race/WA/Redmond/TheElectricCookieRun"
