@@ -1,15 +1,23 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "mubbie-personal-site",
+  "main": "workers/index.js",
   "compatibility_date": "2026-04-15",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "observability": {
     "enabled": true
   },
   "assets": {
     "directory": "public",
+    "binding": "ASSETS",
     "not_found_handling": "404-page"
   },
-  "compatibility_flags": [
-    "nodejs_compat"
+  "kv_namespaces": [
+    {
+      "binding": "WC_CACHE",
+      "id": "6654a5496ff24969a583260e6d31c31c"
+    }
   ]
 }
