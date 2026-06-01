@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WC 2026 Bracket — Mubbie Idoko</title>
+  <meta name="description" content="My FIFA World Cup 2026 bracket: group stage picks, knockout round predictions, and live accuracy tracking.">
+  <meta property="og:title" content="WC 2026 Bracket — Mubbie Idoko">
+  <meta property="og:description" content="My FIFA World Cup 2026 bracket: group stage picks, knockout round predictions, and live accuracy tracking.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mubbie.dev/wc-2026/">
+  <meta property="og:image" content="https://mubbie.dev/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://mubbie.dev/wc-2026/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+  <script>
+    const t = localStorage.getItem('mubbie-theme-explicit') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', t);
+  </script>
+</head>
+<body class="wc-page">
+
+<a href="#groups" class="skip-link">Skip to content</a>
+
+<div class="glow-orb green" aria-hidden="true"></div>
+<div class="glow-orb blue" aria-hidden="true"></div>
+
+<div class="container wc-container">
+
+  <!-- ─── Hero ─── -->
+
+  <header class="wc-header">
+    <a href="/" class="wc-back">← back to mubbie.dev</a>
+    <h1>WC 2026 · my bracket</h1>
+    <p class="tagline">
+      My picks for the FIFA World Cup 2026. <span id="wc-champion-line">Champion pick loading…</span>
+    </p>
+    <nav class="nav-pills" aria-label="Bracket sections">
+      <a href="#overview">overview</a>
+      <a href="#groups">groups</a>
+      <a href="#knockout">knockout</a>
+      <a href="#tree">tree</a>
+      <a id="wc-bracket-link" href="#" target="_blank" rel="noopener noreferrer">nbc bracket ↗</a>
+    </nav>
+  </header>
+
+  <!-- ─── Overview ─── -->
+
+  <section id="overview" class="reveal">
+    <div class="section-label">// at a glance</div>
+    <div class="wc-overview" id="wc-overview"></div>
+    <div class="wc-results-meta" id="wc-results-meta"></div>
+    <details class="wc-grading">
+      <summary>how grading works</summary>
+      <ul>
+        <li><strong>Group stage:</strong> one point per group where my picked 1st-place team is the actual group winner. 2nd and 3rd are shown for context but only 1st is scored.</li>
+        <li><strong>Knockout rounds:</strong> one point per match where my picked winner actually advances. Scored independently per round, so a wrong R32 pick doesn't cascade.</li>
+        <li><strong>Champion:</strong> the team I expect to lift the cup. Worth a bonus brag if it lands.</li>
+        <li><strong>"Graded":</strong> means a result has been entered for that match. "0/N graded" means no results yet for that round.</li>
+      </ul>
+      <p class="wc-grading-source">
+        Live results come from <a href="https://www.football-data.org" target="_blank" rel="noopener noreferrer">football-data.org</a> via a Cloudflare Worker at <code>/api/wc-results</code>.
+        The Worker fetches the WC competition feed, derives group standings from finished matches (3 pts for a win, 1 for a draw, goal diff tiebreaker), and caches the response in Workers KV for 1 hour.
+        The browser additionally caches the result in localStorage for 30 minutes. If the upstream API is down, the Worker serves stale KV data; if that's also unavailable, the client falls back to the static <code>data/wc-2026-results.json</code>.
+        The bracket tree highlights my champion's path in green; correct picks turn the card border green, wrong picks orange.
+      </p>
+    </details>
+  </section>
+
+  <!-- ─── Group stage ─── -->
+
+  <section id="groups" class="reveal">
+    <div class="section-label">// group stage · 12 groups</div>
+    <div class="wc-groups" id="wc-groups"></div>
+    <p class="wc-note" id="wc-groups-note"></p>
+  </section>
+
+  <!-- ─── Knockout stepper ─── -->
+
+  <section id="knockout" class="reveal">
+    <div class="section-label">// knockout · round of 32 → final</div>
+    <div class="wc-stepper" id="wc-stepper" role="tablist" aria-label="Knockout round"></div>
+    <div class="wc-matches" id="wc-matches" aria-live="polite"></div>
+  </section>
+
+  <!-- ─── Bracket tree ─── -->
+
+  <section id="tree" class="reveal">
+    <div class="section-label">// bracket tree</div>
+    <p class="wc-note">The full path, R32 → Final. Scroll horizontally on smaller screens.</p>
+    <div class="wc-tree-scroll">
+      <div class="wc-tree" id="wc-tree"></div>
+    </div>
+  </section>
+
+  <!-- ─── Footer ─── -->
+
+  <footer>
+    <div class="footer-status">
+      <span class="status-dot"></span>
+      bracket lives until Jul 19, 2026
+    </div>
+    <p>&copy; <span id="footer-year"></span> Mubbie Idoko · <a href="/" class="wc-back-inline">mubbie.dev</a></p>
+  </footer>
+
+</div>
+
+<script type="module" src="../js/wc-2026.js"></script>
+
+</body>
+</html>

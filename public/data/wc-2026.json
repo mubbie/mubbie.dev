@@ -1,0 +1,61 @@
+{
+  "prediction": "France",
+  "bracketUrl": "https://www.nbcnews.com/sports/world-cup/fifa-world-cup-2026-bracket-challenge/?id=ldcZn1B1T5",
+  "groupStage": {
+    "A": { "1st": "South Korea", "2nd": "Mexico", "3rd": "South Africa" },
+    "B": { "1st": "Switzerland", "2nd": "Canada" },
+    "C": { "1st": "Brazil", "2nd": "Morocco", "3rd": "Scotland" },
+    "D": { "1st": "Australia", "2nd": "Turkey", "3rd": "United States" },
+    "E": { "1st": "Germany", "2nd": "Ivory Coast", "3rd": "Ecuador" },
+    "F": { "1st": "Netherlands", "2nd": "Japan", "3rd": "Tunisia" },
+    "G": { "1st": "Belgium", "2nd": "Egypt" },
+    "H": { "1st": "Spain", "2nd": "Uruguay" },
+    "I": { "1st": "France", "2nd": "Senegal", "3rd": "Norway" },
+    "J": { "1st": "Argentina", "2nd": "Algeria", "3rd": "Austria" },
+    "K": { "1st": "Portugal", "2nd": "Colombia" },
+    "L": { "1st": "England", "2nd": "Croatia", "3rd": "Ghana" }
+  },
+  "knockout": {
+    "roundOf32": [
+      { "date": "2026-06-29T16:30:00", "home": "Germany", "away": "United States", "pick": "Germany" },
+      { "date": "2026-06-30T17:00:00", "home": "France", "away": "Scotland", "pick": "France" },
+      { "date": "2026-06-28T15:00:00", "home": "Mexico", "away": "Canada", "pick": "Mexico" },
+      { "date": "2026-06-29T21:00:00", "home": "Netherlands", "away": "Morocco", "pick": "Netherlands" },
+      { "date": "2026-07-02T19:00:00", "home": "Colombia", "away": "Croatia", "pick": "Colombia" },
+      { "date": "2026-07-02T15:00:00", "home": "Spain", "away": "Algeria", "pick": "Spain" },
+      { "date": "2026-07-01T20:00:00", "home": "Australia", "away": "Tunisia", "pick": "Australia" },
+      { "date": "2026-07-01T16:00:00", "home": "Belgium", "away": "South Africa", "pick": "Belgium" },
+      { "date": "2026-06-29T13:00:00", "home": "Brazil", "away": "Japan", "pick": "Brazil" },
+      { "date": "2026-06-30T13:00:00", "home": "Ivory Coast", "away": "Senegal", "pick": "Ivory Coast" },
+      { "date": "2026-06-30T21:00:00", "home": "South Korea", "away": "Norway", "pick": "South Korea" },
+      { "date": "2026-07-01T12:00:00", "home": "England", "away": "Ecuador", "pick": "England" },
+      { "date": "2026-07-03T18:00:00", "home": "Argentina", "away": "Uruguay", "pick": "Argentina" },
+      { "date": "2026-07-03T14:00:00", "home": "Turkey", "away": "Egypt", "pick": "Turkey" },
+      { "date": "2026-07-02T23:00:00", "home": "Switzerland", "away": "Austria", "pick": "Switzerland" },
+      { "date": "2026-07-03T21:30:00", "home": "Portugal", "away": "Ghana", "pick": "Portugal" }
+    ],
+    "roundOf16": [
+      { "date": "2026-07-04T17:00:00", "home": "Germany", "away": "France", "pick": "France" },
+      { "date": "2026-07-04T13:00:00", "home": "Mexico", "away": "Netherlands", "pick": "Netherlands" },
+      { "date": "2026-07-06T15:00:00", "home": "Croatia", "away": "Spain", "pick": "Croatia" },
+      { "date": "2026-07-06T20:00:00", "home": "Australia", "away": "Belgium", "pick": "Belgium" },
+      { "date": "2026-07-05T16:00:00", "home": "Brazil", "away": "Senegal", "pick": "Brazil" },
+      { "date": "2026-07-05T20:00:00", "home": "Norway", "away": "England", "pick": "Norway" },
+      { "date": "2026-07-07T12:00:00", "home": "Argentina", "away": "Egypt", "pick": "Argentina" },
+      { "date": "2026-07-07T16:00:00", "home": "Switzerland", "away": "Portugal", "pick": "Portugal" }
+    ],
+    "quarterfinals": [
+      { "date": "2026-07-09T16:00:00", "home": "France", "away": "Netherlands", "pick": "France" },
+      { "date": "2026-07-10T15:00:00", "home": "Croatia", "away": "Belgium", "pick": "Belgium" },
+      { "date": "2026-07-11T17:00:00", "home": "Brazil", "away": "England", "pick": "Brazil" },
+      { "date": "2026-07-11T21:00:00", "home": "Argentina", "away": "Portugal", "pick": "Portugal" }
+    ],
+    "semifinals": [
+      { "date": "2026-07-14T15:00:00", "home": "France", "away": "Belgium", "pick": "France" },
+      { "date": "2026-07-15T15:00:00", "home": "Brazil", "away": "Portugal", "pick": "Brazil" }
+    ],
+    "final": [
+      { "date": "2026-07-19T15:00:00", "home": "France", "away": "Brazil", "pick": "France" }
+    ]
+  }
+}
