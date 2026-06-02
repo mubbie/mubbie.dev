@@ -1314,10 +1314,25 @@ footer p {
 .wc-emoji {
   display: inline-block;
   font-size: 0.9em;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  color: inherit;
+  line-height: 1;
+  cursor: pointer;
   transition: transform 0.3s ease;
 }
 
-.wc-emoji:hover { transform: rotate(15deg) scale(1.15); }
+.wc-emoji:hover,
+.wc-emoji:focus-visible { transform: rotate(15deg) scale(1.15); }
+
+.wc-emoji:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
 
 .wc-champion-pick {
   font-family: var(--mono);
@@ -1501,6 +1516,11 @@ footer p {
   border-color: var(--accent);
 }
 
+.wc-step:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .wc-step.active {
   color: var(--bg);
   background: var(--accent);
@@ -1591,6 +1611,12 @@ footer p {
   padding: 16px 24px 24px;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+}
+
+.wc-tree-scroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 4px;
 }
 
 .wc-tree {
@@ -1888,9 +1914,11 @@ footer p {
   transition: all 0.15s ease;
 }
 
-.wc-results-refresh:hover {
+.wc-results-refresh:hover,
+.wc-results-refresh:focus-visible {
   color: var(--accent);
   border-color: var(--accent);
+  outline: none;
 }
 
 .wc-results-refresh:disabled {
@@ -1968,6 +1996,186 @@ footer p {
   .wc-overview { grid-template-columns: repeat(2, 1fr); }
   .wc-groups { grid-template-columns: repeat(2, 1fr); }
   .wc-matches { grid-template-columns: 1fr; }
+}
+
+/* ─── Next-match countdown banner ─── */
+.wc-countdown {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  margin: 24px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0;
+  animation: fadeUp 0.6s ease 0.5s forwards;
+}
+
+.wc-countdown[hidden] { display: none; }
+
+.wc-countdown-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.wc-countdown-value {
+  font-weight: 600;
+}
+
+.wc-countdown-live {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.wc-countdown-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 var(--accent);
+  animation: wc-pulse 1.4s infinite;
+}
+
+@keyframes wc-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--accent-glow); }
+  70%  { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.wc-countdown-dead .wc-countdown-label,
+.wc-countdown-dead .wc-countdown-value {
+  color: var(--text-dim);
+}
+
+.wc-countdown-won {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+/* ─── Keyboard-shortcuts toast ─── */
+.wc-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  z-index: 9000;
+  max-width: 360px;
+}
+
+.wc-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.wc-toast strong {
+  display: block;
+  color: var(--text);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.wc-toast div { line-height: 1.7; }
+
+.wc-toast kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Screen-reader-only utility (used for non-color result cues) ─── */
+.wc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Light mode tweaks for the WC bracket ─── */
+[data-theme="light"] .wc-tree-match.champion-path.path-dimmed,
+[data-theme="light"] .wc-tree-champion.wc-tree-champion-dead {
+  /* 0.4 opacity on white looks washed-out. Lift it and let the gray border
+     do the de-emphasis work instead. */
+  opacity: 0.55;
+}
+
+[data-theme="light"] .wc-tree-match {
+  /* Slightly stronger border so cards don't disappear into the surface. */
+  border-color: var(--border);
+}
+
+[data-theme="light"] .wc-rojas a:hover {
+  /* Bump background contrast slightly so the pill is visible against cream. */
+  background: rgba(22, 163, 74, 0.16);
+}
+
+[data-theme="light"] .wc-toast {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* ─── WC footer: stacked lines with breathing room ─── */
+.wc-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+  padding: 32px 0;
+}
+
+.wc-footer-line {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+/* ─── Shortcut hint in footer ─── */
+.wc-footer-hint {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.wc-footer-hint kbd {
+  display: inline-block;
+  padding: 0 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
 }
 
 /* ─── Reduced motion (accessibility) ─── */
