@@ -4,6 +4,7 @@ import { initTheme } from './theme.js';
 import { initFooter } from './footer.js';
 import { initScrollReveal } from './ui.js';
 import { fetchJSON } from './dom.js';
+import { kickConfetti } from './wc-confetti.js';
 
 const ROUNDS = [
   { key: 'roundOf32',     label: 'Round of 32', short: 'R32',   id: 'r32' },
@@ -75,6 +76,18 @@ function matchKey(m) {
 initTheme();
 initFooter();
 initScrollReveal();
+initRotatingEmoji();
+
+function initRotatingEmoji() {
+  const el = document.getElementById('wc-emoji');
+  if (!el) return;
+  const emojis = ['⚽', '🏆', '🥅', '🎯', '🏟️', '🟢', '⚽'];
+  let i = 0;
+  setInterval(() => {
+    i = (i + 1) % emojis.length;
+    el.textContent = emojis[i];
+  }, 1400);
+}
 
 const state = { picks: null, results: null };
 
@@ -91,6 +104,10 @@ const state = { picks: null, results: null };
     renderKnockout(picks);   // builds stepper once
     renderAll();
     wireRefreshButton();
+    wireConfetti();
+    // Subtle welcome confetti from the page emoji
+    const emojiEl = document.getElementById('wc-emoji');
+    if (emojiEl) setTimeout(() => kickConfetti(emojiEl, 14), 400);
   } catch (err) {
     console.error(err);
     const ov = document.getElementById('wc-overview');
@@ -150,7 +167,7 @@ function writeResultsCache(data) {
   try {
     localStorage.setItem(RESULTS_CACHE_KEY, JSON.stringify({ cachedAt: Date.now(), data }));
   } catch {
-    // localStorage may be unavailable (private mode etc.) — non-fatal
+    // localStorage may be unavailable (private mode etc.), non-fatal
   }
 }
 
@@ -159,7 +176,7 @@ function writeResultsCache(data) {
 function setChampion(picks) {
   const el = document.getElementById('wc-champion-line');
   if (!el) return;
-  el.innerHTML = `Champion pick: <strong>${flag(picks.prediction, 'md')} ${picks.prediction}</strong>.`;
+  el.innerHTML = `Champion pick: <strong>${flag(picks.prediction, 'md')} ${picks.prediction}</strong>`;
 }
 
 function setBracketLink(picks) {
@@ -174,7 +191,7 @@ function renderOverview(picks, results) {
   if (!el) return;
 
   const tiles = [];
-  tiles.push(tile('🏆', 'champion', `${flag(picks.prediction)} ${picks.prediction}`));
+  tiles.push(tile('🏆', 'champion', `${flag(picks.prediction, 'md')} ${picks.prediction}`));
 
   const groupTotal = Object.keys(picks.groupStage).length;
   let groupCorrect = 0;
@@ -185,7 +202,7 @@ function renderOverview(picks, results) {
     groupGraded++;
     if (actual['1st'] === picked['1st']) groupCorrect++;
   }
-  tiles.push(tile('🟢', 'group winners', groupGraded ? `${groupCorrect}/${groupGraded} correct` : `0/${groupTotal} graded`));
+  tiles.push(tile(null, 'group winners', groupGraded ? `${groupCorrect}/${groupGraded} correct` : `0/${groupTotal} graded`));
 
   for (const r of ROUNDS) {
     const matches = picks.knockout[r.key] || [];
@@ -198,7 +215,7 @@ function renderOverview(picks, results) {
       graded++;
       if (res.winner === m.pick) correct++;
     }
-    tiles.push(tile(r.short === 'Final' ? '🏁' : '⚽', r.label.toLowerCase(), graded ? `${correct}/${graded} correct` : `0/${matches.length} graded`));
+    tiles.push(tile(null, r.label.toLowerCase(), graded ? `${correct}/${graded} correct` : `0/${matches.length} graded`));
   }
 
   el.innerHTML = tiles.join('');
@@ -228,6 +245,20 @@ function labelForSource(source) {
   return 'no results yet';
 }
 
+function wireConfetti() {
+  // Click the rotating emoji → small celebration
+  const emojiEl = document.getElementById('wc-emoji');
+  if (emojiEl) {
+    emojiEl.style.cursor = 'pointer';
+    emojiEl.addEventListener('click', () => kickConfetti(emojiEl, 20));
+  }
+  // Click the champion/trophy box → bigger celebration
+  document.addEventListener('click', (e) => {
+    const champ = e.target.closest('.wc-tree-champion');
+    if (champ) kickConfetti(champ, 36);
+  });
+}
+
 function wireRefreshButton() {
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('#wc-results-refresh');
@@ -247,8 +278,9 @@ function wireRefreshButton() {
 }
 
 function tile(icon, label, value) {
-  return `<div class="wc-tile">
-    <div class="wc-tile-icon">${icon}</div>
+  const iconHtml = icon ? `<div class="wc-tile-icon">${icon}</div>` : '';
+  return `<div class="wc-tile${icon ? '' : ' wc-tile-plain'}">
+    ${iconHtml}
     <div class="wc-tile-body">
       <div class="wc-tile-label">${label}</div>
       <div class="wc-tile-value">${value}</div>
@@ -401,7 +433,7 @@ function renderTree(picks, results) {
   const el = document.getElementById('wc-tree');
   if (!el) return;
 
-  const championPath = computeChampionPath(picks);
+  const pathStatus = computeChampionPathStatus(picks, results);
   const ordered = orderRoundsForTree(picks);
 
   const columns = ROUNDS.map((r) => {
@@ -410,13 +442,19 @@ function renderTree(picks, results) {
 
     const slots = matches.map((m) => {
       const actual = round[matchKey(m)];
-      const onPath = championPath.has(`${r.key}:${matchKey(m)}`);
+      const status = pathStatus.matchStatus.get(`${r.key}:${matchKey(m)}`);
+      const onPath = status !== undefined;
       let stateCls = '';
       if (actual && actual.winner) {
         stateCls = actual.winner === m.pick ? ' correct' : ' incorrect';
       }
-      return `<div class="wc-tree-slot">
-        <div class="wc-tree-match${stateCls}${onPath ? ' champion-path' : ''}">
+      let pathCls = '';
+      if (onPath) {
+        pathCls = ' champion-path';
+        if (status === 'dimmed') pathCls += ' path-dimmed';
+      }
+      return `<div class="wc-tree-slot${pathCls}">
+        <div class="wc-tree-match${stateCls}${pathCls}">
           <div class="wc-tree-team ${m.pick === m.home ? 'pick' : ''}">
             ${flag(m.home)}<span class="wc-tree-code">${code(m.home)}</span>
           </div>
@@ -433,11 +471,12 @@ function renderTree(picks, results) {
     </div>`;
   }).join('');
 
+  const trophyCls = pathStatus.championAlive ? '' : ' wc-tree-champion-dead';
   const trophyCol = `<div class="wc-tree-col wc-tree-trophy">
     <div class="wc-tree-col-label">🏆</div>
     <div class="wc-tree-slots">
-      <div class="wc-tree-slot">
-        <div class="wc-tree-champion">
+      <div class="wc-tree-slot${pathStatus.championAlive ? ' champion-path' : ' champion-path path-dimmed'}">
+        <div class="wc-tree-champion${trophyCls}">
           ${flag(picks.prediction, 'lg')}
           <span class="wc-tree-champion-name">${picks.prediction}</span>
         </div>
@@ -446,6 +485,31 @@ function renderTree(picks, results) {
   </div>`;
 
   el.innerHTML = columns + trophyCol;
+}
+
+// Walk France's path chronologically. Once a result shows France lost, the
+// remaining path segments are 'dimmed'. The losing match itself stays styled
+// as champion-path so the .incorrect class can show the orange border there.
+function computeChampionPathStatus(picks, results) {
+  const champ = picks.prediction;
+  const matchStatus = new Map(); // key → 'alive' | 'dimmed'
+  let died = false;
+  for (const r of ROUNDS) {
+    const matches = picks.knockout[r.key] || [];
+    const round = results.knockout?.[r.key] || {};
+    for (const m of matches) {
+      if (m.home !== champ && m.away !== champ) continue;
+      const key = `${r.key}:${matchKey(m)}`;
+      matchStatus.set(key, died ? 'dimmed' : 'alive');
+      if (!died) {
+        const actual = round[matchKey(m)];
+        if (actual && actual.winner && actual.winner !== champ) {
+          died = true;
+        }
+      }
+    }
+  }
+  return { matchStatus, championAlive: !died };
 }
 
 function computeChampionPath(picks) {

@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WC 2026 Bracket — Mubbie Idoko</title>
+  <title>WC 2026 Bracket · Mubbie Idoko</title>
   <meta name="description" content="My FIFA World Cup 2026 bracket: group stage picks, knockout round predictions, and live accuracy tracking.">
-  <meta property="og:title" content="WC 2026 Bracket — Mubbie Idoko">
+  <meta property="og:title" content="WC 2026 Bracket · Mubbie Idoko">
   <meta property="og:description" content="My FIFA World Cup 2026 bracket: group stage picks, knockout round predictions, and live accuracy tracking.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://mubbie.dev/wc-2026/">
@@ -36,9 +36,18 @@
 
   <header class="wc-header">
     <a href="/" class="wc-back">← back to mubbie.dev</a>
-    <h1>WC 2026 · my bracket</h1>
-    <p class="tagline">
-      My picks for the FIFA World Cup 2026. <span id="wc-champion-line">Champion pick loading…</span>
+    <h1>
+      <span class="wc-emoji" id="wc-emoji" aria-hidden="true">⚽</span>
+      WC 2026 · my bracket
+    </h1>
+    <p class="tagline">My picks for the FIFA World Cup 2026</p>
+    <p class="wc-champion-pick" id="wc-champion-line">Champion pick loading…</p>
+    <p class="wc-rojas">
+      <a href="https://youtu.be/FDFBG7_0H5I?si=nusn9YIFv7Cv9HA8" target="_blank" rel="noopener noreferrer">
+        <span class="wc-rojas-ball" aria-hidden="true">⚽</span>
+        <span class="wc-rojas-quote">"football is life!"</span>
+        <span class="wc-rojas-attr">· dani rojas ↗</span>
+      </a>
     </p>
     <nav class="nav-pills" aria-label="Bracket sections">
       <a href="#overview">overview</a>
@@ -56,18 +65,16 @@
     <div class="wc-overview" id="wc-overview"></div>
     <div class="wc-results-meta" id="wc-results-meta"></div>
     <details class="wc-grading">
-      <summary>how grading works</summary>
+      <summary>how scoring works</summary>
+      <p class="wc-grading-lead">Quick version: I get a point every time my pick matches reality.</p>
       <ul>
-        <li><strong>Group stage:</strong> one point per group where my picked 1st-place team is the actual group winner. 2nd and 3rd are shown for context but only 1st is scored.</li>
-        <li><strong>Knockout rounds:</strong> one point per match where my picked winner actually advances. Scored independently per round, so a wrong R32 pick doesn't cascade.</li>
-        <li><strong>Champion:</strong> the team I expect to lift the cup. Worth a bonus brag if it lands.</li>
-        <li><strong>"Graded":</strong> means a result has been entered for that match. "0/N graded" means no results yet for that round.</li>
+        <li><strong>Group stage:</strong> a point for each group I called the winner of. 2nd and 3rd are shown for context but don't score.</li>
+        <li><strong>Knockout rounds:</strong> a point for each match I picked the winner of. Each round is scored on its own, so missing one R32 game doesn't snowball.</li>
+        <li><strong>Champion:</strong> the trophy is the big one. If France lifts it, I get bragging rights for four years.</li>
+        <li>The bracket tree highlights France's path in green. Correct picks turn the card border green, wrong picks orange. Easy to see at a glance how much my bracket survives.</li>
       </ul>
       <p class="wc-grading-source">
-        Live results come from <a href="https://www.football-data.org" target="_blank" rel="noopener noreferrer">football-data.org</a> via a Cloudflare Worker at <code>/api/wc-results</code>.
-        The Worker fetches the WC competition feed, derives group standings from finished matches (3 pts for a win, 1 for a draw, goal diff tiebreaker), and caches the response in Workers KV for 1 hour.
-        The browser additionally caches the result in localStorage for 30 minutes. If the upstream API is down, the Worker serves stale KV data; if that's also unavailable, the client falls back to the static <code>data/wc-2026-results.json</code>.
-        The bracket tree highlights my champion's path in green; correct picks turn the card border green, wrong picks orange.
+        Results come straight from <a href="https://www.football-data.org" target="_blank" rel="noopener noreferrer">football-data.org</a>. The site holds onto them for a bit so the page loads fast. Hit the <strong>refresh</strong> button next to the indicator above any time you want the very latest. If something's wrong on their end, the page shows the last good fetch instead, so it never breaks. The indicator above tells you which one you're looking at.
       </p>
     </details>
   </section>

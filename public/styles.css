@@ -1248,6 +1248,14 @@ footer p {
   animation: popcorn-pop 1.2s ease-out forwards;
 }
 
+.wc-confetti {
+  position: fixed;
+  font-size: 1.6rem;
+  pointer-events: none;
+  z-index: 10000;
+  animation: popcorn-pop 1.4s ease-out forwards;
+}
+
 @keyframes popcorn-pop {
   0% {
     transform: translate(0, 0) scale(0.3) rotate(0deg);
@@ -1294,9 +1302,85 @@ footer p {
   font-size: clamp(28px, 6vw, 48px);
   font-weight: 700;
   letter-spacing: -0.02em;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   opacity: 0;
   animation: fadeUp 0.6s ease 0.2s forwards;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.wc-emoji {
+  display: inline-block;
+  font-size: 0.9em;
+  transition: transform 0.3s ease;
+}
+
+.wc-emoji:hover { transform: rotate(15deg) scale(1.15); }
+
+.wc-champion-pick {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  margin-bottom: 0;
+  opacity: 0;
+  animation: fadeUp 0.6s ease 0.3s forwards;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.wc-champion-pick strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.wc-rojas {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 20px;
+  margin-bottom: 16px;
+  opacity: 0;
+  animation: fadeUp 0.6s ease 0.45s forwards;
+}
+
+.wc-rojas a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  transition: all 0.2s ease;
+}
+
+.wc-rojas a:hover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.wc-rojas-ball {
+  display: inline-block;
+  animation: rojas-bounce 1.6s ease-in-out infinite;
+}
+
+.wc-rojas-quote { font-style: italic; }
+.wc-rojas-attr { color: var(--text-dim); font-size: 11px; }
+
+@keyframes rojas-bounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-3px) rotate(-15deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-3px) rotate(15deg); }
 }
 
 #wc-champion-line strong { color: var(--text); font-weight: 600; }
@@ -1584,7 +1668,7 @@ footer p {
 .wc-tree-match.correct { border-color: var(--accent); }
 .wc-tree-match.incorrect { border-color: var(--orange); }
 
-/* Connectors — L-shaped pseudo-elements forming the bracket spine.
+/* Connectors: L-shaped pseudo-elements forming the bracket spine.
    Odd-indexed slots draw the top half of the spine (going down from center),
    even-indexed slots draw the bottom half (going up to center).
    ::before draws the outgoing horizontal half from match to column edge.
@@ -1632,6 +1716,80 @@ footer p {
   width: 14px;
   top: 50%;
   border-top: 1px solid var(--border);
+}
+
+/* Green champion-path connectors: follow France's route through the bracket.
+   Use full shorthand to override default style/width/color cleanly. */
+.wc-tree-col:not(:last-of-type) .wc-tree-slot.champion-path::before {
+  border-top: 3px solid var(--accent);
+  top: calc(50% - 1px);
+}
+
+.wc-tree-col:not(:last-of-type):not(.wc-tree-final) .wc-tree-slot.champion-path:nth-child(odd)::after,
+.wc-tree-col:not(:last-of-type):not(.wc-tree-final) .wc-tree-slot.champion-path:nth-child(even)::after {
+  border-right: 3px solid var(--accent);
+}
+
+.wc-tree-col:not(:first-of-type) .wc-tree-match.champion-path::before,
+.wc-tree-trophy .wc-tree-match.champion-path::before {
+  border-top: 3px solid var(--accent);
+  top: calc(50% - 1px);
+}
+
+/* Final → trophy outgoing line */
+.wc-tree-final .wc-tree-slot.champion-path::before {
+  border-top: 3px solid var(--accent);
+  top: calc(50% - 1px);
+}
+
+.wc-tree-champion::before {
+  border-top: 3px solid var(--accent);
+  top: calc(50% - 1px);
+}
+
+/* Dimmed path: France was eliminated upstream. Picks are still rendered
+   (so you can see what was predicted) but the green energy stops here. */
+.wc-tree-match.champion-path.path-dimmed {
+  opacity: 0.4;
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.wc-tree-col:not(:last-of-type) .wc-tree-slot.champion-path.path-dimmed::before {
+  border-top: 1px solid var(--border);
+  top: 50%;
+}
+
+.wc-tree-col:not(:last-of-type):not(.wc-tree-final) .wc-tree-slot.champion-path.path-dimmed:nth-child(odd)::after,
+.wc-tree-col:not(:last-of-type):not(.wc-tree-final) .wc-tree-slot.champion-path.path-dimmed:nth-child(even)::after {
+  border-right: 1px solid var(--border);
+}
+
+.wc-tree-col:not(:first-of-type) .wc-tree-match.champion-path.path-dimmed::before,
+.wc-tree-trophy .wc-tree-match.champion-path.path-dimmed::before {
+  border-top: 1px solid var(--border);
+  top: 50%;
+}
+
+.wc-tree-final .wc-tree-slot.champion-path.path-dimmed::before {
+  border-top: 1px solid var(--border);
+  top: 50%;
+}
+
+/* Trophy box when France is out — keep visible but de-energized */
+.wc-tree-champion.wc-tree-champion-dead {
+  opacity: 0.4;
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.wc-tree-champion.wc-tree-champion-dead::before {
+  border-top: 1px solid var(--border);
+  top: 50%;
+}
+
+.wc-tree-champion.wc-tree-champion-dead .wc-tree-champion-name {
+  color: var(--text-dim);
 }
 
 /* Trophy column */
@@ -1692,7 +1850,7 @@ footer p {
   color: var(--text-dim);
 }
 
-/* Results meta line — "live results · updated 2 min ago · [refresh]" */
+/* Results meta line: "live results · updated 2 min ago · [refresh]" */
 .wc-results-meta {
   margin-top: 12px;
   display: flex;
@@ -1774,6 +1932,12 @@ footer p {
 }
 
 .wc-grading[open] summary::before { content: '−'; }
+
+.wc-grading-lead {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--text);
+}
 
 .wc-grading ul {
   margin: 12px 0 8px;
