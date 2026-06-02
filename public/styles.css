@@ -1491,6 +1491,38 @@ footer p {
   text-decoration: line-through;
 }
 
+/* Two sections stacked inside each card: picks + actual */
+.wc-group-section + .wc-group-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.wc-group-subheader {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.wc-group-row-actual .wc-group-team { color: var(--text); }
+.wc-group-row-actual .wc-group-place { color: var(--text-dim); }
+
+.wc-group-team-pending {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.wc-group-pending {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 4px 0;
+}
+
 /* ─── WC stepper ─── */
 .wc-stepper {
   display: flex;
@@ -1996,67 +2028,6 @@ footer p {
   .wc-overview { grid-template-columns: repeat(2, 1fr); }
   .wc-groups { grid-template-columns: repeat(2, 1fr); }
   .wc-matches { grid-template-columns: 1fr; }
-}
-
-/* ─── Next-match countdown banner ─── */
-.wc-countdown {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 18px;
-  margin: 24px 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--text);
-  opacity: 0;
-  animation: fadeUp 0.6s ease 0.5s forwards;
-}
-
-.wc-countdown[hidden] { display: none; }
-
-.wc-countdown-label {
-  font-size: 11px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.wc-countdown-value {
-  font-weight: 600;
-}
-
-.wc-countdown-live {
-  border-color: var(--accent);
-  background: var(--accent-glow);
-}
-
-.wc-countdown-pulse {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 0 var(--accent);
-  animation: wc-pulse 1.4s infinite;
-}
-
-@keyframes wc-pulse {
-  0%   { box-shadow: 0 0 0 0 var(--accent-glow); }
-  70%  { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-}
-
-.wc-countdown-dead .wc-countdown-label,
-.wc-countdown-dead .wc-countdown-value {
-  color: var(--text-dim);
-}
-
-.wc-countdown-won {
-  border-color: var(--accent);
-  background: var(--accent-glow);
 }
 
 /* ─── Keyboard-shortcuts toast ─── */

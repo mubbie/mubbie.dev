@@ -6,7 +6,6 @@
 //   3   scroll to knockout
 //   4   scroll to tree
 //   r   refresh results
-//   c   download calendar
 //   ?   toast the shortcut list
 
 const SECTION_KEYS = {
@@ -16,7 +15,7 @@ const SECTION_KEYS = {
   '4': 'tree',
 };
 
-export function initShortcuts({ onRefresh, onCalendar }) {
+export function initShortcuts({ onRefresh }) {
   document.addEventListener('keydown', (e) => {
     if (isTyping(e.target)) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -29,11 +28,6 @@ export function initShortcuts({ onRefresh, onCalendar }) {
     }
     if (e.key === 'r' || e.key === 'R') {
       onRefresh?.();
-      e.preventDefault();
-      return;
-    }
-    if (e.key === 'c' || e.key === 'C') {
-      onCalendar?.();
       e.preventDefault();
       return;
     }
@@ -69,7 +63,7 @@ function toastHelp() {
   toastEl.innerHTML = (
     `<strong>shortcuts</strong>` +
     `<div><kbd>1</kbd>–<kbd>4</kbd> jump to a section</div>` +
-    `<div><kbd>r</kbd> refresh results · <kbd>c</kbd> calendar</div>` +
+    `<div><kbd>r</kbd> refresh results</div>` +
     `<div><kbd>←</kbd> <kbd>→</kbd> change knockout round (when focused)</div>`
   );
   toastEl.classList.add('visible');

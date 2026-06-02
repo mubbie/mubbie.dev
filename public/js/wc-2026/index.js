@@ -18,8 +18,6 @@ import {
 import { createKnockoutSection } from './knockout.js';
 import { renderBracketTree } from './bracket.js';
 import { renderGroups, scoreGroupWinners } from './groups.js';
-import { initCountdown } from './countdown.js';
-import { downloadCalendar } from './calendar.js';
 import { initShortcuts } from './shortcuts.js';
 import { kickConfetti } from './confetti.js';
 
@@ -61,12 +59,10 @@ initRotatingEmoji();
     knockoutSection = createKnockoutSection(ctx);
     renderAll();
 
-    initCountdown(ctx);
     wireRefreshButton();
     wireConfetti();
     initShortcuts({
       onRefresh: () => refreshResults(),
-      onCalendar: () => downloadCalendar(ctx),
     });
 
     // Welcome burst, but only if motion isn't reduced.
@@ -177,8 +173,7 @@ function renderResultsMeta() {
   const ageText = ageMin <= 0 ? 'just now' : ageMin === 1 ? '1 min ago' : `${ageMin} min ago`;
   el.innerHTML = (
     `<span class="wc-results-source">${labelForSource(r.source)} · updated ${ageText}</span>` +
-    `<button class="wc-results-refresh" id="wc-results-refresh" type="button">refresh</button>` +
-    `<button class="wc-results-refresh" id="wc-export-calendar" type="button" title="Download .ics calendar of knockout matches">📅 calendar</button>`
+    `<button class="wc-results-refresh" id="wc-results-refresh" type="button">refresh</button>`
   );
 }
 
@@ -209,9 +204,7 @@ async function refreshResults(button) {
 function wireRefreshButton() {
   document.addEventListener('click', (e) => {
     const refreshBtn = e.target.closest('#wc-results-refresh');
-    if (refreshBtn) { refreshResults(refreshBtn); return; }
-    const calBtn = e.target.closest('#wc-export-calendar');
-    if (calBtn) downloadCalendar(ctx);
+    if (refreshBtn) refreshResults(refreshBtn);
   });
 }
 

@@ -1,6 +1,11 @@
 // ─── Group stage section ───
 // Picks shape: { A: { '1st': team, '2nd': team, '3rd': team }, B: ..., ... }
-// Worker results shape is identical, so comparison is a direct key lookup.
+// Worker results shape is identical.
+//
+// Each card renders two stacked sections, parallel to how knockout cards
+// stack the match info above the "result line":
+//   - "my picks": predicted 1st / 2nd / 3rd, marked ✓/✗ once graded
+//   - "actual":   real 1st / 2nd / 3rd from the live API, or a pending stub
 
 import { flag } from './teams.js';
 
@@ -20,10 +25,9 @@ export function renderGroups(ctx) {
     return;
   }
 
-  const cards = Object.entries(groups).map(([letter, group]) =>
+  el.innerHTML = Object.entries(groups).map(([letter, group]) =>
     renderGroupCard(letter, group, results?.groupStage?.[letter] || {})
   ).join('');
-  el.innerHTML = cards;
 
   if (note) {
     note.textContent = 'Top-2 (and top-3 advancers) per group. Picks fill in with ✓/✗ once group play finishes.';
@@ -31,19 +35,27 @@ export function renderGroups(ctx) {
 }
 
 function renderGroupCard(letter, picked, actual) {
-  const rows = PLACES
-    .filter((place) => picked[place])
-    .map((place) => renderGroupRow(place, picked[place], actual[place]))
-    .join('');
   return (
-    `<div class="wc-group-card" aria-label="Group ${letter}">` +
+    `<article class="wc-group-card" aria-label="Group ${letter}">` +
       `<div class="wc-group-header">Group ${letter}</div>` +
-      rows +
+      renderSection('my picks', PLACES.filter((p) => picked[p]).map((place) =>
+        renderPickRow(place, picked[place], actual[place])
+      )) +
+      renderSection('actual', renderActualRows(picked, actual)) +
+    `</article>`
+  );
+}
+
+function renderSection(label, rowsHtml) {
+  return (
+    `<div class="wc-group-section">` +
+      `<div class="wc-group-subheader">${label}</div>` +
+      rowsHtml.join('') +
     `</div>`
   );
 }
 
-function renderGroupRow(place, pickedTeam, actualTeam) {
+function renderPickRow(place, pickedTeam, actualTeam) {
   let status = '';
   let mark = '';
   let srSuffix = '';
@@ -55,7 +67,7 @@ function renderGroupRow(place, pickedTeam, actualTeam) {
     } else {
       status = 'incorrect';
       mark = '✗';
-      srSuffix = '<span class="wc-sr-only"> (wrong; actual was ' + actualTeam + ')</span>';
+      srSuffix = `<span class="wc-sr-only"> (wrong; actual was ${actualTeam})</span>`;
     }
   }
   return (
@@ -63,6 +75,35 @@ function renderGroupRow(place, pickedTeam, actualTeam) {
       `<span class="wc-group-place">${place}</span>` +
       `<span class="wc-group-team">${flag(pickedTeam)} ${pickedTeam}${srSuffix}</span>` +
       `<span class="wc-group-mark" aria-hidden="true">${mark}</span>` +
+    `</div>`
+  );
+}
+
+function renderActualRows(picked, actual) {
+  // Show one row per place the user picked, so the columns line up between
+  // the two sections. If a place has no actual yet, render a "pending" stub.
+  const places = PLACES.filter((p) => picked[p]);
+  if (!places.some((p) => actual[p])) {
+    return [`<div class="wc-group-pending">awaiting group play</div>`];
+  }
+  return places.map((place) => renderActualRow(place, actual[place]));
+}
+
+function renderActualRow(place, team) {
+  if (!team) {
+    return (
+      `<div class="wc-group-row wc-group-row-actual pending">` +
+        `<span class="wc-group-place">${place}</span>` +
+        `<span class="wc-group-team wc-group-team-pending">awaiting</span>` +
+        `<span class="wc-group-mark"></span>` +
+      `</div>`
+    );
+  }
+  return (
+    `<div class="wc-group-row wc-group-row-actual">` +
+      `<span class="wc-group-place">${place}</span>` +
+      `<span class="wc-group-team">${flag(team)} ${team}</span>` +
+      `<span class="wc-group-mark"></span>` +
     `</div>`
   );
 }
