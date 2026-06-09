@@ -31,7 +31,8 @@
     "date": "2026-06-06",
     "name": "The Big Run (Brooks)",
     "location": "Seattle",
-    "url": "https://runsignup.com/Race/WA/Seattle/TBRSeattle"
+    "url": "https://runsignup.com/Race/WA/Seattle/TBRSeattle",
+    "completed": true
   },
   {
     "date": "2026-06-20",
