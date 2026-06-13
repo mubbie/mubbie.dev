@@ -1,11 +1,21 @@
 {
-  "fetchedAt": "2026-06-12T04:14:46.332Z",
+  "fetchedAt": "2026-06-13T04:02:29.541Z",
   "season": 2026,
   "groupStage": {
     "A": {
       "1st": "Mexico",
       "2nd": "South Korea",
       "3rd": "Czechia"
+    },
+    "B": {
+      "1st": "Canada",
+      "2nd": "Bosnia-Herzegovina",
+      "3rd": null
+    },
+    "D": {
+      "1st": "United States",
+      "2nd": "Paraguay",
+      "3rd": null
     }
   },
   "knockout": {
