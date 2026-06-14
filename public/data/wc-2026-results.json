@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-06-13T04:02:29.541Z",
+  "fetchedAt": "2026-06-14T04:20:59.239Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -10,12 +10,17 @@
     "B": {
       "1st": "Canada",
       "2nd": "Bosnia-Herzegovina",
-      "3rd": null
+      "3rd": "Qatar"
     },
     "D": {
       "1st": "United States",
       "2nd": "Paraguay",
       "3rd": null
+    },
+    "C": {
+      "1st": "Scotland",
+      "2nd": "Brazil",
+      "3rd": "Morocco"
     }
   },
   "knockout": {
