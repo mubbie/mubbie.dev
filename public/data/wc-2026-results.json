@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-06-14T19:40:08.060Z",
+  "fetchedAt": "2026-06-15T04:43:49.926Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -24,8 +24,13 @@
     },
     "E": {
       "1st": "Germany",
-      "2nd": "Curaçao",
-      "3rd": null
+      "2nd": "Ivory Coast",
+      "3rd": "Ecuador"
+    },
+    "F": {
+      "1st": "Sweden",
+      "2nd": "Netherlands",
+      "3rd": "Japan"
     }
   },
   "knockout": {
