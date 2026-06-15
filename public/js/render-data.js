@@ -196,7 +196,7 @@ export function fetchWriting() {
   const writingList = document.getElementById('writing-list');
   if (!writingList) return;
 
-  fetch('https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent('https://notebook.mubbie.dev/api/v1/posts?limit=4'))
+  fetch('/api/posts?limit=4')
     .then((res) => {
       if (!res.ok) throw new Error(res.status);
       return res.json();

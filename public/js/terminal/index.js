@@ -117,7 +117,7 @@ function createHandlers(out, history, getFortunes) {
       if (lower === 'latest' || lower === 'substack latest' || lower === 'notebook latest') {
         out.addLine('$', trimmed, null);
         out.addLine(null, null, 'fetching latest post...');
-        fetch('https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent('https://notebook.mubbie.dev/api/v1/posts?limit=1'))
+        fetch('/api/posts?limit=1')
           .then((r) => r.json())
           .then((posts) => {
             if (!posts || !posts.length) throw new Error();
@@ -530,15 +530,12 @@ function createHandlers(out, history, getFortunes) {
         out.addLine('$', trimmed, null);
         out.addLine(null, null, 'fetching xkcd...');
 
-        const proxyUrl = (url) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`;
-        const latestUrl = proxyUrl('https://xkcd.com/info.0.json');
-
         const fetchComic = isRandom
-          ? fetch(latestUrl).then((r) => r.json()).then((data) => {
+          ? fetch('/api/xkcd').then((r) => r.json()).then((data) => {
               const num = Math.floor(Math.random() * data.num) + 1;
-              return fetch(proxyUrl(`https://xkcd.com/${num}/info.0.json`)).then((r) => r.json());
+              return fetch(`/api/xkcd?num=${num}`).then((r) => r.json());
             })
-          : fetch(latestUrl).then((r) => r.json());
+          : fetch('/api/xkcd').then((r) => r.json());
 
         fetchComic
           .then((data) => {
