@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-06-15T20:47:55.541Z",
+  "fetchedAt": "2026-06-16T04:27:48.531Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -33,9 +33,14 @@
       "3rd": "Japan"
     },
     "H": {
-      "1st": "Spain",
-      "2nd": "Cape Verde Islands",
-      "3rd": null
+      "1st": "Saudi Arabia",
+      "2nd": "Uruguay",
+      "3rd": "Spain"
+    },
+    "G": {
+      "1st": "Iran",
+      "2nd": "New Zealand",
+      "3rd": "Belgium"
     }
   },
   "knockout": {
