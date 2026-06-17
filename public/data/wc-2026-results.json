@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-06-16T04:27:48.531Z",
+  "fetchedAt": "2026-06-17T04:22:07.220Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -8,9 +8,9 @@
       "3rd": "Czechia"
     },
     "B": {
-      "1st": "Canada",
-      "2nd": "Bosnia-Herzegovina",
-      "3rd": "Qatar"
+      "1st": "Qatar",
+      "2nd": "Switzerland",
+      "3rd": "Canada"
     },
     "D": {
       "1st": "United States",
@@ -41,6 +41,16 @@
       "1st": "Iran",
       "2nd": "New Zealand",
       "3rd": "Belgium"
+    },
+    "I": {
+      "1st": "Norway",
+      "2nd": "France",
+      "3rd": "Senegal"
+    },
+    "J": {
+      "1st": "Argentina",
+      "2nd": "Algeria",
+      "3rd": null
     }
   },
   "knockout": {
