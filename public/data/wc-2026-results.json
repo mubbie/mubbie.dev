@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-06-17T11:02:19.212Z",
+  "fetchedAt": "2026-06-18T04:14:53.999Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -51,6 +51,16 @@
       "1st": "Argentina",
       "2nd": "Austria",
       "3rd": "Jordan"
+    },
+    "K": {
+      "1st": "Colombia",
+      "2nd": "Portugal",
+      "3rd": "Congo DR"
+    },
+    "L": {
+      "1st": "England",
+      "2nd": "Ghana",
+      "3rd": "Panama"
     }
   },
   "knockout": {
