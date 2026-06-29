@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-06-28T04:04:54.267Z",
+  "fetchedAt": "2026-06-29T04:11:24.196Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -64,7 +64,13 @@
     }
   },
   "knockout": {
-    "roundOf32": {},
+    "roundOf32": {
+      "South Africa-Canada": {
+        "winner": "Canada",
+        "score": "0-1",
+        "finishedAt": "2026-06-29T03:25:00Z"
+      }
+    },
     "roundOf16": {},
     "quarterfinals": {},
     "semifinals": {},
