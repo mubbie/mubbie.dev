@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-06-29T11:05:13.505Z",
+  "fetchedAt": "2026-06-29T20:01:13.123Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -69,6 +69,11 @@
         "winner": "Canada",
         "score": "0-1",
         "finishedAt": "2026-06-29T05:20:12Z"
+      },
+      "Brazil-Japan": {
+        "winner": "Brazil",
+        "score": "2-1",
+        "finishedAt": "2026-06-29T19:09:03Z"
       }
     },
     "roundOf16": {},
