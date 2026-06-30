@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-06-30T09:41:28.532Z",
+  "fetchedAt": "2026-06-30T20:01:48.144Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -84,6 +84,11 @@
         "winner": "Morocco",
         "score": "3-4",
         "finishedAt": "2026-06-30T06:02:35Z"
+      },
+      "Ivory Coast-Norway": {
+        "winner": "Norway",
+        "score": "1-2",
+        "finishedAt": "2026-06-30T19:04:39Z"
       }
     },
     "roundOf16": {},
