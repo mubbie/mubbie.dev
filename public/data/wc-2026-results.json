@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-01T09:52:52.276Z",
+  "fetchedAt": "2026-07-01T19:59:23.854Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -99,6 +99,11 @@
         "winner": "Mexico",
         "score": "2-0",
         "finishedAt": "2026-07-01T08:25:01Z"
+      },
+      "England-Congo DR": {
+        "winner": "England",
+        "score": "2-1",
+        "finishedAt": "2026-07-01T18:06:21Z"
       }
     },
     "roundOf16": {},
