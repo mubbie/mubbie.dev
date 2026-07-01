@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-01T04:08:22.285Z",
+  "fetchedAt": "2026-07-01T09:52:52.276Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -68,37 +68,37 @@
       "South Africa-Canada": {
         "winner": "Canada",
         "score": "0-1",
-        "finishedAt": "2026-06-29T15:20:12Z"
+        "finishedAt": "2026-06-30T15:20:13Z"
       },
       "Brazil-Japan": {
         "winner": "Brazil",
         "score": "2-1",
-        "finishedAt": "2026-06-30T08:25:01Z"
+        "finishedAt": "2026-06-30T15:20:13Z"
       },
       "Germany-Paraguay": {
         "winner": "Paraguay",
         "score": "4-5",
-        "finishedAt": "2026-06-30T02:22:13Z"
+        "finishedAt": "2026-06-30T15:20:13Z"
       },
       "Netherlands-Morocco": {
         "winner": "Morocco",
         "score": "3-4",
-        "finishedAt": "2026-06-30T06:02:35Z"
+        "finishedAt": "2026-06-30T15:20:13Z"
       },
       "Ivory Coast-Norway": {
         "winner": "Norway",
         "score": "1-2",
-        "finishedAt": "2026-06-30T19:04:39Z"
+        "finishedAt": "2026-07-01T08:25:01Z"
       },
       "France-Sweden": {
         "winner": "France",
         "score": "3-0",
-        "finishedAt": "2026-06-30T23:00:18Z"
+        "finishedAt": "2026-07-01T08:25:01Z"
       },
       "Mexico-Ecuador": {
         "winner": "Mexico",
         "score": "2-0",
-        "finishedAt": "2026-07-01T04:07:36Z"
+        "finishedAt": "2026-07-01T08:25:01Z"
       }
     },
     "roundOf16": {},
