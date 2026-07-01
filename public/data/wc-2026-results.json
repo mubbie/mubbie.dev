@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-06-30T20:01:48.144Z",
+  "fetchedAt": "2026-07-01T04:08:22.285Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -89,6 +89,16 @@
         "winner": "Norway",
         "score": "1-2",
         "finishedAt": "2026-06-30T19:04:39Z"
+      },
+      "France-Sweden": {
+        "winner": "France",
+        "score": "3-0",
+        "finishedAt": "2026-06-30T23:00:18Z"
+      },
+      "Mexico-Ecuador": {
+        "winner": "Mexico",
+        "score": "2-0",
+        "finishedAt": "2026-07-01T04:07:36Z"
       }
     },
     "roundOf16": {},
