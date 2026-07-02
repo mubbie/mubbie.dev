@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-01T19:59:23.854Z",
+  "fetchedAt": "2026-07-02T03:49:58.531Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -98,12 +98,22 @@
       "Mexico-Ecuador": {
         "winner": "Mexico",
         "score": "2-0",
-        "finishedAt": "2026-07-01T08:25:01Z"
+        "finishedAt": "2026-07-02T03:25:01Z"
       },
       "England-Congo DR": {
         "winner": "England",
         "score": "2-1",
-        "finishedAt": "2026-07-01T18:06:21Z"
+        "finishedAt": "2026-07-02T03:25:01Z"
+      },
+      "Belgium-Senegal": {
+        "winner": "Belgium",
+        "score": "3-2",
+        "finishedAt": "2026-07-02T03:25:01Z"
+      },
+      "United States-Bosnia-Herzegovina": {
+        "winner": "United States",
+        "score": "2-0",
+        "finishedAt": "2026-07-02T03:25:01Z"
       }
     },
     "roundOf16": {},
