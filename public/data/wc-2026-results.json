@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-02T09:16:45.946Z",
+  "fetchedAt": "2026-07-03T03:31:05.619Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -114,6 +114,16 @@
         "winner": "United States",
         "score": "2-0",
         "finishedAt": "2026-07-02T05:20:12Z"
+      },
+      "Spain-Austria": {
+        "winner": "Spain",
+        "score": "3-0",
+        "finishedAt": "2026-07-02T21:08:24Z"
+      },
+      "Portugal-Croatia": {
+        "winner": "Portugal",
+        "score": "2-1",
+        "finishedAt": "2026-07-03T01:22:34Z"
       }
     },
     "roundOf16": {},
