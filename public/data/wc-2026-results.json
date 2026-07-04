@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-04T03:23:26.877Z",
+  "fetchedAt": "2026-07-04T08:40:38.225Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -68,72 +68,82 @@
       "South Africa-Canada": {
         "winner": "Canada",
         "score": "0-1",
-        "finishedAt": "2026-07-02T15:20:12Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "Brazil-Japan": {
         "winner": "Brazil",
         "score": "2-1",
-        "finishedAt": "2026-07-02T15:20:12Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "Germany-Paraguay": {
         "winner": "Paraguay",
         "score": "4-5",
-        "finishedAt": "2026-07-02T15:20:12Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "Netherlands-Morocco": {
         "winner": "Morocco",
         "score": "3-4",
-        "finishedAt": "2026-07-02T15:20:12Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "Ivory Coast-Norway": {
         "winner": "Norway",
         "score": "1-2",
-        "finishedAt": "2026-07-02T15:20:12Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "France-Sweden": {
         "winner": "France",
         "score": "3-0",
-        "finishedAt": "2026-07-02T15:20:12Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "Mexico-Ecuador": {
         "winner": "Mexico",
         "score": "2-0",
-        "finishedAt": "2026-07-02T15:20:12Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "England-Congo DR": {
         "winner": "England",
         "score": "2-1",
-        "finishedAt": "2026-07-02T15:20:12Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "Belgium-Senegal": {
         "winner": "Belgium",
         "score": "3-2",
-        "finishedAt": "2026-07-02T15:20:12Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "United States-Bosnia-Herzegovina": {
         "winner": "United States",
         "score": "2-0",
-        "finishedAt": "2026-07-02T15:20:12Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "Spain-Austria": {
         "winner": "Spain",
         "score": "3-0",
-        "finishedAt": "2026-07-03T08:25:01Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "Portugal-Croatia": {
         "winner": "Portugal",
         "score": "2-1",
-        "finishedAt": "2026-07-03T08:25:01Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
       },
       "Switzerland-Algeria": {
         "winner": "Switzerland",
         "score": "2-0",
-        "finishedAt": "2026-07-03T08:25:01Z"
+        "finishedAt": "2026-07-03T15:20:13Z"
+      },
+      "Australia-Egypt": {
+        "winner": "Egypt",
+        "score": "3-5",
+        "finishedAt": "2026-07-03T23:04:00Z"
       },
       "Argentina-Cape Verde Islands": {
         "winner": "Argentina",
         "score": "3-2",
-        "finishedAt": "2026-07-04T00:50:06Z"
+        "finishedAt": "2026-07-04T08:25:01Z"
+      },
+      "Colombia-Ghana": {
+        "winner": "Colombia",
+        "score": "1-0",
+        "finishedAt": "2026-07-04T08:25:02Z"
       }
     },
     "roundOf16": {},
