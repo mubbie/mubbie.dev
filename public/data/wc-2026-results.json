@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-03T09:22:26.074Z",
+  "fetchedAt": "2026-07-04T03:23:26.877Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -129,6 +129,11 @@
         "winner": "Switzerland",
         "score": "2-0",
         "finishedAt": "2026-07-03T08:25:01Z"
+      },
+      "Argentina-Cape Verde Islands": {
+        "winner": "Argentina",
+        "score": "3-2",
+        "finishedAt": "2026-07-04T00:50:06Z"
       }
     },
     "roundOf16": {},
