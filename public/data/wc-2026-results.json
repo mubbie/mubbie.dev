@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-04T19:17:26.892Z",
+  "fetchedAt": "2026-07-05T03:40:13.376Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -150,7 +150,12 @@
       "Canada-Morocco": {
         "winner": "Morocco",
         "score": "0-3",
-        "finishedAt": "2026-07-04T19:09:21Z"
+        "finishedAt": "2026-07-05T03:25:01Z"
+      },
+      "Paraguay-France": {
+        "winner": "France",
+        "score": "0-1",
+        "finishedAt": "2026-07-05T03:25:01Z"
       }
     },
     "quarterfinals": {},
