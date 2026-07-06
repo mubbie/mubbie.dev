@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-05T08:55:58.568Z",
+  "fetchedAt": "2026-07-06T03:48:44.276Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -156,6 +156,16 @@
         "winner": "France",
         "score": "0-1",
         "finishedAt": "2026-07-05T05:20:12Z"
+      },
+      "Brazil-Norway": {
+        "winner": "Norway",
+        "score": "1-2",
+        "finishedAt": "2026-07-06T03:25:01Z"
+      },
+      "Mexico-England": {
+        "winner": "England",
+        "score": "2-3",
+        "finishedAt": "2026-07-06T03:25:01Z"
       }
     },
     "quarterfinals": {},
