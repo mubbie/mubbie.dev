@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-07T09:46:40.781Z",
+  "fetchedAt": "2026-07-07T19:58:40.667Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -176,6 +176,11 @@
         "winner": "Belgium",
         "score": "1-4",
         "finishedAt": "2026-07-07T05:20:11Z"
+      },
+      "Argentina-Egypt": {
+        "winner": "Argentina",
+        "score": "3-2",
+        "finishedAt": "2026-07-07T18:15:15Z"
       }
     },
     "quarterfinals": {},
