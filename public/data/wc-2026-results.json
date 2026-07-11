@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-10T09:39:26.402Z",
+  "fetchedAt": "2026-07-11T02:49:30.563Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -193,6 +193,11 @@
         "winner": "France",
         "score": "2-0",
         "finishedAt": "2026-07-10T05:20:09Z"
+      },
+      "Spain-Belgium": {
+        "winner": "Spain",
+        "score": "2-1",
+        "finishedAt": "2026-07-10T22:25:01Z"
       }
     },
     "semifinals": {},
