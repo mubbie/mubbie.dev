@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-11T07:59:42.804Z",
+  "fetchedAt": "2026-07-12T03:14:01.270Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -162,11 +162,6 @@
         "score": "1-2",
         "finishedAt": "2026-07-11T05:20:09Z"
       },
-      "Mexico-England": {
-        "winner": "England",
-        "score": "2-3",
-        "finishedAt": "2026-07-11T05:20:09Z"
-      },
       "Portugal-Spain": {
         "winner": "Spain",
         "score": "0-1",
@@ -198,6 +193,11 @@
         "winner": "Spain",
         "score": "2-1",
         "finishedAt": "2026-07-11T05:20:09Z"
+      },
+      "Norway-England": {
+        "winner": "England",
+        "score": "1-2",
+        "finishedAt": "2026-07-11T23:53:31Z"
       }
     },
     "semifinals": {},
