@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-15T08:16:47.759Z",
+  "fetchedAt": "2026-07-16T02:46:51.055Z",
   "season": 2026,
   "groupStage": {
     "A": {
@@ -215,6 +215,11 @@
         "winner": "Spain",
         "score": "0-2",
         "finishedAt": "2026-07-15T05:20:10Z"
+      },
+      "England-Argentina": {
+        "winner": "Argentina",
+        "score": "1-2",
+        "finishedAt": "2026-07-15T22:25:01Z"
       }
     },
     "final": {}
