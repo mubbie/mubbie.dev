@@ -52,7 +52,8 @@
     "date": "2026-07-24",
     "name": "Microsoft Redmond 5K",
     "location": "Redmond",
-    "url": "https://raceroster.com/events/2026/116454/2026-microsoft-redmond-5k"
+    "url": "https://raceroster.com/events/2026/116454/2026-microsoft-redmond-5k",
+    "completed": true
   },
   {
     "date": "2026-08-01",
