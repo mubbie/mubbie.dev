@@ -66,7 +66,8 @@
     "date": "2026-08-02",
     "name": "Craft Classic Half Marathon",
     "location": "Redmond",
-    "url": "https://www.orcarunning.com/craft-classic/"
+    "url": "https://www.orcarunning.com/craft-classic/",
+    "completed": true
   },
   {
     "date": "2026-08-30",
