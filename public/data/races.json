@@ -59,7 +59,8 @@
     "date": "2026-08-01",
     "name": "Bubble Run 5K",
     "location": "Puyallup",
-    "url": "https://bubblerun.com/locations/seattle-2/"
+    "url": "https://bubblerun.com/locations/seattle-2/",
+    "completed": true
   },
   {
     "date": "2026-08-02",
