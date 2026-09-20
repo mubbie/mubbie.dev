@@ -80,7 +80,8 @@
     "date": "2026-09-20",
     "name": "Orca Half Marathon",
     "location": "Seattle",
-    "url": "https://www.orcarunning.com/race/orca-half/"
+    "url": "https://www.orcarunning.com/race/orca-half/",
+    "completed": true
   },
   {
     "date": "2026-10-10",
