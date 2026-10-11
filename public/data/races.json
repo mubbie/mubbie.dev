@@ -87,7 +87,8 @@
     "date": "2026-10-10",
     "name": "Night Nation Run 5K",
     "location": "Seattle",
-    "url": "https://nightnationrun.com/events/seattle/"
+    "url": "https://nightnationrun.com/events/seattle/",
+    "completed": true
   },
   {
     "date": "2026-10-17",
