@@ -67,12 +67,6 @@ async function handlePosts(request, env, ctx) {
         return jsonResponse(value.slice(0, limit), { 'X-Cache': 'HIT-KV' });
       }
       if (value) cached = { value };
-      // One-time bridge from the old per-limit key so a cold deploy has a stale fallback.
-      // Safe to delete once posts-v3 has been populated in production.
-      if (!cached) {
-        const legacy = await env.POSTS_CACHE.get('posts-v2-4', 'json');
-        if (Array.isArray(legacy)) cached = { value: legacy };
-      }
     } catch (e) {
       // KV read failure → fall through to upstream
     }
