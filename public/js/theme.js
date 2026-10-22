@@ -4,6 +4,15 @@
 // vs. just inheriting from system preference.
 const USER_PREF_KEY = 'mubbie-theme-explicit';
 
+// localStorage throws in some privacy modes / when storage is blocked
+function getThemePreference() {
+  try { return localStorage.getItem(USER_PREF_KEY); } catch { return null; }
+}
+
+export function setThemePreference(theme) {
+  try { localStorage.setItem(USER_PREF_KEY, theme); } catch { /* not persisted */ }
+}
+
 export function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
 
@@ -23,14 +32,14 @@ export function getTheme() {
 
 export function toggleTheme() {
   const next = getTheme() === 'dark' ? 'light' : 'dark';
-  localStorage.setItem(USER_PREF_KEY, next);
+  setThemePreference(next);
   applyTheme(next);
   return next;
 }
 
 export function initTheme() {
-  const explicit = localStorage.getItem(USER_PREF_KEY);
-  if (explicit) {
+  const explicit = getThemePreference();
+  if (explicit === 'dark' || explicit === 'light') {
     applyTheme(explicit);
   } else {
     // Follow system preference when no explicit choice has been made
@@ -41,7 +50,7 @@ export function initTheme() {
   // Listen for OS theme changes (e.g. scheduled dark mode on phones)
   // Only auto-switch if the user hasn't made an explicit choice
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!localStorage.getItem(USER_PREF_KEY)) {
+    if (!getThemePreference()) {
       applyTheme(e.matches ? 'dark' : 'light');
     }
   });

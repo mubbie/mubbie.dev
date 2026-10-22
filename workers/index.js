@@ -4,9 +4,12 @@
 //   /api/posts       → cached Substack posts (same-origin proxy; Substack sends no CORS)
 //   *                → static assets via env.ASSETS
 //
-// Caching layers (defense in depth + free-tier friendly):
-//   - KV: shared across all visitors
-//   - Client localStorage: set on the client side
+// Caching: KV shared across all visitors (free-tier friendly), plus short
+// browser/CDN caching on successful responses only.
+//
+// Forcing a refresh: GET /api/posts?refresh=1 with header
+// `Authorization: Bearer <REFRESH_TOKEN>` (set via `wrangler secret put REFRESH_TOKEN`).
+// Without a valid token the param is ignored, so the public can't bypass the cache.
 
 const STALE_GRACE_SECONDS = 24 * 60 * 60; // 24 hours: serve stale if upstream is down
 
@@ -14,6 +17,7 @@ const STALE_GRACE_SECONDS = 24 * 60 * 60; // 24 hours: serve stale if upstream i
 const SUBSTACK_BASE = 'https://notebook.mubbie.dev/api/v1/posts';
 const POSTS_CACHE_TTL_SECONDS = 30 * 60; // 30 minutes
 const POSTS_MAX_LIMIT = 20;
+const UPSTREAM_TIMEOUT_MS = 5000;
 
 export default {
   async fetch(request, env, ctx) {
@@ -27,6 +31,10 @@ export default {
       return handleXkcd(request);
     }
 
+    if (url.pathname.startsWith('/api/')) {
+      return jsonResponse({ error: 'not-found' }, {}, 404);
+    }
+
     return env.ASSETS.fetch(request);
   },
 };
@@ -37,7 +45,7 @@ export default {
 // stale on error so a Substack hiccup doesn't blank the page.
 async function handlePosts(request, env, ctx) {
   const url = new URL(request.url);
-  const force = url.searchParams.get('refresh') === '1';
+  const force = url.searchParams.get('refresh') === '1' && isAuthorized(request, env);
 
   // Clamp limit to a sane range; default 4 (the writing list's needs).
   const rawLimit = parseInt(url.searchParams.get('limit'), 10);
@@ -45,13 +53,13 @@ async function handlePosts(request, env, ctx) {
     ? Math.min(POSTS_MAX_LIMIT, Math.max(1, rawLimit))
     : 4;
 
-  const cacheKey = `posts-v1-${limit}`;
+  const cacheKey = `posts-v2-${limit}`;
 
   // 1. KV cache lookup
   let cached = null;
-  if (!force && env.WC_CACHE) {
+  if (!force && env.POSTS_CACHE) {
     try {
-      const { value, metadata } = await env.WC_CACHE.getWithMetadata(cacheKey, 'json');
+      const { value, metadata } = await env.POSTS_CACHE.getWithMetadata(cacheKey, 'json');
       if (value && metadata && Date.now() - metadata.fetchedAt < POSTS_CACHE_TTL_SECONDS * 1000) {
         return jsonResponse(value, { 'X-Cache': 'HIT-KV' });
       }
@@ -64,9 +72,9 @@ async function handlePosts(request, env, ctx) {
   // 2. Upstream call to Substack
   try {
     const data = await fetchFromSubstack(limit);
-    if (env.WC_CACHE) {
+    if (env.POSTS_CACHE) {
       ctx.waitUntil(
-        env.WC_CACHE.put(cacheKey, JSON.stringify(data), {
+        env.POSTS_CACHE.put(cacheKey, JSON.stringify(data), {
           expirationTtl: POSTS_CACHE_TTL_SECONDS + STALE_GRACE_SECONDS,
           metadata: { fetchedAt: Date.now() },
         }),
@@ -96,6 +104,7 @@ async function fetchFromSubstack(limit) {
       'User-Agent': 'mubbie.dev writing list',
       'Accept': 'application/json',
     },
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   });
   if (!res.ok) {
     throw new Error(`substack ${res.status} ${res.statusText}`);
@@ -104,7 +113,14 @@ async function fetchFromSubstack(limit) {
   if (!Array.isArray(body)) {
     throw new Error('substack: unexpected response shape');
   }
-  return body;
+  // Keep only what the site uses; full posts (body_html etc.) run to ~500 KB
+  return body.map((p) => ({
+    title: p.title,
+    slug: p.slug,
+    canonical_url: p.canonical_url,
+    post_date: p.post_date,
+    wordcount: p.wordcount,
+  }));
 }
 
 // ─── xkcd (terminal `curl xkcd`) ───
@@ -123,6 +139,7 @@ async function handleXkcd(request) {
   try {
     const res = await fetch(upstream, {
       headers: { 'User-Agent': 'mubbie.dev terminal xkcd' },
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
     if (!res.ok) throw new Error(`xkcd ${res.status}`);
     const data = await res.json();
@@ -138,12 +155,23 @@ async function handleXkcd(request) {
   }
 }
 
+function isAuthorized(request, env) {
+  const token = env.REFRESH_TOKEN;
+  if (!token) return false;
+  const enc = new TextEncoder();
+  const given = enc.encode(request.headers.get('Authorization') || '');
+  const expected = enc.encode(`Bearer ${token}`);
+  // Constant-time compare (lengths must match first)
+  return given.byteLength === expected.byteLength && crypto.subtle.timingSafeEqual(given, expected);
+}
+
 function jsonResponse(data, extraHeaders = {}, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, max-age=600',
+      // Never let a transient error get cached by browsers or the CDN
+      'Cache-Control': status === 200 ? 'public, max-age=600' : 'no-store',
       ...extraHeaders,
     },
   });

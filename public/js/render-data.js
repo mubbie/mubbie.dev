@@ -45,10 +45,9 @@ export function renderRaces(races) {
   const nextIndex = races.findIndex((r) => r.completed === undefined && r.date >= today);
   let daysUntilNext = null;
   if (nextIndex >= 0) {
-    const raceDate = new Date(races[nextIndex].date + 'T00:00:00');
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    daysUntilNext = Math.ceil((raceDate - now) / (1000 * 60 * 60 * 24));
+    // Both are YYYY-MM-DD strings (today is in Seattle time), so they parse as UTC
+    // midnights and the difference is always a whole number of days — no DST drift.
+    daysUntilNext = Math.round((Date.parse(races[nextIndex].date) - Date.parse(today)) / 86400000);
   }
   let completedCount = 0;
   let missedCount = 0;

@@ -28,8 +28,9 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  // Don't fire shortcuts when typing in inputs
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  // Don't fire shortcuts when typing, or steal browser shortcuts like Cmd+/ or Ctrl+1
+  if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
 
   // "/" to focus terminal
   if (e.key === '/') {

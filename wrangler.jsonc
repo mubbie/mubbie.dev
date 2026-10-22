@@ -16,7 +16,7 @@
   },
   "kv_namespaces": [
     {
-      "binding": "WC_CACHE",
+      "binding": "POSTS_CACHE",
       "id": "6654a5496ff24969a583260e6d31c31c"
     }
   ]

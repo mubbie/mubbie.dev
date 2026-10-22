@@ -5,6 +5,16 @@ function escapeHtml(str) {
 }
 
 export function createOutput(historyEl) {
+  // Timers for multi-step animations (sudo, coffee, ssh…), cancelled by clear()
+  const pending = new Set();
+
+  function later(fn, delay) {
+    const id = setTimeout(() => {
+      pending.delete(id);
+      fn();
+    }, delay);
+    pending.add(id);
+  }
   function scrollToBottom() {
     historyEl.scrollTop = historyEl.scrollHeight;
   }
@@ -56,7 +66,10 @@ export function createOutput(historyEl) {
     helpItems.forEach((h) => {
       html += `<div class="terminal-help-row"><span class="terminal-help-cmd">${escapeHtml(h.c)}</span><span class="terminal-help-desc">${escapeHtml(h.d)}</span></div>`;
     });
-    html += '<div class="terminal-help-hint">press <kbd>/</kbd> from anywhere to jump here. <kbd>Tab</kbd> to autocomplete. <kbd>↑</kbd><kbd>↓</kbd> for history.</div>';
+    const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    html += isTouch
+      ? '<div class="terminal-help-hint">tap the prompt, type a command, and hit enter.</div>'
+      : '<div class="terminal-help-hint">press <kbd>/</kbd> from anywhere to jump here. <kbd>Tab</kbd> to autocomplete. <kbd>↑</kbd><kbd>↓</kbd> for history.</div>';
     table.innerHTML = html;
     historyEl.appendChild(table);
     scrollToBottom();
@@ -86,9 +99,25 @@ export function createOutput(historyEl) {
     scrollToBottom();
   }
 
+  function addLink(text, href) {
+    const line = document.createElement('div');
+    line.className = 'terminal-history-line';
+    const link = document.createElement('a');
+    link.className = 'terminal-ok';
+    link.href = href;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = text;
+    line.appendChild(link);
+    historyEl.appendChild(line);
+    scrollToBottom();
+  }
+
   function clear() {
+    pending.forEach(clearTimeout);
+    pending.clear();
     historyEl.innerHTML = '';
   }
 
-  return { addLine, addOk, addHelpTable, addImage, clear };
+  return { addLine, addOk, addHelpTable, addImage, addLink, later, clear };
 }

@@ -41,7 +41,15 @@ export function initGreeting() {
   // Easter egg: clicking "What's poppin'" triggers popcorn
   if (chosen === 'What\'s poppin\'') {
     el.style.cursor = 'pointer';
+    el.setAttribute('role', 'button');
+    el.tabIndex = 0;
     el.addEventListener('click', () => popPopcorn(el));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        popPopcorn(el);
+      }
+    });
   }
 }
 

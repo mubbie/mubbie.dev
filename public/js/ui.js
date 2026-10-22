@@ -20,6 +20,7 @@ export function initBackToTop() {
   btn.className = 'back-to-top';
   btn.setAttribute('aria-label', 'Back to top');
   btn.textContent = '↑';
+  btn.tabIndex = -1; // hidden until scrolled; don't leave an invisible tab stop
   document.body.appendChild(btn);
 
   btn.addEventListener('click', () => {
@@ -27,16 +28,18 @@ export function initBackToTop() {
   });
 
   window.addEventListener('scroll', () => {
-    if (window.scrollY > 400) {
-      btn.classList.add('visible');
-    } else {
-      btn.classList.remove('visible');
-    }
+    const visible = window.scrollY > 400;
+    btn.classList.toggle('visible', visible);
+    btn.tabIndex = visible ? 0 : -1;
   }, { passive: true });
 }
 
+const HINT_KEY = 'mubbie-hint-dismissed';
+
 export function initShortcutHint() {
-  if (localStorage.getItem('mubbie-hint-dismissed')) return;
+  let dismissed = false;
+  try { dismissed = Boolean(localStorage.getItem(HINT_KEY)); } catch { /* storage blocked */ }
+  if (dismissed) return;
 
   const hint = document.createElement('div');
   hint.className = 'shortcut-hint';
@@ -51,7 +54,7 @@ export function initShortcutHint() {
 
   function dismiss() {
     hint.classList.remove('visible');
-    localStorage.setItem('mubbie-hint-dismissed', '1');
+    try { localStorage.setItem(HINT_KEY, '1'); } catch { /* storage blocked */ }
     setTimeout(() => hint.remove(), 300);
   }
 

@@ -555,10 +555,6 @@ a.currently-item:hover .arrow {
   color: var(--text-dim);
 }
 
-.bucket-stats-divider {
-  opacity: 0.4;
-}
-
 /* ─── 404 page ─── */
 .four-oh-four {
   min-height: 100vh;
@@ -765,10 +761,6 @@ a.race-item:hover {
   margin-top: 16px;
 }
 
-.race-stats-divider {
-  opacity: 0.4;
-}
-
 /* ─── Connect section ─── */
 .connect-grid {
   display: flex;
@@ -968,6 +960,11 @@ footer p {
 /* ─── Light mode overrides ─── */
 [data-theme="light"] body::after {
   opacity: 0.015;
+}
+
+[data-theme="light"] .race-pr {
+  color: #ca8a04;
+  text-shadow: none;
 }
 
 [data-theme="light"] .glow-orb {
@@ -1183,20 +1180,9 @@ footer p {
   text-align: center;
 }
 
-
-/* ─── Wave bounce ─── */
+/* ─── Wave ─── */
 .wave {
   cursor: pointer;
-}
-
-.wave.bounce {
-  animation: bounce 0.4s ease;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: scale(1); }
-  40% { transform: scale(1.4); }
-  60% { transform: scale(0.9); }
 }
 
 /* ─── Programmatic focus (no visible outline for scroll targets) ─── */

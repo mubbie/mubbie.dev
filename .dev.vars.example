@@ -1,0 +1,2 @@
+# Copy to .dev.vars for local dev. In production: wrangler secret put REFRESH_TOKEN
+REFRESH_TOKEN=change-me

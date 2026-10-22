@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>404 — mubbie.dev</title>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/styles.css">
   <script>
     (function() {
       var key = 'mubbie-theme-explicit';
@@ -18,10 +18,13 @@
         if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
         m.content = theme === 'light' ? '#f5f5f0' : '#0a0a0c';
       }
-      var saved = localStorage.getItem(key);
+      function getSaved() {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+      }
+      var saved = getSaved();
       apply(saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
       matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-        if (!localStorage.getItem(key)) apply(e.matches ? 'dark' : 'light');
+        if (!getSaved()) apply(e.matches ? 'dark' : 'light');
       });
     })();
   </script>

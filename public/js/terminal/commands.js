@@ -107,7 +107,7 @@ export const COMMAND_DEFS = [
   { name: 'pwd',                                        usage: 'pwd',                help: 'print working directory' },
   { name: 'repo',                                       usage: 'repo',               help: 'open the site repo' },
   { name: 'clear',    aliases: ['c', 'cls'],            usage: 'clear',              help: 'wipe terminal history' },
-  { name: 'claude',                                     usage: 'claude',             help: 'open claude code' },
+  { name: 'claude',                                     usage: 'claude',             help: 'who helped build this' },
   { name: 'history',                                    usage: 'history',            help: 'recent commands' },
   { name: 'neofetch',                                   usage: 'neofetch',           help: 'system info' },
   { name: 'ping',                                       usage: 'ping',               help: 'pong' },

@@ -7,13 +7,30 @@ import {
 import { createHistory } from './history.js';
 import { createOutput } from './output.js';
 import { tabComplete } from './completer.js';
-import { applyTheme, toggleTheme } from '../theme.js';
+import { applyTheme, toggleTheme, setThemePreference } from '../theme.js';
 import { startMatrix } from '../matrix.js';
 import { scrollToTop, scrollToEl } from '../scroll.js';
 import { fetchWeather } from '../weather.js';
 import { popPopcorn } from '../popcorn.js';
 
 const PAGE_LOAD_TIME = Date.now();
+
+// Own-property lookup, so input like "constructor" never resolves to Object.prototype members
+function lookup(obj, key) {
+  return Object.hasOwn(obj, key) ? obj[key] : undefined;
+}
+
+// Open a URL in a new tab. Browsers block window.open outside a direct user gesture
+// (e.g. after a fetch or a timer), so fall back to a clickable link in the terminal.
+function openUrl(out, url, label) {
+  const win = window.open(url, '_blank');
+  if (win) {
+    win.opener = null;
+  } else {
+    out.addLink(`popup blocked — click to open ${label || url}`, url);
+  }
+  return Boolean(win);
+}
 
 // ─── Argument parser ───
 
@@ -30,6 +47,13 @@ function parseArgs(arg) {
     }
   }
   return { flags, positional: positional.join(' ') };
+}
+
+// "rm -rf …", "rm -fr …", "rm -r -f …" etc.
+function isRmRf(cmdline) {
+  const [name, ...rest] = cmdline.split(/\s+/);
+  const flagChars = rest.filter((t) => /^-[a-z]+$/.test(t)).join('');
+  return name === 'rm' && flagChars.includes('r') && flagChars.includes('f');
 }
 
 // Guard: reject unknown flags for commands that don't accept any
@@ -58,8 +82,12 @@ function createHandlers(out, history, getFortunes) {
     },
 
     ls(trimmed, arg) {
-      const target = rejectFlags(out, trimmed, 'ls', arg);
-      if (target === null) return;
+      const { flags, positional: target } = parseArgs(arg);
+      const badFlag = flags.find((f) => !/^-[lah1]+$/.test(f));
+      if (badFlag) {
+        out.addLine('$', trimmed, `ls: unknown option: ${badFlag}`, true);
+        return;
+      }
       const lower = target.toLowerCase();
       if (!lower || lower === '~' || lower === '.') {
         out.addLine('$', trimmed, FILESYSTEM['~'].join('  '));
@@ -80,7 +108,7 @@ function createHandlers(out, history, getFortunes) {
       } else if (lower === '/dev' || lower === '/dev/' || lower === 'dev') {
         out.addLine('$', trimmed, 'you found the secret directory. try: ls /dev');
       } else {
-        const section = SECTION_MAP[lower.replace(/\/$/, '')];
+        const section = lookup(SECTION_MAP, lower.replace(/\/$/, ''));
         if (section) {
           out.addLine('$', trimmed, null);
           out.addOk(`→ /${lower.replace(/\/$/, '')}`);
@@ -97,8 +125,9 @@ function createHandlers(out, history, getFortunes) {
       const lower = target.toLowerCase();
       if (!target) {
         out.addLine('$', trimmed, 'usage: cat <file> — try: ls /dev', true);
-      } else if (FILES[lower] || FILES[target]) {
-        out.addLine('$', trimmed, FILES[lower] || FILES[target]);
+      } else if (lookup(FILES, lower) || lookup(FILES, `/dev/${lower.replace(/^\.\//, '')}`)) {
+        // Bare names from `ls /dev` (e.g. "secrets.txt") resolve to /dev
+        out.addLine('$', trimmed, lookup(FILES, lower) || lookup(FILES, `/dev/${lower.replace(/^\.\//, '')}`));
       } else {
         out.addLine('$', trimmed, `cat: ${target}: No such file or directory`, true);
       }
@@ -118,13 +147,15 @@ function createHandlers(out, history, getFortunes) {
         out.addLine('$', trimmed, null);
         out.addLine(null, null, 'fetching latest post...');
         fetch('/api/posts?limit=1')
-          .then((r) => r.json())
+          .then((r) => {
+            if (!r.ok) throw new Error(r.status);
+            return r.json();
+          })
           .then((posts) => {
-            if (!posts || !posts.length) throw new Error();
+            if (!Array.isArray(posts) || !posts.length) throw new Error();
             const post = posts[0];
             const link = post.canonical_url || `https://notebook.mubbie.dev/p/${post.slug}`;
-            window.open(link, '_blank');
-            out.addOk(`→ opening "${post.title}"`);
+            if (openUrl(out, link, `"${post.title}"`)) out.addOk(`→ opening "${post.title}"`);
           })
           .catch(() => out.addLine(null, null, 'could not fetch latest post.', true));
         return;
@@ -133,9 +164,8 @@ function createHandlers(out, history, getFortunes) {
       const exact = OPENABLES.find((x) => x.name.toLowerCase() === lower);
       const matches = exact ? [exact] : OPENABLES.filter((x) => x.name.toLowerCase().includes(lower));
       if (matches.length === 1) {
-        window.open(matches[0].href, '_blank');
         out.addLine('$', trimmed, null);
-        out.addOk(`→ opening ${matches[0].name}`);
+        if (openUrl(out, matches[0].href, matches[0].name)) out.addOk(`→ opening ${matches[0].name}`);
       } else if (matches.length > 1) {
         out.addLine('$', trimmed, `open: ambiguous '${target}'. did you mean: ${matches.map((m) => m.name).join(', ')}?`, true);
       } else {
@@ -148,7 +178,7 @@ function createHandlers(out, history, getFortunes) {
       if (target === null) return;
       const lower = target.toLowerCase();
       if (lower === 'dark' || lower === 'light') {
-        localStorage.setItem('mubbie-theme-explicit', lower);
+        setThemePreference(lower);
         applyTheme(lower);
         out.addLine('$', trimmed, null);
         out.addOk(`theme: ${lower}`);
@@ -200,7 +230,7 @@ function createHandlers(out, history, getFortunes) {
         out.addLine(null, null, '[sudo] password for recruiter: ••••••••');
         out.addOk('authenticated. email queued → midoko.dev@gmail.com');
         out.addLine(null, null, 'just kidding — drop a note at midoko.dev@gmail.com 👋🏾');
-      } else if (lower.startsWith('rm') && lower.includes('-r') && lower.includes('-f') || lower.includes('-rf')) {
+      } else if (isRmRf(lower)) {
         out.addLine('$', trimmed, null);
         out.addLine(null, null, '[sudo] password for root: ••••••••');
         const targets = [
@@ -212,9 +242,9 @@ function createHandlers(out, history, getFortunes) {
           { text: 'deleting /dev/secrets.txt...', delay: 3600 },
         ];
         targets.forEach((t) => {
-          setTimeout(() => out.addLine(null, null, t.text), t.delay);
+          out.later(() => out.addLine(null, null, t.text), t.delay);
         });
-        setTimeout(() => {
+        out.later(() => {
           out.addOk('just kidding. nice try though. 🛡️');
         }, 4200);
       } else {
@@ -224,8 +254,12 @@ function createHandlers(out, history, getFortunes) {
 
     matrix(trimmed) {
       out.addLine('$', trimmed, null);
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        out.addLine(null, null, 'the matrix is resting — your system prefers reduced motion.');
+        return;
+      }
       out.addOk('wake up, neo... (esc or tap to exit)');
-      setTimeout(() => startMatrix(), 400);
+      out.later(() => startMatrix(), 400);
     },
 
     coffee(trimmed) {
@@ -238,7 +272,7 @@ function createHandlers(out, history, getFortunes) {
         { text: '', delay: 2400 },
       ];
       steps.forEach((step) => {
-        setTimeout(() => {
+        out.later(() => {
           if (step.text === '') {
             out.addOk('☕ freshly brewed. enjoy!');
           } else {
@@ -286,10 +320,10 @@ function createHandlers(out, history, getFortunes) {
           { text: '', delay: 3500 },
         ];
         steps.forEach((step) => {
-          setTimeout(() => {
+          out.later(() => {
             if (step.text === '') {
               out.addOk('🍸 your elixir awaits — opening sorcery...');
-              setTimeout(() => window.open(url, '_blank'), 600);
+              out.later(() => openUrl(out, url, 'sorcery'), 600);
             } else {
               out.addLine(null, null, step.text);
             }
@@ -336,9 +370,10 @@ function createHandlers(out, history, getFortunes) {
     },
 
     repo(trimmed) {
-      window.open('https://github.com/mubbie/mubbie.dev', '_blank');
       out.addLine('$', trimmed, null);
-      out.addOk('→ opening mubbie/mubbie.dev');
+      if (openUrl(out, 'https://github.com/mubbie/mubbie.dev', 'mubbie/mubbie.dev')) {
+        out.addOk('→ opening mubbie/mubbie.dev');
+      }
     },
 
     rm(trimmed) {
@@ -383,7 +418,7 @@ function createHandlers(out, history, getFortunes) {
 
       // Races: name + location
       searchSection('races/', '.race-item', (el) => {
-        const name = el.querySelector('.race-name')?.textContent || '';
+        const name = el.querySelector('.race-name')?.firstChild?.textContent || '';
         const loc = el.querySelector('.race-location')?.textContent || '';
         const date = el.querySelector('.race-date')?.textContent || '';
         return (name + loc).toLowerCase().includes(term)
@@ -444,7 +479,7 @@ function createHandlers(out, history, getFortunes) {
         { text: '', delay: 2400 },
       ];
       steps.forEach((step) => {
-        setTimeout(() => {
+        out.later(() => {
           if (step.text === '') {
             out.addOk(`access granted. welcome back. you're already here. 🏠`);
           } else {
@@ -483,9 +518,12 @@ function createHandlers(out, history, getFortunes) {
       if (all.length === 0) {
         out.addLine('$', trimmed, 'no commands in history yet');
       } else {
+        // entries are newest-first; print oldest → newest like a real shell
+        const recent = all.slice(0, 20).reverse();
+        const start = all.length - recent.length + 1;
         out.addLine('$', trimmed, null);
-        all.slice(0, 20).forEach((h, i) => {
-          out.addLine(null, null, `  ${i + 1}  ${h}`);
+        recent.forEach((h, i) => {
+          out.addLine(null, null, `  ${String(start + i).padStart(3)}  ${h}`);
         });
       }
     },
@@ -497,8 +535,8 @@ function createHandlers(out, history, getFortunes) {
         out.addLine('$', trimmed, 'what manual page do you want? usage: man <command>', true);
         return;
       }
-      const resolved = ALIASES[target.toLowerCase()] || target.toLowerCase();
-      const page = MAN_PAGES[resolved];
+      const resolved = lookup(ALIASES, target.toLowerCase()) || target.toLowerCase();
+      const page = lookup(MAN_PAGES, resolved);
       if (!page) {
         out.addLine('$', trimmed, `no manual entry for '${target}'`, true);
         return;
@@ -530,12 +568,17 @@ function createHandlers(out, history, getFortunes) {
         out.addLine('$', trimmed, null);
         out.addLine(null, null, 'fetching xkcd...');
 
+        const getJson = (url) => fetch(url).then((r) => {
+          if (!r.ok) throw new Error(r.status);
+          return r.json();
+        });
         const fetchComic = isRandom
-          ? fetch('/api/xkcd').then((r) => r.json()).then((data) => {
-              const num = Math.floor(Math.random() * data.num) + 1;
-              return fetch(`/api/xkcd?num=${num}`).then((r) => r.json());
+          ? getJson('/api/xkcd').then((data) => {
+              let num = Math.floor(Math.random() * data.num) + 1;
+              if (num === 404) num = 405; // xkcd #404 intentionally doesn't exist
+              return getJson(`/api/xkcd?num=${num}`);
             })
-          : fetch('/api/xkcd').then((r) => r.json());
+          : getJson('/api/xkcd');
 
         fetchComic
           .then((data) => {
@@ -628,9 +671,9 @@ export function initTerminal() {
     const arg = parts.slice(1).join(' ');
 
     // Resolve aliases
-    if (ALIASES[cmd]) cmd = ALIASES[cmd];
+    cmd = lookup(ALIASES, cmd) || cmd;
 
-    const handler = handlers[cmd];
+    const handler = lookup(handlers, cmd);
     if (handler) {
       handler(trimmed, arg);
     } else {
