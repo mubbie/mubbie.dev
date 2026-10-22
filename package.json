@@ -4,9 +4,13 @@
   "version": "0.0.0",
   "scripts": {
     "deploy": "wrangler deploy",
-    "dev": "wrangler dev"
+    "dev": "wrangler dev",
+    "test": "node --test --no-warnings tests/worker.test.mjs",
+    "test:integration": "node --test --no-warnings tests/integration.test.mjs",
+    "test:browser": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "1.55.0",
     "wrangler": "^4.96.0"
   }
 }
