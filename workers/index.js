@@ -59,10 +59,11 @@ async function handlePosts(request, env, ctx) {
 
   // 1. KV cache lookup
   let cached = null;
-  if (!force && env.POSTS_CACHE) {
+  // Always read KV so a forced refresh still has a stale fallback if Substack fails
+  if (env.POSTS_CACHE) {
     try {
       const { value, metadata } = await env.POSTS_CACHE.getWithMetadata(cacheKey, 'json');
-      if (value && metadata && Date.now() - metadata.fetchedAt < POSTS_CACHE_TTL_SECONDS * 1000) {
+      if (!force && value && metadata && Date.now() - metadata.fetchedAt < POSTS_CACHE_TTL_SECONDS * 1000) {
         return jsonResponse(value.slice(0, limit), { 'X-Cache': 'HIT-KV' });
       }
       if (value) cached = { value };
