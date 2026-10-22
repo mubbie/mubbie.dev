@@ -40,7 +40,8 @@ export function initShortcutHint() {
 
   const hint = document.createElement('div');
   hint.className = 'shortcut-hint';
-  hint.innerHTML = 'press <kbd>/</kbd> to start typing';
+  const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  hint.innerHTML = isTouch ? 'tap here to start typing' : 'press <kbd>/</kbd> to start typing';
 
   const terminal = document.getElementById('terminal');
   if (!terminal) return;
@@ -54,6 +55,9 @@ export function initShortcutHint() {
     setTimeout(() => hint.remove(), 300);
   }
 
-  hint.addEventListener('click', dismiss);
+  hint.addEventListener('click', () => {
+    if (isTouch) document.getElementById('terminal-input')?.focus();
+    dismiss();
+  });
   document.getElementById('terminal-input')?.addEventListener('focus', dismiss);
 }

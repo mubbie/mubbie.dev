@@ -530,17 +530,13 @@ a.currently-item:hover .arrow {
   color: var(--text-dim);
 }
 
-.bucket-item.done {
-  opacity: 0.5;
-}
-
 .bucket-item.done .bucket-status {
   color: var(--accent);
 }
 
 .bucket-item.done .bucket-text {
-  text-decoration: line-through;
-  text-decoration-color: var(--text-dim);
+  color: var(--text-dim);
+  font-weight: 400;
 }
 
 .bucket-item.done .bucket-note {
@@ -671,7 +667,17 @@ a.race-item:hover {
   color: var(--text-dim);
 }
 
+.race-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.race-badges:empty { display: none; }
+
 .race-badge {
+  white-space: nowrap;
   font-family: var(--mono);
   font-size: 11px;
   padding: 2px 8px;
@@ -687,27 +693,46 @@ a.race-item:hover {
   border-color: rgba(249, 115, 22, 0.3);
 }
 
-/* Completed races */
-.race-item.completed {
-  opacity: 0.5;
+.race-badge.note {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
+/* Completed races: muted, but still readable */
 .race-item.completed .race-status {
   color: var(--accent);
 }
 
 .race-item.completed .race-name {
-  text-decoration: line-through;
-  text-decoration-color: var(--text-dim);
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.race-item.completed .race-date,
+.race-item.completed .race-location {
+  opacity: 0.7;
+}
+
+/* Personal record */
+.race-pr {
+  margin-left: 8px;
+  color: #facc15;
+  font-size: 20px;
+  line-height: 0;
+  vertical-align: -2px;
+  text-shadow: 0 0 8px rgba(250, 204, 21, 0.45);
 }
 
 /* Skipped / DNS races */
-.race-item.skipped {
-  opacity: 0.5;
-}
-
 .race-item.skipped .race-status {
   color: #ef4444;
+}
+
+.race-item.skipped .race-date,
+.race-item.skipped .race-name,
+.race-item.skipped .race-location {
+  opacity: 0.5;
 }
 
 .race-item.skipped .race-name {
@@ -892,9 +917,9 @@ footer p {
 
   .race-location { display: none; }
 
-  .race-badge {
+  .race-badges {
     grid-column: 3;
-    justify-self: start;
+    justify-content: flex-start;
   }
 
   .currently-item {
@@ -1135,6 +1160,11 @@ footer p {
   border-color: var(--accent-dim);
 }
 
+.race-block.missed {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
 .race-block.highlight {
   border-color: var(--accent);
   box-shadow: 0 0 6px var(--accent-glow);
@@ -1233,6 +1263,24 @@ footer p {
 }
 
 /* If both badge and time exist, time goes after badge */
+.writing-date {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.writing-date + .writing-time::before {
+  content: '·';
+  margin-right: 0.5em;
+  opacity: 0.6;
+}
+
+.writing-date + .writing-time,
+.writing-badge + .writing-date {
+  margin-left: 0.5em;
+}
+
 .writing-badge + .writing-time {
   margin-left: 0.5em;
 }

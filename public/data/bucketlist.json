@@ -1,9 +1,10 @@
 [
-  { "item": "Run a half marathon", "done": true, "note": "done 5!" },
-  { "item": "Run a full marathon", "done": false },
+  { "item": "Run a half marathon", "done": true, "note": "done 10!" },
+  { "item": "Run a full marathon", "done": false, "note": "Nov 29 · Seattle" },
   { "item": "Complete at least two half Ironmans", "done": false },
   { "item": "Complete at least one full Ironman", "done": false },
   { "item": "Ride STP (Seattle to Portland)", "done": false },
+  { "item": "Ride RSVP (Seattle to Vancouver)", "done": false },
   { "item": "Learn to ride motorcycles", "done": false },
   { "item": "Learn to fly airplanes", "done": false, "note": "starting in ms flight sim" },
   { "item": "Go skydiving", "done": true, "note": "done 2!" },

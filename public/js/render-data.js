@@ -51,6 +51,7 @@ export function renderRaces(races) {
     daysUntilNext = Math.ceil((raceDate - now) / (1000 * 60 * 60 * 24));
   }
   let completedCount = 0;
+  let missedCount = 0;
 
   races.forEach((race, i) => {
     const a = document.createElement('a');
@@ -68,6 +69,7 @@ export function renderRaces(races) {
     } else if (race.completed === false) {
       a.classList.add('skipped');
       statusIcon = '✗';
+      missedCount++;
     } else if (i === nextIndex) {
       a.classList.add('next');
       statusIcon = '→';
@@ -77,36 +79,52 @@ export function renderRaces(races) {
 
     a.appendChild(span('race-status', statusIcon));
     a.appendChild(span('race-date', formatDate(race.date)));
-    a.appendChild(span('race-name', race.name));
+    const name = span('race-name', race.name);
+    if (race.pr) {
+      const star = span('race-pr', '★');
+      star.title = 'Personal record';
+      star.setAttribute('aria-label', 'personal record');
+      name.appendChild(star);
+    }
+    a.appendChild(name);
     a.appendChild(span('race-location', race.location));
+    const badges = span('race-badges', '');
     if (i === nextIndex) {
       if (daysUntilNext === 0) {
-        a.appendChild(span('race-badge countdown', 'today!'));
+        badges.appendChild(span('race-badge countdown', 'today!'));
       } else if (daysUntilNext === 1) {
-        a.appendChild(span('race-badge countdown', 'tomorrow'));
+        badges.appendChild(span('race-badge countdown', 'tomorrow'));
       } else if (daysUntilNext !== null) {
-        a.appendChild(span('race-badge countdown', `in ${daysUntilNext} days`));
+        badges.appendChild(span('race-badge countdown', `in ${daysUntilNext} days`));
       }
     }
-    if (race.goal) a.appendChild(span('race-badge goal', 'first marathon'));
+    if (race.goal) badges.appendChild(span('race-badge goal', 'first marathon'));
+    if (race.note) badges.appendChild(span('race-badge note', race.note));
+    a.appendChild(badges);
 
     a.dataset.raceIndex = i;
     list.appendChild(a);
   });
 
   // Block progress + stats
-  const total = races.length;
-  const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+  const remaining = races.length - completedCount - missedCount;
 
   let blocksHtml = '<div class="race-blocks">[ ';
   races.forEach((race, idx) => {
     const filled = race.completed === true;
-    blocksHtml += `<span class="race-block${filled ? ' filled' : ''}" data-race-index="${idx}"></span>`;
+    const missed = race.completed === false;
+    blocksHtml += `<span class="race-block${filled ? ' filled' : ''}${missed ? ' missed' : ''}" data-race-index="${idx}"></span>`;
   });
   blocksHtml += ' ]</div>';
 
-  const summaryHtml =
-    `<div class="race-summary">${completedCount}/${total} done · ${pct}%</div>`;
+  const prCount = races.filter((r) => r.pr).length;
+  const summaryParts = [`${completedCount} run`];
+  if (prCount > 0) {
+    summaryParts.push(`${prCount} PR${prCount === 1 ? '' : 's'}`);
+  }
+  if (missedCount > 0) summaryParts.push(`${missedCount} missed`);
+  summaryParts.push(`${remaining} to go`);
+  const summaryHtml = `<div class="race-summary">${summaryParts.join(' · ')}</div>`;
 
   stats.innerHTML = blocksHtml + summaryHtml;
 
@@ -220,6 +238,15 @@ export function fetchWriting() {
         a.appendChild(h3);
 
         if (i === 0) a.appendChild(span('writing-badge', 'new'));
+
+        if (post.post_date) {
+          const d = new Date(post.post_date);
+          const sameYear = d.getFullYear() === new Date().getFullYear();
+          const label = d.toLocaleDateString('en-US', sameYear
+            ? { month: 'short', day: 'numeric' }
+            : { month: 'short', year: 'numeric' });
+          a.appendChild(span('writing-date', label));
+        }
 
         const wc = post.wordcount || post.word_count;
         if (wc) {
