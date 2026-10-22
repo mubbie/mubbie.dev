@@ -53,7 +53,9 @@ async function handlePosts(request, env, ctx) {
     ? Math.min(POSTS_MAX_LIMIT, Math.max(1, rawLimit))
     : 4;
 
-  const cacheKey = `posts-v2-${limit}`;
+  // One cache entry holds the latest POSTS_MAX_LIMIT posts; every ?limit is a slice of it.
+  // Fewer Substack calls (it rate-limits) and one shared stale fallback.
+  const cacheKey = 'posts-v3';
 
   // 1. KV cache lookup
   let cached = null;
@@ -61,9 +63,15 @@ async function handlePosts(request, env, ctx) {
     try {
       const { value, metadata } = await env.POSTS_CACHE.getWithMetadata(cacheKey, 'json');
       if (value && metadata && Date.now() - metadata.fetchedAt < POSTS_CACHE_TTL_SECONDS * 1000) {
-        return jsonResponse(value, { 'X-Cache': 'HIT-KV' });
+        return jsonResponse(value.slice(0, limit), { 'X-Cache': 'HIT-KV' });
       }
       if (value) cached = { value };
+      // One-time bridge from the old per-limit key so a cold deploy has a stale fallback.
+      // Safe to delete once posts-v3 has been populated in production.
+      if (!cached) {
+        const legacy = await env.POSTS_CACHE.get('posts-v2-4', 'json');
+        if (Array.isArray(legacy)) cached = { value: legacy };
+      }
     } catch (e) {
       // KV read failure → fall through to upstream
     }
@@ -71,7 +79,7 @@ async function handlePosts(request, env, ctx) {
 
   // 2. Upstream call to Substack
   try {
-    const data = await fetchFromSubstack(limit);
+    const data = await fetchFromSubstack(POSTS_MAX_LIMIT);
     if (env.POSTS_CACHE) {
       ctx.waitUntil(
         env.POSTS_CACHE.put(cacheKey, JSON.stringify(data), {
@@ -80,11 +88,11 @@ async function handlePosts(request, env, ctx) {
         }),
       );
     }
-    return jsonResponse(data, { 'X-Cache': force ? 'BYPASS' : 'MISS' });
+    return jsonResponse(data.slice(0, limit), { 'X-Cache': force ? 'BYPASS' : 'MISS' });
   } catch (err) {
     // 3. Stale-while-error: serve last good KV value if we have one
     if (cached && cached.value) {
-      return jsonResponse(cached.value, {
+      return jsonResponse(cached.value.slice(0, limit), {
         'X-Cache': 'STALE',
         'X-Upstream-Error': err.message.slice(0, 120),
       });
