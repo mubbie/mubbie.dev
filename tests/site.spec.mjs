@@ -115,7 +115,7 @@ test('races: statuses, PR stars, countdown, and summary', async ({ page }) => {
   await expect(page.locator('#panel-2026 .race-block.filled')).toHaveCount(run, { timeout: 10_000 });
 });
 
-test('race tabs: opens on this year, 2027 shows the cycling rail', async ({ page }) => {
+test('race tabs: opens on this year, 2027 shows the cycling rail', async ({ page }, testInfo) => {
   await load(page);
   const year = String(new Date().getFullYear());
   const hasTab = await page.locator(`.race-tab[data-year="${year}"]`).count();
@@ -126,8 +126,7 @@ test('race tabs: opens on this year, 2027 shows the cycling rail', async ({ page
   await page.locator('#tab-2027').click();
   await expect(page.locator('#panel-2027')).toBeVisible();
   await expect(page.locator('#panel-2026')).toBeHidden();
-  await expect(page.locator('#races-label')).toHaveText('// 2027 cycling challenge');
-  await expect(page.locator('.rail-race')).toHaveCount(rides.length);
+    await expect(page.locator('.rail-race')).toHaveCount(rides.length);
   await expect(page.locator('.rail-month')).toHaveCount(new Set(rides.map((r) => r.date.slice(0, 7))).size);
   // Placeholder dates say so instead of showing a made-up day
   for (const [i, r] of rides.entries()) {
@@ -137,6 +136,18 @@ test('race tabs: opens on this year, 2027 shows the cycling rail', async ({ page
   // Short names on the rail; the official name is the hover title
   for (const r of rides.filter((x) => x.fullName)) {
     await expect(page.locator('.rail-race', { hasText: r.name }).first()).toHaveAttribute('title', r.fullName);
+  }
+
+  await expect(page.locator('#races-label')).toHaveText('// 2027 cycling challenge: road to vancouver');
+
+  // Progress bar works like 2026: one block per ride, hover pairs block and row both ways
+  await expect(page.locator('#panel-2027 .race-block')).toHaveCount(rides.length);
+  if (!isMobile(testInfo)) {
+    await page.locator('#panel-2027 .race-block').nth(1).hover();
+    await expect(page.locator('#panel-2027 .rail-race').nth(1)).toHaveClass(/highlight-row/);
+    await page.locator('#panel-2027 .rail-race').nth(2).hover();
+    await expect(page.locator('#panel-2027 .race-block').nth(2)).toHaveClass(/highlight/);
+    await expect(page.locator('#panel-2027 .rail-race').nth(1)).not.toHaveClass(/highlight-row/);
   }
 
   // Arrow keys move between tabs
@@ -179,6 +190,9 @@ test('fav tools dock: hover or focus explains an app, and every app links out', 
   await expect(items.nth(2).locator('.dock-label')).toBeVisible();
   await expect(items.nth(2)).toHaveClass(/selected/);
   if (!isMobile(testInfo)) {
+    // Magnification shifts icons under the cursor, so re-aim once the dock settles
+    await items.nth(4).hover();
+    await page.waitForTimeout(250);
     await items.nth(4).hover();
     await expect(caption).toContainText(tools[4].note);
   }
@@ -553,8 +567,13 @@ test.describe('phones', () => {
     await load(page);
     const item = page.locator('.dock-item').nth(1);
     await item.scrollIntoViewIfNeeded();
+    // Count real link popups too: Android fires focus before click, which once let the first tap open the app
+    let popups = 0;
+    page.context().on('page', () => popups++);
     await item.tap();
     await expect(page.locator('#dock-caption')).toContainText('coding agents');
+    await page.waitForTimeout(500);
+    expect(popups, 'first tap should only explain').toBe(0);
     expect(await page.evaluate(() => window.__opened.length + (location.href.includes('t3.codes') ? 1 : 0))).toBe(0);
     const [popup] = await Promise.all([page.waitForEvent('popup'), item.tap()]);
     expect(popup.url()).toContain('t3.codes');

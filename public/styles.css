@@ -984,28 +984,34 @@ a.race-item:hover {
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 10px;
-  padding: 5px 8px;
+  padding: 9px 12px;
   border-radius: 8px;
+  border: 1px solid transparent; /* reserved so the highlight border doesn't shift the row */
   text-decoration: none;
   color: var(--text);
   font-size: 14px;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 /* The line: one segment from each stop down to the next, so it starts at the first
    stop and ends at the last. Segments behind you (done or missed) turn green. */
+.rail-race::before,
+.rail-race::after {
+  transition: transform 0.2s ease;
+}
+
 .rail-race::after {
   content: '';
   position: absolute;
   left: -14px;
-  top: 18px;
-  bottom: -18px;
+  top: 22px;
+  bottom: -22px;
   width: 2px;
   background: var(--border);
 }
 
 .rail-group > .rail-race:last-child::after {
-  bottom: -28px; /* reaches across the gap between months */
+  bottom: -32px; /* reaches across the gap between months */
 }
 
 .rail-group:last-child > .rail-race:last-child::after {
@@ -1023,7 +1029,7 @@ a.race-item:hover {
   content: '';
   position: absolute;
   left: -20px;
-  top: 12px;
+  top: 16px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -1033,8 +1039,16 @@ a.race-item:hover {
 
 /* Hover-capable devices only, so a tapped row doesn't stay highlighted on phones */
 @media (hover: hover) {
+  /* Same nudge as the 2026 cards: the ride slides right... */
   .rail-race:hover {
     background: var(--surface);
+    transform: translateX(4px);
+  }
+
+  /* ...while its stop and the line stay put on the rail */
+  .rail-race:hover::before,
+  .rail-race:hover::after {
+    transform: translateX(-4px);
   }
 }
 
@@ -1047,6 +1061,10 @@ a.race-item:hover {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--text-dim);
+}
+
+.rail-part {
+  white-space: nowrap; /* "in 137 days" wraps as one piece, never mid-phrase */
 }
 
 .rail-part + .rail-part::before {
@@ -1096,7 +1114,7 @@ a.race-item:hover {
 .rail-race.skipped::before {
   content: '✗';
   left: -20px;
-  top: 5px;
+  top: 9px;
   width: 12px;
   height: auto;
   border: 0;
@@ -1632,9 +1650,10 @@ footer p {
   box-shadow: 0 0 6px var(--accent-glow);
 }
 
-.race-item.highlight-row {
+/* Hover pairing with the progress bar: a green outline only, no fill */
+.race-item.highlight-row,
+.rail-race.highlight-row {
   border-color: var(--accent) !important;
-  background: var(--accent-glow) !important;
 }
 
 .race-summary {

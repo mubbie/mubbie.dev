@@ -49,6 +49,9 @@ export function renderDock(items) {
 
   dock.style.setProperty('--dock-count', items.length);
   let lastPointer = 'mouse';
+  // Whether the tapped app was already selected when the finger came down. Android
+  // fires focus (which selects) before click, so checking at click time is too late.
+  let tapWasSelected = false;
   let selected = null;
 
   function select(el) {
@@ -84,7 +87,7 @@ export function renderDock(items) {
     a.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') select(a); });
     a.addEventListener('focus', () => select(a));
     a.addEventListener('click', (e) => {
-      if (lastPointer !== 'mouse' && selected !== a) {
+      if (lastPointer !== 'mouse' && !tapWasSelected) {
         e.preventDefault();
         select(a);
       }
@@ -93,8 +96,14 @@ export function renderDock(items) {
     dock.appendChild(a);
   });
 
-  dock.addEventListener('pointerdown', (e) => { lastPointer = e.pointerType; });
-  dock.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') select(null); });
+  dock.addEventListener('pointerdown', (e) => {
+    lastPointer = e.pointerType;
+    tapWasSelected = selected !== null && selected === e.target.closest('.dock-item');
+  });
+  // Keyboard Enter on a focused app opens it, even after an earlier tap
+  dock.addEventListener('keydown', () => { lastPointer = 'mouse'; });
+  // WebKit fires compatibility mouse-leave events right after a tap; only a real mouse should clear the selection
+  dock.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && lastPointer === 'mouse') select(null); });
   dock.addEventListener('focusout', (e) => { if (!dock.contains(e.relatedTarget)) select(null); });
 }
 
@@ -190,7 +199,14 @@ export function renderRaces(races) {
 
   stats.innerHTML = blocksHtml + summaryHtml;
 
-  // Animate blocks filling in on scroll
+  wireProgress(races, list, stats, '.race-item');
+}
+
+// ─── Progress bar behavior, shared by every challenge tab ───
+// Blocks fill in when the bar scrolls into view, and hovering a block highlights
+// its race (and vice versa). Rows and blocks are paired by data-race-index.
+
+function wireProgress(races, list, stats, rowSelector) {
   const blocks = stats.querySelectorAll('.race-block.filled');
   if (blocks.length > 0) {
     blocks.forEach((b) => b.classList.remove('filled'));
@@ -210,10 +226,9 @@ export function renderRaces(races) {
     obs.observe(stats);
   }
 
-  // Cross-highlight: hover block ↔ race row
   function highlightPair(index, on) {
     const block = stats.querySelector(`.race-block[data-race-index="${index}"]`);
-    const row = list.querySelector(`.race-item[data-race-index="${index}"]`);
+    const row = list.querySelector(`${rowSelector}[data-race-index="${index}"]`);
     if (block) block.classList.toggle('highlight', on);
     if (row) row.classList.toggle('highlight-row', on);
   }
@@ -227,11 +242,11 @@ export function renderRaces(races) {
     if (block) highlightPair(block.dataset.raceIndex, false);
   });
   list.addEventListener('mouseover', (e) => {
-    const row = e.target.closest('.race-item');
+    const row = e.target.closest(rowSelector);
     if (row) highlightPair(row.dataset.raceIndex, true);
   });
   list.addEventListener('mouseout', (e) => {
-    const row = e.target.closest('.race-item');
+    const row = e.target.closest(rowSelector);
     if (row) highlightPair(row.dataset.raceIndex, false);
   });
 }
@@ -302,6 +317,7 @@ export function renderRail(races, list, stats) {
     }
     a.appendChild(meta);
 
+    a.dataset.raceIndex = i;
     group.appendChild(a);
   });
 
@@ -309,9 +325,10 @@ export function renderRail(races, list, stats) {
   if (stats) {
     const done = races.filter((r) => r.completed === true).length;
     const missed = races.filter((r) => r.completed === false).length;
-    const blocks = races.map((r) => `<span class="race-block${r.completed === true ? ' filled' : ''}${r.completed === false ? ' missed' : ''}"></span>`).join('');
+    const blocks = races.map((r, idx) => `<span class="race-block${r.completed === true ? ' filled' : ''}${r.completed === false ? ' missed' : ''}" data-race-index="${idx}"></span>`).join('');
     const parts = [`${done} done`, missed && `${missed} missed`, `${races.length - done - missed} to go`].filter(Boolean);
     stats.innerHTML = `<div class="race-blocks">[ ${blocks} ]</div><div class="race-summary">${parts.join(' · ')}</div>`;
+    wireProgress(races, list, stats, '.rail-race');
   }
 }
 
