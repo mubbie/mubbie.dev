@@ -867,13 +867,10 @@ a.race-item:hover {
 }
 
 /* Personal record */
+/* Personal record: a gold PR tag, same as the cycling rail */
 .race-pr {
   margin-left: 8px;
-  color: #facc15;
-  font-size: 20px;
-  line-height: 0;
-  vertical-align: -2px;
-  text-shadow: 0 0 8px rgba(250, 204, 21, 0.45);
+  vertical-align: 1px;
 }
 
 /* Skipped / DNS races */
@@ -1089,6 +1086,7 @@ a.race-item:hover {
   border: 1px solid rgba(168, 85, 247, 0.35);
 }
 
+.race-pr,
 .rail-pr {
   font-family: var(--mono);
   font-size: 10px;
@@ -1447,11 +1445,6 @@ footer p {
 /* ─── Light mode overrides ─── */
 [data-theme="light"] body::after {
   opacity: 0.015;
-}
-
-[data-theme="light"] .race-pr {
-  color: #ca8a04;
-  text-shadow: none;
 }
 
 [data-theme="light"] .terminal-history-line .terminal-error {

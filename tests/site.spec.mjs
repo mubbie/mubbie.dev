@@ -380,7 +380,8 @@ test('terminal: every command produces the expected output', async ({ page }) =>
   for (const [cmd, expected] of COMMANDS) {
     expect.soft(await run(page, cmd), cmd).toContain(expected);
   }
-  expect(await run(page, 'grep shamrock')).not.toContain('★');
+  // The PR tag lives inside the race name; terminal output should show the plain name
+  expect(await run(page, 'grep shamrock')).not.toMatch(/MarathonPR|★/);
   expect(await run(page, 'grep uncharted')).not.toContain('uncharted 4'); // /dev contents stay hidden
 });
 

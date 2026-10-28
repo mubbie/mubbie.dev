@@ -152,10 +152,10 @@ export function renderRaces(races) {
     a.appendChild(span('race-date', formatDate(race.date)));
     const name = span('race-name', race.name);
     if (race.pr) {
-      const star = span('race-pr', '★');
-      star.title = 'Personal record';
-      star.setAttribute('aria-label', 'personal record');
-      name.appendChild(star);
+      const pr = span('race-pr', 'PR');
+      pr.title = 'Personal record';
+      pr.setAttribute('aria-label', 'personal record');
+      name.appendChild(pr);
     }
     a.appendChild(name);
     a.appendChild(span('race-location', race.location));
@@ -169,7 +169,7 @@ export function renderRaces(races) {
         badges.appendChild(span('race-badge countdown', `in ${daysUntilNext} days`));
       }
     }
-    if (race.goal) badges.appendChild(span('race-badge goal', 'first marathon 🤞🏿'));
+    if (race.goal) badges.appendChild(span('race-badge goal', 'first marathon 🤞🏾'));
     if (race.note) badges.appendChild(span('race-badge note', race.note));
     a.appendChild(badges);
 
