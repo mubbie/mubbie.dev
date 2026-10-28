@@ -304,6 +304,8 @@ export function renderRail(races, list, stats) {
       a.appendChild(pr);
     }
     // Line 1 is the name plus any chip; line 2 is the details
+    // The year's goal ride gets the same orange tag as 2026's first marathon
+    if (race.goal) a.appendChild(span('rail-chip goal', race.goal));
     if (race.note) a.appendChild(span('rail-chip', race.note));
 
     // One quiet line of details: date (or TBA until announced) · place · distance · countdown

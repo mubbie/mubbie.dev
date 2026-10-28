@@ -1074,6 +1074,13 @@ a.race-item:hover {
   color: var(--accent);
 }
 
+.rail-chip.goal {
+  font-style: normal;
+  background: rgba(249, 115, 22, 0.12);
+  color: var(--orange);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
 .rail-chip {
   white-space: nowrap;
   font-family: var(--mono);

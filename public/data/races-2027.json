@@ -1,6 +1,6 @@
 [
   {
-    "date": "2027-02-21",
+    "date": "2027-02-28",
     "name": "Chilly Hilly",
     "location": "Bainbridge Island",
     "distance": "33 mi",
@@ -16,11 +16,20 @@
     "note": "not a bike race. i know."
   },
   {
-    "date": "2027-05-02",
+    "date": "2027-04-18",
     "name": "Ride for Major Taylor",
     "location": "White Center, Seattle",
     "distance": "62 mi",
     "url": "https://cascade.org/rides-events/ride-major-taylor-2026",
+    "tba": true
+  },
+  {
+    "date": "2027-04-25",
+    "name": "McClinchy Camano Classic",
+    "fullName": "McClinchy Camano Classic Century",
+    "location": "Stanwood",
+    "distance": "103 mi",
+    "url": "https://bikesclub.wildapricot.org/McClinchy",
     "tba": true
   },
   {
@@ -45,7 +54,7 @@
     "name": "Volunteer Park Criterium",
     "fullName": "Taco Time Volunteer Park Criterium",
     "location": "Capitol Hill, Seattle",
-    "distance": "crit",
+    "distance": "45 min race",
     "url": "https://www.bikereg.com/74269",
     "tba": true
   },
@@ -59,13 +68,30 @@
     "url": "https://cascade.org/stp"
   },
   {
+    "date": "2027-08-01",
+    "name": "Ride the Hurricane",
+    "location": "Port Angeles → Hurricane Ridge",
+    "distance": "~40 mi",
+    "url": "https://runsignup.com/Race/WA/PortAngeles/RidetheHurricane",
+    "tba": true
+  },
+  {
+    "date": "2027-08-14",
+    "name": "Obliteride",
+    "location": "Seattle",
+    "distance": "100 mi",
+    "url": "https://www.obliteride.org",
+    "tba": true
+  },
+  {
     "date": "2027-08-28",
     "name": "RSVP",
     "fullName": "RSVP: Ride from Seattle to Vancouver and Party",
     "location": "Seattle → Vancouver",
     "distance": "184 mi",
     "url": "https://cascade.org/rsvp",
-    "tba": true
+    "tba": true,
+    "goal": "goal ride 🤞🏾"
   },
   {
     "date": "2027-09-12",

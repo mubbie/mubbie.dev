@@ -132,7 +132,9 @@ test('race tabs: opens on this year, 2027 shows the cycling rail', async ({ page
   for (const [i, r] of rides.entries()) {
     await expect(page.locator('.rail-meta').nth(i)).toContainText(r.tba ? 'date TBA' : /^[A-Z][a-z]{2} \d{1,2}/);
   }
-  await expect(page.locator('.rail-chip')).toHaveText(rides.filter((r) => r.note).map((r) => r.note));
+  await expect(page.locator('.rail-chip:not(.goal)')).toHaveText(rides.filter((r) => r.note).map((r) => r.note));
+  // The goal ride gets the orange tag, like 2026's first marathon
+  await expect(page.locator('.rail-chip.goal')).toHaveText(rides.filter((r) => r.goal).map((r) => r.goal));
   // Short names on the rail; the official name is the hover title
   for (const r of rides.filter((x) => x.fullName)) {
     await expect(page.locator('.rail-race', { hasText: r.name }).first()).toHaveAttribute('title', r.fullName);
