@@ -26,10 +26,13 @@ export function renderCurrently(items) {
       el.rel = 'noopener noreferrer';
     }
 
-    el.appendChild(span('currently-icon', item.icon));
-    el.appendChild(span('currently-label', item.label));
+    // Tile: icon + label on top, the thing itself underneath
+    const head = span('currently-head', '');
+    head.appendChild(span('currently-icon', item.icon));
+    head.appendChild(span('currently-label', item.label));
+    el.appendChild(head);
     el.appendChild(span('currently-value', item.value));
-    if (item.url) el.appendChild(span('arrow', '→'));
+    if (item.url) el.appendChild(span('arrow', '↗'));
 
     list.appendChild(el);
   });
@@ -233,6 +236,85 @@ export function renderRaces(races) {
   });
 }
 
+// ─── Month rail (2027 cycling challenge) ───
+// Races grouped by month along a vertical line. Status reads by shape as well as
+// color: filled dot = done, ✗ = missed, ringed dot = next, hollow dot = upcoming.
+
+export function renderRail(races, list, stats) {
+  if (!list) return;
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
+  const nextIndex = races.findIndex((r) => r.completed === undefined && r.date >= today);
+
+  let group = null;
+  let groupMonth = '';
+
+  races.forEach((race, i) => {
+    const month = race.date.slice(0, 7);
+    if (month !== groupMonth) {
+      groupMonth = month;
+      list.appendChild(span('rail-month', MONTHS[parseInt(month.slice(5), 10) - 1]));
+      group = document.createElement('div');
+      group.className = 'rail-group';
+      list.appendChild(group);
+    }
+
+    const a = document.createElement('a');
+    a.className = 'rail-race';
+    a.href = race.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+
+    let status = 'upcoming';
+    if (race.completed === true) {
+      a.classList.add('completed');
+      status = 'completed';
+    } else if (race.completed === false) {
+      a.classList.add('skipped');
+      status = 'missed';
+    } else if (i === nextIndex) {
+      a.classList.add('next');
+      status = 'next';
+    }
+
+    a.appendChild(span('sr-only', `${status}: `));
+    a.appendChild(span('rail-name', race.name));
+    // Short name keeps every row to two lines; the official name is on hover and for screen readers
+    if (race.fullName) {
+      a.title = race.fullName;
+      a.appendChild(span('sr-only', ` ${race.fullName}`));
+    }
+    if (race.pr) {
+      const pr = span('rail-pr', 'PR');
+      pr.title = 'Personal record';
+      a.appendChild(pr);
+    }
+    // Line 1 is the name plus any chip; line 2 is the details
+    if (race.note) a.appendChild(span('rail-chip', race.note));
+
+    // One quiet line of details: date (or TBA until announced) · place · distance · countdown
+    const meta = span('rail-meta', '');
+    let when = race.tba ? 'date TBA' : formatDate(race.date);
+    if (!race.tba && race.endDate) when += `–${parseInt(race.endDate.slice(8), 10)}`;
+    [when, race.location, race.distance].filter(Boolean).forEach((part) => meta.appendChild(span('rail-part', part)));
+    if (i === nextIndex && !race.tba) {
+      const days = Math.round((Date.parse(race.date) - Date.parse(today)) / 86400000);
+      meta.appendChild(span('rail-part rail-countdown', days === 0 ? 'today!' : days === 1 ? 'tomorrow' : `in ${days} days`));
+    }
+    a.appendChild(meta);
+
+    group.appendChild(a);
+  });
+
+  // Progress bar + summary, same as the running challenge
+  if (stats) {
+    const done = races.filter((r) => r.completed === true).length;
+    const missed = races.filter((r) => r.completed === false).length;
+    const blocks = races.map((r) => `<span class="race-block${r.completed === true ? ' filled' : ''}${r.completed === false ? ' missed' : ''}"></span>`).join('');
+    const parts = [`${done} done`, missed && `${missed} missed`, `${races.length - done - missed} to go`].filter(Boolean);
+    stats.innerHTML = `<div class="race-blocks">[ ${blocks} ]</div><div class="race-summary">${parts.join(' · ')}</div>`;
+  }
+}
+
 // ─── Bucket List ───
 
 export function renderBucketList(items) {
@@ -250,11 +332,10 @@ export function renderBucketList(items) {
 
     if (item.done) doneCount++;
 
-    const status = item.done ? '✓' : '○';
-
-    el.appendChild(span('bucket-status', status));
+    // A markdown checklist line: - [x] item  # note
+    el.appendChild(span('bucket-status', item.done ? '- [x]' : '- [ ]'));
     el.appendChild(span('bucket-text', item.item));
-    if (item.note) el.appendChild(span('bucket-note', item.note));
+    if (item.note) el.appendChild(span('bucket-note', `# ${item.note}`));
 
     list.appendChild(el);
   });

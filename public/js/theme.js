@@ -23,7 +23,7 @@ export function applyTheme(theme) {
     meta.name = 'theme-color';
     document.head.appendChild(meta);
   }
-  meta.content = theme === 'light' ? '#f5f5f0' : '#0a0a0c';
+  meta.content = theme === 'light' ? '#fff' : '#000';
 }
 
 export function getTheme() {

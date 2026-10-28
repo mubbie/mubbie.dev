@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mubbie Idoko — Engineer, Builder, Writer</title>
+  <title>Mubbie Idoko · Engineer, Builder, Writer</title>
   <meta name="description" content="I am a software engineer at Microsoft Security. I enjoy building software, breaking systems, and writing about things that make me curious.">
   <meta property="og:title" content="Mubbie Idoko - Engineer, Builder, Writer">
   <meta property="og:description" content="I am a software engineer at Microsoft Security. I enjoy building software, breaking systems, and writing about things that make me curious.">
@@ -33,24 +33,22 @@
 
 <a href="#projects" class="skip-link">Skip to content</a>
 
-<div class="glow-orb green" aria-hidden="true"></div>
-<div class="glow-orb blue" aria-hidden="true"></div>
 
 <div class="container">
 
   <!-- ─── Hero ─── -->
 
   <header>
-    <div class="terminal" id="terminal" role="region" aria-label="Interactive terminal — type help for commands">
+    <div class="terminal" id="terminal" role="region" aria-label="Interactive terminal. Type help for commands">
       <div class="terminal-history" id="terminal-history" aria-live="polite" aria-relevant="additions"></div>
       <div class="terminal-input-line">
         <label for="terminal-input" class="terminal-prompt">~/mubbie $&nbsp;</label>
         <span class="terminal-typed" id="terminal-typed" aria-hidden="true"></span>
         <span class="cursor" aria-hidden="true"></span>
-        <input type="text" id="terminal-input" class="terminal-hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command input — press / to focus">
+        <input type="text" id="terminal-input" class="terminal-hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command input. Press / to focus">
       </div>
     </div>
-    <h1><span id="greeting-text">Hey</span>, I'm Mubbie <button class="wave" aria-label="Wave hello — click to cycle hand gestures">👋🏾</button></h1>
+    <h1><span id="greeting-text">Hey</span>, I'm <span class="nowrap">Mubbie <button class="wave" aria-label="Wave hello. Click to cycle hand gestures">👋🏾</button></span></h1>
     <p class="tagline">
       I'm a software engineer at <strong>Microsoft Security</strong>. I enjoy building software,
       breaking systems, and <strong>writing about things that make me curious</strong>.
@@ -160,17 +158,34 @@
   <!-- ─── Races ─── -->
 
   <section id="races" class="reveal">
-    <div class="section-label">// 2026 running challenge: road to marathon</div>
-    <div class="races-list" id="races-list"></div>
-    <div class="race-stats" id="race-stats"></div>
+    <div class="section-label" id="races-label">// 2026 running challenge: road to marathon</div>
+    <div class="race-tabs" role="tablist" aria-label="Challenges by year">
+      <button type="button" class="race-tab" role="tab" id="tab-2026" aria-controls="panel-2026" aria-selected="true" data-year="2026" data-label="// 2026 running challenge: road to marathon">2026 · running</button>
+      <button type="button" class="race-tab" role="tab" id="tab-2027" aria-controls="panel-2027" aria-selected="false" tabindex="-1" data-year="2027" data-label="// 2027 cycling challenge">2027 · cycling</button>
+    </div>
+    <div class="race-panel" id="panel-2026" role="tabpanel" aria-labelledby="tab-2026">
+      <div class="races-list" id="races-list"></div>
+      <div class="race-stats" id="race-stats"></div>
+    </div>
+    <div class="race-panel" id="panel-2027" role="tabpanel" aria-labelledby="tab-2027" hidden>
+      <div class="race-rail" id="race-rail"></div>
+      <div class="race-stats" id="rail-stats"></div>
+    </div>
 
   </section>
 
   <!-- ─── Bucket List ─── -->
   <section id="bucketlist" class="reveal">
     <div class="section-label">// the bucket list</div>
-    <div class="bucket-list" id="bucket-list"></div>
-    <div class="bucket-stats" id="bucket-stats"></div>
+    <div class="term-window">
+      <div class="term-bar" aria-hidden="true"><i></i><i></i><i></i><span>~/mubbie</span></div>
+      <div class="term-body">
+        <div class="term-cmd"><span class="terminal-prompt">~/mubbie $</span> cat bucketlist.md</div>
+        <div class="bucket-list" id="bucket-list"></div>
+        <div class="bucket-stats" id="bucket-stats"></div>
+        <div class="term-cmd" aria-hidden="true"><span class="terminal-prompt">~/mubbie $</span> <span class="cursor"></span></div>
+      </div>
+    </div>
   </section>
 
   <!-- ─── Connect ─── -->
@@ -181,7 +196,6 @@
         <strong>Want more friends in Seattle?</strong>
         Join the Seattle Hangouters for the next
         <span class="hangout-activity" id="hangout-activity">game night</span>.
-        Laughs guaranteed.
       </p>
       <a class="hangout-join" id="hangout-join" href="https://chat.whatsapp.com/JDZW4Em5UyJEd7RS4leUNd" target="_blank" rel="noopener noreferrer">count me in →</a>
     </div>

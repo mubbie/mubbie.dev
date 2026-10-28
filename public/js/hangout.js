@@ -42,7 +42,30 @@ export function initHangout() {
     return current;
   };
 
+  // Activities wrap to different line counts. Reserve the tallest so the card, the
+  // button, and everything below it don't jump as the word changes.
+  const pitch = word.closest('p');
+  function reserveHeight() {
+    const shown = word.textContent;
+    pitch.style.minHeight = '';
+    let tallest = 0;
+    for (const activity of ACTIVITIES) {
+      word.textContent = activity;
+      tallest = Math.max(tallest, pitch.offsetHeight);
+    }
+    word.textContent = shown;
+    pitch.style.minHeight = `${tallest}px`;
+  }
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(reserveHeight, 150);
+  });
+
   word.textContent = next();
+  reserveHeight();
+  // Webfont swap changes line breaks; measure again once it lands
+  document.fonts?.ready.then(reserveHeight);
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const wait = (ms) => new Promise((done) => setTimeout(done, ms));

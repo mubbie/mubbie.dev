@@ -25,6 +25,13 @@ export function tabComplete(input) {
     return hit ? 'cd ' + hit : null;
   }
 
+  // Complete ls argument with section names and /dev
+  if (cmd === 'ls') {
+    const prefix = hasTrailingSpace && parts.length === 1 ? '' : (parts[1] || '');
+    const hit = [...Object.keys(SECTION_MAP), '/dev'].find((s) => s.startsWith(prefix));
+    return hit ? 'ls ' + hit : null;
+  }
+
   // Complete open argument with project/link names + "latest"
   if (cmd === 'open') {
     const prefix = hasTrailingSpace ? arg : (arg || '');

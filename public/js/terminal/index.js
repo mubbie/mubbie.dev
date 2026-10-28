@@ -12,12 +12,44 @@ import { startMatrix } from '../matrix.js';
 import { scrollToTop, scrollToEl } from '../scroll.js';
 import { fetchWeather } from '../weather.js';
 import { popPopcorn } from '../popcorn.js';
+import { ACTIVITIES } from '../hangout.js';
+import { selectRaceTab } from '../race-tabs.js';
+
+// cd/ls names that mean a specific year's challenge tab in the races section
+const RACE_TABS = { running: '2026', cycling: '2027' };
 
 const PAGE_LOAD_TIME = Date.now();
 
 // Own-property lookup, so input like "constructor" never resolves to Object.prototype members
 function lookup(obj, key) {
   return Object.hasOwn(obj, key) ? obj[key] : undefined;
+}
+
+// ─── ls <section>: what's in a section, read from the rendered page (like grep) ───
+
+const texts = (selector, pick = (el) => el.textContent) =>
+  [...document.querySelectorAll(selector)].map((el) => pick(el).trim()).filter(Boolean);
+
+const SECTION_LISTINGS = {
+  projects: () => texts('.project-card h3'),
+  writing: () => texts('.writing-item h3'),
+  currently: () => [...texts('.currently-label'), 'tools/'],
+  tools: () => texts('.dock-item', (el) => el.querySelector('.dock-label')?.textContent || ''),
+  races: () => texts('#races-list .race-name', (el) => el.firstChild?.textContent || ''),
+  cycling: () => texts('#race-rail .rail-name'),
+  bucketlist: () => texts('.bucket-text'),
+  connect: () => texts('.connect-link'),
+};
+
+function listSection(target) {
+  const key = target.toLowerCase().replace(/\/+$/, '').replace(/^~\//, '').replace(/^currently\//, '');
+  const section = lookup(SECTION_MAP, key);
+  const lister = lookup(SECTION_LISTINGS, key) || (section && lookup(SECTION_LISTINGS, section));
+  if (!lister) return null;
+  const items = lister();
+  if (!items.length) return '(empty)';
+  // Like ls -1: names with spaces read better one per line
+  return items.some((s) => s.includes(' ')) ? items.join('\n') : items.join('  ');
 }
 
 // Open a URL in a new tab. Browsers block window.open outside a direct user gesture
@@ -27,7 +59,7 @@ function openUrl(out, url, label) {
   if (win) {
     win.opener = null;
   } else {
-    out.addLink(`popup blocked — click to open ${label || url}`, url);
+    out.addLink(`popup blocked. click to open ${label || url}`, url);
   }
   return Boolean(win);
 }
@@ -94,7 +126,12 @@ function createHandlers(out, history, getFortunes) {
       } else if (lower === '/dev' || lower === '/dev/') {
         out.addLine('$', trimmed, FILESYSTEM['/dev'].join('  '));
       } else {
-        out.addLine('$', trimmed, `ls: ${target}: No such file or directory`, true);
+        const listing = listSection(target);
+        if (listing !== null) {
+          out.addLine('$', trimmed, listing);
+        } else {
+          out.addLine('$', trimmed, `ls: ${target}: No such file or directory`, true);
+        }
       }
     },
 
@@ -111,7 +148,10 @@ function createHandlers(out, history, getFortunes) {
         const section = lookup(SECTION_MAP, lower.replace(/\/$/, ''));
         if (section) {
           out.addLine('$', trimmed, null);
-          out.addOk(`→ /${lower.replace(/\/$/, '')}`);
+          const name = lower.replace(/\/$/, '');
+          out.addOk(`→ /${name}`);
+          const year = lookup(RACE_TABS, name);
+          if (year) selectRaceTab(year);
           scrollToEl(document.getElementById(section));
         } else {
           out.addLine('$', trimmed, `cd: ${target || arg}: No such directory`, true);
@@ -124,7 +164,7 @@ function createHandlers(out, history, getFortunes) {
       if (target === null) return;
       const lower = target.toLowerCase();
       if (!target) {
-        out.addLine('$', trimmed, 'usage: cat <file> — try: ls /dev', true);
+        out.addLine('$', trimmed, 'usage: cat <file> (try: ls /dev)', true);
       } else if (lookup(FILES, lower) || lookup(FILES, `/dev/${lower.replace(/^\.\//, '')}`)) {
         // Bare names from `ls /dev` (e.g. "secrets.txt") resolve to /dev
         out.addLine('$', trimmed, lookup(FILES, lower) || lookup(FILES, `/dev/${lower.replace(/^\.\//, '')}`));
@@ -138,7 +178,7 @@ function createHandlers(out, history, getFortunes) {
       if (target === null) return;
       const lower = target.toLowerCase();
       if (!target) {
-        out.addLine('$', trimmed, 'usage: open <project|link> — try: open gx, open latest', true);
+        out.addLine('$', trimmed, 'usage: open <project|link> (try: open gx, open latest)', true);
         return;
       }
 
@@ -229,7 +269,7 @@ function createHandlers(out, history, getFortunes) {
         out.addLine('$', trimmed, null);
         out.addLine(null, null, '[sudo] password for recruiter: ••••••••');
         out.addOk('authenticated. email queued → midoko.dev@gmail.com');
-        out.addLine(null, null, 'just kidding — drop a note at midoko.dev@gmail.com 👋🏾');
+        out.addLine(null, null, 'just kidding. drop a note at midoko.dev@gmail.com 👋🏾');
       } else if (isRmRf(lower)) {
         out.addLine('$', trimmed, null);
         out.addLine(null, null, '[sudo] password for root: ••••••••');
@@ -255,7 +295,7 @@ function createHandlers(out, history, getFortunes) {
     matrix(trimmed) {
       out.addLine('$', trimmed, null);
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        out.addLine(null, null, 'the matrix is resting — your system prefers reduced motion.');
+        out.addLine(null, null, 'the matrix is resting: your system prefers reduced motion.');
         return;
       }
       out.addOk('wake up, neo... (esc or tap to exit)');
@@ -322,7 +362,7 @@ function createHandlers(out, history, getFortunes) {
         steps.forEach((step) => {
           out.later(() => {
             if (step.text === '') {
-              out.addOk('🍸 your elixir awaits — opening sorcery...');
+              out.addOk('🍸 your elixir awaits. opening sorcery...');
               out.later(() => openUrl(out, url, 'sorcery'), 600);
             } else {
               out.addLine(null, null, step.text);
@@ -407,7 +447,7 @@ function createHandlers(out, history, getFortunes) {
         const name = el.querySelector('h3')?.textContent || '';
         const desc = el.querySelector('p')?.textContent || '';
         return name.toLowerCase().includes(term) || desc.toLowerCase().includes(term)
-          ? `${name} — ${desc}` : null;
+          ? `${name}: ${desc}` : null;
       });
 
       // Writing: titles
@@ -428,7 +468,16 @@ function createHandlers(out, history, getFortunes) {
         const loc = el.querySelector('.race-location')?.textContent || '';
         const date = el.querySelector('.race-date')?.textContent || '';
         return (name + loc).toLowerCase().includes(term)
-          ? `${name} — ${loc}, ${date}` : null;
+          ? `${name}: ${loc}, ${date}` : null;
+      });
+
+      // 2027 cycling challenge (month rail)
+      searchSection('races/2027/', '.rail-race', (el) => {
+        // Full official name when there is one (it's the row's hover title)
+        const name = el.title || el.querySelector('.rail-name')?.textContent || '';
+        // The · separators are CSS-only, so join the detail parts explicitly
+        const meta = [...el.querySelectorAll('.rail-part')].map((part) => part.textContent).join(' · ');
+        return (name + ' ' + meta).toLowerCase().includes(term) ? `${name} (${meta})` : null;
       });
 
       // Bucket list
@@ -508,6 +557,13 @@ function createHandlers(out, history, getFortunes) {
       out.addLine('$', trimmed, 'pong! 🏓');
     },
 
+    hangout(trimmed) {
+      const pick = ACTIVITIES[Math.floor(Math.random() * ACTIVITIES.length)];
+      out.addLine('$', trimmed, null);
+      out.addOk(`🎲 next hangout: ${pick}`);
+      out.addLine(null, null, 'want in? try "open hangouters"');
+    },
+
     popcorn(trimmed) {
       out.addLine('$', trimmed, null);
       out.addOk("what's poppin'! 🍿");
@@ -549,7 +605,7 @@ function createHandlers(out, history, getFortunes) {
       }
       const def = COMMAND_DEFS.find((c) => c.name === resolved);
       out.addLine('$', trimmed, null);
-      out.addLine(null, null, `NAME\n    ${resolved} — ${def?.help || ''}`);
+      out.addLine(null, null, `NAME\n    ${resolved} - ${def?.help || ''}`);
       out.addLine(null, null, `\nSYNOPSIS\n    ${def?.usage || resolved}`);
       out.addLine(null, null, `\nDESCRIPTION\n    ${page}`);
     },

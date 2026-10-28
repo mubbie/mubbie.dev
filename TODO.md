@@ -1,6 +1,26 @@
 # TODO
 
-Ideas parked for later (from looking at vitorialima.com).
+Ideas parked for later, plus upkeep for the data-driven sections.
+
+## Upkeep
+
+- **2027 cycling challenge** (`public/data/races-2027.json`):
+  - RSVP is `"tba": true` with a placeholder date (Aug 28). When Cascade posts
+    the 2027 date (cascade.org/rsvp), set `date` (and `endDate` for the second
+    day) and remove `tba`.
+  - After each event, add `"completed": true` (or `false` if missed). The rail
+    turns green behind it, and the progress blocks fill.
+  - New Shamrock-style notes go in `note`; they render as the purple chip.
+- **Race tabs** open on the current year automatically, so on Jan 1 2027 the
+  site switches to the cycling tab by itself. A 2028 challenge is a new
+  `races-2028.json`, a tab button in `index.html`, and a `renderRail` call in
+  `sections.js`.
+- **2026 Shamrock link** still points to portlandshamrockrun.com; the 2027 one
+  uses shamrockrun.com. Decide whether 2026 should match.
+- **Currently**: swap the `planning` tile once Issa Game Night: Round 5 happens.
+  Six tiles fill two rows; any count still fills its rows.
+- **New Substack posts**: tag them technical / fitness / life / general on
+  Substack so the parked writing filters (below) keep working if revived.
 
 ## Past / present / future arc
 
@@ -15,7 +35,7 @@ Do this around the team switch, when "present" changes anyway.
 
 ## One-line identity in the hero
 
-"engineer, runner, writer — reach out about any of the three." Running is a
+"engineer, runner, writer. reach out about any of the three." Running is a
 big part of the page but not mentioned up top. Pairs naturally with the arc
 above.
 

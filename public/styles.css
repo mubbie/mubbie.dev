@@ -1,9 +1,10 @@
 /* ─── Variables ─── */
 :root {
-  --bg: #0a0a0c;
-  --surface: #111115;
-  --surface-hover: #1a1a20;
-  --border: #222228;
+  /* Pure black; surfaces and borders sit just above it so cards still read as layers */
+  --bg: #000;
+  --surface: #0b0b0d;
+  --surface-hover: #141417;
+  --border: #1c1c21;
   --text: #e8e8ed;
   --text-dim: #8a8a96;
   --accent: #22c55e;
@@ -39,10 +40,11 @@
 
 /* ─── Light mode ─── */
 [data-theme="light"] {
-  --bg: #f5f5f0;
-  --surface: #ffffff;
-  --surface-hover: #eeeee8;
-  --border: #d4d4cc;
+  /* Pure white, mirroring dark mode's pure black: cards step one shade toward the middle */
+  --bg: #fff;
+  --surface: #f5f5f6;
+  --surface-hover: #ececee;
+  --border: #e2e2e5;
   --text: #1a1a1a;
   --text-dim: #5c5c5c;
   --accent: #137a38;
@@ -89,20 +91,6 @@ body::after {
   margin: 0 auto;
   padding: 0 24px;
 }
-
-/* ─── Ambient glow ─── */
-.glow-orb {
-  position: fixed;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.07;
-  pointer-events: none;
-  z-index: 0;
-}
-.glow-orb.green { background: var(--accent); top: -200px; right: -200px; }
-.glow-orb.blue { background: var(--blue); bottom: -200px; left: -200px; }
 
 /* ─── Header / Hero ─── */
 header {
@@ -220,6 +208,10 @@ h1 .wave {
   line-height: 1.7;
   opacity: 0;
   animation: fadeUp 0.6s ease 0.3s forwards;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 .tagline strong {
@@ -432,21 +424,27 @@ section {
   color: var(--accent);
 }
 
-/* ─── Currently section ─── */
+/* ─── Currently section: tiles ─── */
 .currently-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
 }
 
+/* Rows of three; a short last row stretches to fill instead of leaving a hole */
+.currently-item { grid-column: span 2; }
+.currently-item:nth-last-child(2):nth-child(3n + 1),
+.currently-item:last-child:nth-child(3n + 2) { grid-column: span 3; }
+.currently-item:last-child:nth-child(3n + 1) { grid-column: span 6; }
+
 .currently-item {
-  display: grid;
-  grid-template-columns: 28px 72px 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
   background: var(--surface);
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid transparent;
   text-decoration: none;
   color: var(--text);
@@ -456,33 +454,43 @@ section {
 a.currently-item:hover {
   background: var(--surface-hover);
   border-color: var(--border);
-  transform: translateX(4px);
+  transform: translateY(-2px);
 }
 
-.currently-icon { font-size: 16px; }
+.currently-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.currently-icon { font-size: 14px; }
 
 .currently-label {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .currently-value {
   font-size: 14px;
   font-weight: 500;
+  line-height: 1.45;
 }
 
 .currently-item .arrow {
+  position: absolute;
+  top: 12px;
+  right: 14px;
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: 13px;
   opacity: 0;
-  transform: translateX(-4px);
   transition: all 0.2s ease;
 }
 
 a.currently-item:hover .arrow {
   opacity: 1;
-  transform: translateX(0);
   color: var(--accent);
 }
 
@@ -581,7 +589,11 @@ a.currently-item:hover .arrow {
 }
 
 .dock-caption {
+  /* Sits in the section's bottom padding (pulled back up by the negative margin),
+     so the empty-until-hover caption doesn't widen the gap after the dock */
+  --caption-space: calc(16px + 1.6em);
   margin-top: 16px;
+  margin-bottom: calc(-1 * var(--caption-space));
   min-height: 1.6em;
   text-align: center;
   font-size: 13px;
@@ -600,73 +612,103 @@ a.currently-item:hover .arrow {
   opacity: 1;
 }
 
-/* ─── Bucket list section ─── */
-.bucket-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+/* ─── Bucket list section: a checklist cat'd in a terminal window ─── */
+.term-window {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: var(--mono);
 }
 
+.term-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.term-bar i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.term-bar i:nth-child(1) { background: #ff5f57; }
+.term-bar i:nth-child(2) { background: #febc2e; }
+.term-bar i:nth-child(3) { background: #28c840; }
+
+.term-bar span {
+  flex: 1;
+  text-align: center;
+  margin-right: 46px; /* balance the three dots so the title sits centered */
+}
+
+.term-body {
+  padding: 14px 20px 16px;
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.term-cmd {
+  color: var(--text);
+}
+
+.bucket-list {
+  margin: 2px 0;
+  padding-left: 2ch; /* list output indented under the command */
+}
+
+/* Hanging indent: wrapped text lines up after the checkbox */
 .bucket-item {
   display: grid;
-  grid-template-columns: 24px 1fr auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  background: var(--surface);
-  border-radius: 10px;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.bucket-item:hover {
-  background: var(--surface-hover);
+  grid-template-columns: auto 1fr;
+  column-gap: 1ch;
 }
 
 .bucket-status {
-  font-family: var(--mono);
-  font-size: 14px;
   color: var(--text-dim);
-  text-align: center;
+  white-space: pre;
 }
 
 .bucket-text {
-  font-size: 14px;
-  font-weight: 500;
+  color: var(--text);
 }
 
 .bucket-note {
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--surface-hover);
+  grid-column: 2;
   color: var(--text-dim);
+  opacity: 0.8;
 }
 
-.bucket-item.done .bucket-status {
-  color: var(--accent);
+/* Notes trail the item on wide screens */
+@media (min-width: 641px) {
+  .bucket-item { grid-template-columns: auto auto 1fr; }
+  .bucket-note { grid-column: 3; margin-left: 2ch; }
 }
 
-.bucket-item.done .bucket-text {
-  color: var(--text-dim);
-  font-weight: 400;
-}
-
+.bucket-item.done .bucket-status,
 .bucket-item.done .bucket-note {
-  background: var(--accent-glow);
   color: var(--accent);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  opacity: 1;
 }
 
+/* Done reads from the green [x] and comment; the text stays fully legible */
+.bucket-item.done .bucket-text {
+  color: var(--text);
+}
+
+/* Stats print as a comment at the end of the file */
 .bucket-stats {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 16px;
-  font-family: var(--mono);
-  font-size: 13px;
   color: var(--text-dim);
+}
+
+.bucket-stats::before {
+  content: '# ';
 }
 
 /* ─── 404 page ─── */
@@ -873,6 +915,212 @@ a.race-item:hover {
 /* Stats bar */
 .race-stats {
   margin-top: 16px;
+}
+
+/* ─── Race tabs (2026 running / 2027 cycling) ─── */
+/* Quiet text tabs: the active one gets full-strength text and an accent underline */
+.race-tabs {
+  display: flex;
+  gap: 20px;
+  margin: -8px 0 16px;
+}
+
+.race-tab {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.race-tab:hover {
+  color: var(--text);
+}
+
+.race-tab[aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.race-tab:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.race-panel[hidden] { display: none; }
+
+/* ─── Month rail ─── */
+.race-rail {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+}
+
+.rail-month {
+  grid-column: 1;
+  padding-top: 7px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.rail-group {
+  grid-column: 2;
+  padding: 0 0 10px 14px;
+}
+
+.rail-group:last-child {
+  padding-bottom: 0;
+}
+
+.rail-race {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 14px;
+  transition: background 0.2s ease;
+}
+
+/* The line: one segment from each stop down to the next, so it starts at the first
+   stop and ends at the last. Segments behind you (done or missed) turn green. */
+.rail-race::after {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 18px;
+  bottom: -18px;
+  width: 2px;
+  background: var(--border);
+}
+
+.rail-group > .rail-race:last-child::after {
+  bottom: -28px; /* reaches across the gap between months */
+}
+
+.rail-group:last-child > .rail-race:last-child::after {
+  display: none;
+}
+
+.rail-race.completed::after,
+.rail-race.skipped::after {
+  background: var(--accent);
+}
+
+/* The stop on the rail */
+.rail-race::before {
+  z-index: 1;
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--text-dim);
+}
+
+/* Hover-capable devices only, so a tapped row doesn't stay highlighted on phones */
+@media (hover: hover) {
+  .rail-race:hover {
+    background: var(--surface);
+  }
+}
+
+.rail-name {
+  font-weight: 500;
+}
+
+.rail-meta {
+  flex-basis: 100%;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.rail-part + .rail-part::before {
+  content: '·';
+  margin: 0 6px;
+  opacity: 0.6;
+}
+
+.rail-countdown {
+  color: var(--accent);
+}
+
+.rail-chip {
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-style: italic;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(168, 85, 247, 0.12);
+  color: var(--purple);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.rail-pr {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #1a1a1a;
+  background: #facc15;
+}
+
+.rail-race.completed .rail-name {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.rail-race.completed::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* A red ✗ on the rail, so a miss reads by shape, not just color */
+.rail-race.skipped::before {
+  content: '✗';
+  left: -20px;
+  top: 5px;
+  width: 12px;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+.rail-race.skipped .rail-name {
+  color: var(--text-dim);
+  text-decoration: line-through;
+}
+
+.rail-race.next .rail-name {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.rail-race.next::before {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-glow);
 }
 
 /* ─── Connect section ─── */
@@ -1097,13 +1345,30 @@ footer p {
     justify-content: flex-start;
   }
 
-  .currently-item {
-    grid-template-columns: 24px 1fr auto;
-    gap: 8px;
-    padding: 10px 16px;
-  }
+  .race-rail { grid-template-columns: 36px 1fr; }
 
-  .currently-label { display: none; }
+  /* Keep name + details together; the chip follows as a footnote */
+  .rail-chip { order: 1; }
+
+  /* Same look, bigger tap target */
+  .race-tab { padding: 12px 0; }
+  .race-tabs { margin: -16px 0 8px; }
+
+  /* Two per row on phones; an odd one out takes the full row */
+  .currently-list { grid-template-columns: 1fr 1fr; }
+  /* :nth-child(n) matches every tile; it's there to outrank the desktop span rules */
+  .currently-list > .currently-item:nth-child(n) { grid-column: auto; }
+  .currently-list > .currently-item:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  /* Give titles the full width; date and read time go underneath */
+  .writing-item { flex-wrap: wrap; row-gap: 4px; justify-content: flex-start; }
+  .writing-item h3 { flex-basis: 100%; }
+  .writing-item .writing-badge,
+  .writing-item h3 + .writing-date,
+  .writing-item h3 + .writing-time { margin-left: 0; }
+  .writing-item .arrow { display: none; }
+
+  .currently-item { padding: 12px 14px; }
 
   /* Fit every icon across a phone: (screen - gutters - dock padding - gaps) / count.
      --dock-count is set from uses.json by renderDock. */
@@ -1114,13 +1379,20 @@ footer p {
     margin-top: 40px;
   }
 
+  /* The longest reasons wrap to two lines on a phone; reserve both so a tap never shifts the page */
+  .dock-caption {
+    min-height: 3.2em;
+    --caption-space: calc(16px + 3.2em);
+  }
+
   .hangout-invite {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .bucket-item {
-    padding: 10px 16px;
+  .term-body {
+    padding: 12px 14px 14px;
+    font-size: 12px;
   }
 
   .terminal-history {
@@ -1162,10 +1434,6 @@ footer p {
 [data-theme="light"] .race-pr {
   color: #ca8a04;
   text-shadow: none;
-}
-
-[data-theme="light"] .glow-orb {
-  opacity: 0.04;
 }
 
 [data-theme="light"] .terminal-history-line .terminal-error {
@@ -1385,6 +1653,19 @@ footer p {
 /* ─── Programmatic focus (no visible outline for scroll targets) ─── */
 [tabindex="-1"]:focus {
   outline: none;
+}
+
+/* ─── Screen-reader-only text ─── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ─── Section fallback ─── */

@@ -4,8 +4,9 @@ import { fetchJSON, showFallback } from './dom.js';
 import { initGreeting, initWaveEmoji } from './greeting.js';
 import { initFooter, initFooterMeta } from './footer.js';
 import { initHangout } from './hangout.js';
+import { initRaceTabs } from './race-tabs.js';
 import { initScrollReveal, initBackToTop, initShortcutHint } from './ui.js';
-import { renderCurrently, renderDock, renderRaces, renderBucketList, fetchWriting } from './render-data.js';
+import { renderCurrently, renderDock, renderRaces, renderRail, renderBucketList, fetchWriting } from './render-data.js';
 
 export function initSections() {
   initGreeting();
@@ -16,6 +17,7 @@ export function initSections() {
   initBackToTop();
   initShortcutHint();
   initHangout();
+  initRaceTabs();
 
   fetchJSON('data/currently.json')
     .then(renderCurrently)
@@ -28,6 +30,10 @@ export function initSections() {
   fetchJSON('data/races.json')
     .then(renderRaces)
     .catch(() => showFallback('races-list', 'could not load race data.'));
+
+  fetchJSON('data/races-2027.json')
+    .then((races) => renderRail(races, document.getElementById('race-rail'), document.getElementById('rail-stats')))
+    .catch(() => showFallback('race-rail', 'could not load race data.'));
 
   fetchJSON('data/bucketlist.json')
     .then(renderBucketList)

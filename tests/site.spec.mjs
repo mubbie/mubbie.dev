@@ -69,12 +69,16 @@ test('homepage renders every section with no script errors', async ({ page }) =>
   const errors = await load(page);
   await expect(page.locator('.project-card')).toHaveCount(5);
   await expect(page.locator('.writing-item')).toHaveCount(4);
-  await expect(page.locator('.currently-item')).toHaveCount(5);
+  const currently = await (await page.request.get('/data/currently.json')).json();
+  await expect(page.locator('.currently-item')).toHaveCount(currently.length);
   await expect(page.locator('.dock-item')).toHaveCount(8);
   await expect(page.locator('.hangout-join')).toHaveAttribute('href', /^https:\/\/chat\.whatsapp\.com\//);
   await expect(page.locator('.bucket-item')).toHaveCount(12);
   await expect(page.locator('.connect-link')).toHaveCount(8);
   await expect(page.locator('#greeting-text')).not.toHaveText('Hey');
+  // House style: no em dashes anywhere a visitor can read
+  expect(await page.title()).not.toContain('—');
+  expect(await page.evaluate(() => document.body.innerText)).not.toContain('—');
   expect(errors).toEqual([]);
 });
 
@@ -90,7 +94,7 @@ test('races: statuses, PR stars, countdown, and summary', async ({ page }) => {
   const missed = races.filter((r) => r.completed === false).length;
   const prs = races.filter((r) => r.pr).length;
   const toGo = races.length - run - missed;
-  await expect(page.locator('.race-summary')).toHaveText(
+  await expect(page.locator('#panel-2026 .race-summary')).toHaveText(
     [`${run} run`, prs && `${prs} PR${prs === 1 ? '' : 's'}`, missed && `${missed} missed`, `${toGo} to go`].filter(Boolean).join(' · '),
   );
 
@@ -104,11 +108,41 @@ test('races: statuses, PR stars, countdown, and summary', async ({ page }) => {
     await expect(page.locator('.race-badge.countdown')).toHaveText(label);
   }
 
-  await expect(page.locator('.race-block')).toHaveCount(races.length);
-  await expect(page.locator('.race-block.missed')).toHaveCount(missed);
+  await expect(page.locator('#panel-2026 .race-block')).toHaveCount(races.length);
+  await expect(page.locator('#panel-2026 .race-block.missed')).toHaveCount(missed);
   // Blocks fill in once the progress bar itself is on screen
   await page.locator('#race-stats').scrollIntoViewIfNeeded();
-  await expect(page.locator('.race-block.filled')).toHaveCount(run, { timeout: 10_000 });
+  await expect(page.locator('#panel-2026 .race-block.filled')).toHaveCount(run, { timeout: 10_000 });
+});
+
+test('race tabs: opens on this year, 2027 shows the cycling rail', async ({ page }) => {
+  await load(page);
+  const year = String(new Date().getFullYear());
+  const hasTab = await page.locator(`.race-tab[data-year="${year}"]`).count();
+  const opened = hasTab ? year : '2026';
+  await expect(page.locator(`.race-tab[data-year="${opened}"]`)).toHaveAttribute('aria-selected', 'true');
+
+  const rides = await (await page.request.get('/data/races-2027.json')).json();
+  await page.locator('#tab-2027').click();
+  await expect(page.locator('#panel-2027')).toBeVisible();
+  await expect(page.locator('#panel-2026')).toBeHidden();
+  await expect(page.locator('#races-label')).toHaveText('// 2027 cycling challenge');
+  await expect(page.locator('.rail-race')).toHaveCount(rides.length);
+  await expect(page.locator('.rail-month')).toHaveCount(new Set(rides.map((r) => r.date.slice(0, 7))).size);
+  // Placeholder dates say so instead of showing a made-up day
+  for (const [i, r] of rides.entries()) {
+    await expect(page.locator('.rail-meta').nth(i)).toContainText(r.tba ? 'date TBA' : /^[A-Z][a-z]{2} \d{1,2}/);
+  }
+  await expect(page.locator('.rail-chip')).toHaveText(rides.find((r) => r.note).note);
+  // Short names on the rail; the official name is the hover title
+  for (const r of rides.filter((x) => x.fullName)) {
+    await expect(page.locator('.rail-race', { hasText: r.name }).first()).toHaveAttribute('title', r.fullName);
+  }
+
+  // Arrow keys move between tabs
+  await page.locator('#tab-2027').press('ArrowLeft');
+  await expect(page.locator('#tab-2026')).toBeFocused();
+  await expect(page.locator('#panel-2026')).toBeVisible();
 });
 
 test('writing: NEW badge on first post, dates and read times on all', async ({ page }) => {
@@ -203,6 +237,30 @@ test('theme: follows the OS, and an explicit choice persists across reloads', as
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+
+  // The 404 page follows the same choice, in both directions
+  await page.goto('/missing-page');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+  await page.goto('/');
+  await run(page, 'theme light');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await page.goto('/missing-page');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+});
+
+test('bucket list: a checklist cat\'d in a terminal window', async ({ page }) => {
+  await load(page);
+  const items = await (await page.request.get('/data/bucketlist.json')).json();
+  await expect(page.locator('#bucketlist .term-cmd').first()).toContainText('cat bucketlist.md');
+  await expect(page.locator('.bucket-item.done .bucket-status')).toHaveText(items.filter((i) => i.done).map(() => '- [x]'));
+  await expect(page.locator('.bucket-item:not(.done) .bucket-status')).toHaveCount(items.filter((i) => !i.done).length);
+  await expect(page.locator('.bucket-note')).toHaveCount(items.filter((i) => i.note).length);
+  await expect(page.locator('.bucket-note').first()).toHaveText(/^# /);
+  // Done items stay legible: no strikethrough
+  expect(await page.locator('.bucket-item.done .bucket-text').first().evaluate((el) => getComputedStyle(el).textDecorationLine)).toBe('none');
 });
 
 test('page still works when localStorage is blocked', async ({ page }) => {
@@ -250,6 +308,14 @@ const COMMANDS = [
   ['ll', 'projects/  writing/'],
   ['ls /dev', 'secrets.txt  fuel  goals  mood  about.txt'],
   ['ls -x', 'ls: unknown option: -x'],
+  ['ls currently', 'reading  playing  learning  watching  planning  listening  tools/'],
+  ['ls tools', 'Heynote'],
+  ['ls projects', 'gx  officecat'],
+  ['ls nope', 'No such file or directory'],
+  ['hangout', 'next hangout:'],
+  ['ls cycling', 'STP'],
+  ['grep vancouver', 'races/2027/'],
+  ['grep party', 'Ride from Seattle to Vancouver and Party ('],
   ['cat /dev/secrets.txt', 'uncharted 4'],
   ['cat secrets.txt', 'uncharted 4'],
   ['cat about', 'software engineer at microsoft security'],
@@ -276,7 +342,7 @@ const COMMANDS = [
   ['cocktail', 'conjure your next drink'],
   ['cocktail foo bar', 'unknown incantation'],
   ['man ls', 'NAME'],
-  ['man ll', 'ls —'],
+  ['man ll', 'ls - '],
   ['man zzz', 'no manual entry'],
   ['man', 'what manual page'],
   ['curl', 'usage: curl'],
@@ -307,7 +373,7 @@ test('terminal: every command produces the expected output', async ({ page }) =>
 test('terminal: help lists all visible commands', async ({ page }, testInfo) => {
   await load(page);
   await run(page, 'help');
-  await expect(page.locator('.terminal-help-row')).toHaveCount(30);
+  await expect(page.locator('.terminal-help-row')).toHaveCount(31);
   const hint = page.locator('.terminal-help-hint');
   if (isMobile(testInfo)) await expect(hint).toHaveText('tap the prompt, type a command, and hit enter.');
   else await expect(hint).toContainText('to autocomplete');
@@ -337,12 +403,13 @@ test('terminal: random, flip, uptime, date', async ({ page }) => {
 
 test('terminal: cd scrolls to sections', async ({ page }) => {
   await load(page);
-  for (const [arg, id] of [['races', 'races'], ['bucket', 'bucketlist'], ['now', 'currently'], ['tools', 'tools']]) {
+  for (const [arg, id] of [['races', 'races'], ['bucket', 'bucketlist'], ['now', 'currently'], ['tools', 'tools'], ['cycling', 'races']]) {
     await run(page, `cd ${arg}`);
     await scrollSettled(page);
     expect(await page.locator(`#${id}`).evaluate((el) => Math.abs(el.getBoundingClientRect().top)), `cd ${arg}`)
       .toBeLessThan(200);
   }
+  await expect(page.locator('#tab-2027')).toHaveAttribute('aria-selected', 'true'); // cd cycling opened its tab
   await run(page, 'cd ~');
   expect(await scrollSettled(page)).toBeLessThan(50);
 });
@@ -493,10 +560,11 @@ test.describe('phones', () => {
     expect(popup.url()).toContain('t3.codes');
   });
 
-  test('phone layout: location hidden, badges under the name, 2-column connect grid', async ({ page }) => {
+  test('phone layout: location hidden, badges under the name, 2-column tiles and connect grid', async ({ page }) => {
     await load(page);
     await expect(page.locator('.race-location').first()).toBeHidden();
     expect(await page.locator('.race-item.next .race-badges').evaluate((el) => getComputedStyle(el).gridColumnStart)).toBe('3');
+    expect(await page.locator('.currently-list').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(2);
     expect(await page.locator('.connect-grid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(2);
   });
 });

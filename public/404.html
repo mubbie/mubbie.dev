@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>404 — mubbie.dev</title>
+  <title>404 · mubbie.dev</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +16,7 @@
         document.documentElement.setAttribute('data-theme', theme);
         var m = document.querySelector('meta[name="theme-color"]');
         if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
-        m.content = theme === 'light' ? '#f5f5f0' : '#0a0a0c';
+        m.content = theme === 'light' ? '#fff' : '#000';
       }
       function getSaved() {
         try { return localStorage.getItem(key); } catch (e) { return null; }
