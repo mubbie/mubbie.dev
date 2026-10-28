@@ -49,7 +49,7 @@ export function tabComplete(input) {
 
   // Complete theme argument
   if (cmd === 'theme') {
-    const themes = ['dark', 'light'];
+    const themes = ['dark', 'light', 'default'];
     const prefix = hasTrailingSpace && parts.length === 1 ? '' : (parts[1] || '');
     const hit = themes.find((t) => t.startsWith(prefix));
     return hit ? 'theme ' + hit : null;

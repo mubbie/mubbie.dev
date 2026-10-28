@@ -13,6 +13,18 @@ export function setThemePreference(theme) {
   try { localStorage.setItem(USER_PREF_KEY, theme); } catch { /* not persisted */ }
 }
 
+function systemTheme() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+// Forget the explicit choice and follow the device again (live OS changes included)
+export function useSystemTheme() {
+  try { localStorage.removeItem(USER_PREF_KEY); } catch { /* nothing stored */ }
+  const theme = systemTheme();
+  applyTheme(theme);
+  return theme;
+}
+
 export function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
 
@@ -43,8 +55,7 @@ export function initTheme() {
     applyTheme(explicit);
   } else {
     // Follow system preference when no explicit choice has been made
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    applyTheme(prefersDark ? 'dark' : 'light');
+    applyTheme(systemTheme());
   }
 
   // Listen for OS theme changes (e.g. scheduled dark mode on phones)

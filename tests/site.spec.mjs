@@ -281,6 +281,27 @@ test('theme: follows the OS, and an explicit choice persists across reloads', as
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
 });
 
+test('theme default: forgets the explicit choice and follows the device again', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await load(page);
+  await run(page, 'theme dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+  expect(await run(page, 'theme default')).toContain('theme: default (light, following your device)');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  expect(await page.evaluate(() => localStorage.getItem('mubbie-theme-explicit'))).toBeNull();
+
+  // Follows live OS changes again, and still does after a reload
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+  // Aliases
+  expect(await run(page, 'theme system')).toContain('theme: default');
+  expect(await run(page, 'theme auto')).toContain('theme: default');
+});
+
 test('bucket list: a checklist cat\'d in a terminal window', async ({ page }) => {
   await load(page);
   const items = await (await page.request.get('/data/bucketlist.json')).json();
@@ -357,6 +378,7 @@ const COMMANDS = [
   ['open s', 'ambiguous'],
   ['open zzz', 'not found'],
   ['theme blue', "unknown value 'blue'"],
+  ['theme blue', 'use: dark, light, default'],
   ['echo hello <b>x</b>', 'hello <b>x</b>'],
   ['8ball', 'ask me a question'],
   ['8ball will it ship?', '🎱'],

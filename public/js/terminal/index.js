@@ -7,7 +7,7 @@ import {
 import { createHistory } from './history.js';
 import { createOutput } from './output.js';
 import { tabComplete } from './completer.js';
-import { applyTheme, toggleTheme, setThemePreference } from '../theme.js';
+import { applyTheme, toggleTheme, setThemePreference, useSystemTheme } from '../theme.js';
 import { startMatrix } from '../matrix.js';
 import { scrollToTop, scrollToEl } from '../scroll.js';
 import { fetchWeather } from '../weather.js';
@@ -222,12 +222,16 @@ function createHandlers(out, history, getFortunes) {
         applyTheme(lower);
         out.addLine('$', trimmed, null);
         out.addOk(`theme: ${lower}`);
+      } else if (lower === 'default' || lower === 'system' || lower === 'auto') {
+        const theme = useSystemTheme();
+        out.addLine('$', trimmed, null);
+        out.addOk(`theme: default (${theme}, following your device)`);
       } else if (!target) {
         const next = toggleTheme();
         out.addLine('$', trimmed, null);
         out.addOk(`theme → ${next}`);
       } else {
-        out.addLine('$', trimmed, `theme: unknown value '${target}'. use: dark, light`, true);
+        out.addLine('$', trimmed, `theme: unknown value '${target}'. use: dark, light, default`, true);
       }
     },
 
