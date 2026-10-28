@@ -1,6 +1,6 @@
 [
   { "item": "Run a half marathon", "done": true, "note": "done 10!" },
-  { "item": "Run a full marathon", "done": false, "note": "Nov 29 · Seattle" },
+  { "item": "Run a full marathon", "done": false, "note": "Nov 29 · Seattle 🤞🏿" },
   { "item": "Complete at least two half Ironmans", "done": false },
   { "item": "Complete at least one full Ironman", "done": false },
   { "item": "Ride STP (Seattle to Portland)", "done": false },

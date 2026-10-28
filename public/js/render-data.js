@@ -169,7 +169,7 @@ export function renderRaces(races) {
         badges.appendChild(span('race-badge countdown', `in ${daysUntilNext} days`));
       }
     }
-    if (race.goal) badges.appendChild(span('race-badge goal', 'first marathon'));
+    if (race.goal) badges.appendChild(span('race-badge goal', 'first marathon 🤞🏿'));
     if (race.note) badges.appendChild(span('race-badge note', race.note));
     a.appendChild(badges);
 
