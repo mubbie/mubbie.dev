@@ -958,7 +958,11 @@ a.race-item:hover {
 
 .rail-month {
   grid-column: 1;
-  padding-top: 7px;
+  align-self: start;
+  /* Center the label on its month's first stop: the dot's center is 22px into
+     the row (9px row padding + 13px), so a 14px line starts 15px down */
+  line-height: 14px;
+  padding-top: 15px;
   font-family: var(--mono);
   font-size: 11px;
   color: var(--text-dim);
