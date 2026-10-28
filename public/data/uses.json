@@ -1,0 +1,10 @@
+[
+  { "icon": "img/tools/claude-code.png", "name": "Claude Code", "note": "coding. helped build this site", "url": "https://claude.com/product/claude-code" },
+  { "icon": "img/tools/t3-code.png", "name": "T3 Code", "note": "all my coding agents in one place (control from my phone)", "url": "https://t3.codes" },
+  { "icon": "img/tools/dinkus.png", "name": "Dinkus", "note": "markdown editor", "url": "https://dinkus.textualize.io" },
+  { "icon": "img/tools/heynote.png", "name": "Heynote", "note": "scratch pad / half-formed thoughts", "url": "https://heynote.com" },
+  { "icon": "img/tools/notion.png", "name": "Notion", "note": "runs my life / meetings, mostly", "url": "https://www.notion.com" },
+  { "icon": "img/tools/listy.png", "name": "Listy", "note": "movies to watch, games to play, books to read", "url": "https://listy.is" },
+  { "icon": "img/tools/runna.png", "name": "Runna", "note": "coaching to get me to a marathon", "url": "https://www.runna.com" },
+  { "icon": "img/tools/mywhoosh.png", "name": "MyWhoosh", "note": "indoor cycling for when seattle is rainy", "url": "https://mywhoosh.com" }
+]

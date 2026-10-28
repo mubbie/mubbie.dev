@@ -416,6 +416,12 @@ function createHandlers(out, history, getFortunes) {
         return title.toLowerCase().includes(term) ? title : null;
       });
 
+      // Fav tools dock: name + note (both live in the aria-label)
+      searchSection('currently/tools/', '.dock-item', (el) => {
+        const text = el.getAttribute('aria-label') || '';
+        return text.toLowerCase().includes(term) ? text : null;
+      });
+
       // Races: name + location
       searchSection('races/', '.race-item', (el) => {
         const name = el.querySelector('.race-name')?.firstChild?.textContent || '';

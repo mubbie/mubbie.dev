@@ -70,6 +70,8 @@ test('homepage renders every section with no script errors', async ({ page }) =>
   await expect(page.locator('.project-card')).toHaveCount(5);
   await expect(page.locator('.writing-item')).toHaveCount(4);
   await expect(page.locator('.currently-item')).toHaveCount(5);
+  await expect(page.locator('.dock-item')).toHaveCount(8);
+  await expect(page.locator('.hangout-join')).toHaveAttribute('href', /^https:\/\/chat\.whatsapp\.com\//);
   await expect(page.locator('.bucket-item')).toHaveCount(12);
   await expect(page.locator('.connect-link')).toHaveCount(8);
   await expect(page.locator('#greeting-text')).not.toHaveText('Hey');
@@ -119,6 +121,58 @@ test('writing: NEW badge on first post, dates and read times on all', async ({ p
     await expect(item.locator('.writing-time')).toHaveText(/^\d+ min$/);
     await expect(item).toHaveAttribute('href', /^https:\/\/notebook\.mubbie\.dev\/p\//);
   }
+});
+
+test('fav tools dock: hover or focus explains an app, and every app links out', async ({ page }, testInfo) => {
+  await load(page);
+  const tools = await (await page.request.get('/data/uses.json')).json();
+  const items = page.locator('.dock-item');
+  await expect(items).toHaveCount(tools.length);
+  await page.locator('#dock').scrollIntoViewIfNeeded(); // icons are lazy-loaded
+  for (const [i, t] of tools.entries()) {
+    await expect(items.nth(i)).toHaveAttribute('href', t.url);
+    await expect.poll(() => items.nth(i).locator('img').evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
+  }
+
+  // Easter egg: nothing explains the dock until you poke at it
+  const caption = page.locator('#dock-caption');
+  await expect(caption).toHaveText('');
+  await expect(page.locator('#tools .footnote-ref')).toHaveAttribute('href', '#credits');
+  await expect(page.locator('#credits a')).toHaveAttribute('href', 'https://www.vitorialima.com/');
+  await items.nth(2).focus();
+  await expect(caption).toHaveText(tools[2].note); // the reason only; the name floats above the icon
+  await expect(items.nth(2).locator('.dock-label')).toHaveText(tools[2].name);
+  await expect(items.nth(2).locator('.dock-label')).toBeVisible();
+  await expect(items.nth(2)).toHaveClass(/selected/);
+  if (!isMobile(testInfo)) {
+    await items.nth(4).hover();
+    await expect(caption).toContainText(tools[4].note);
+  }
+  expect(await caption.innerText()).not.toContain('—');
+});
+
+test('hangout invite: activity word cycles, and joining pops popcorn', async ({ page }) => {
+  await load(page);
+  const word = page.locator('#hangout-activity');
+  const first = await word.innerText();
+  expect(first.length).toBeGreaterThan(0);
+  await expect(word).not.toHaveText(first, { timeout: 8000 }); // starts typing a new one
+  await expect(word).not.toHaveClass(/typing/, { timeout: 8000 });
+  const second = await word.innerText();
+  expect(second).not.toBe(first);
+
+  const join = page.locator('#hangout-join');
+  await join.scrollIntoViewIfNeeded();
+  // Kernels remove themselves when their animation ends, so count them as they're added
+  await page.evaluate(() => {
+    window.__kernels = 0;
+    new MutationObserver((records) => records.forEach((r) => r.addedNodes.forEach((n) => {
+      if (n.classList?.contains('popcorn-kernel')) window.__kernels++;
+    }))).observe(document.body, { childList: true });
+  });
+  const [popup] = await Promise.all([page.waitForEvent('popup'), join.click()]);
+  expect(popup.url()).toContain('chat.whatsapp.com');
+  expect(await page.evaluate(() => window.__kernels)).toBeGreaterThan(0);
 });
 
 test('every new-tab link is noopener and no link is empty', async ({ page }) => {
@@ -231,6 +285,7 @@ const COMMANDS = [
   ['grep qqqzzz', 'no matches'],
   ['grep marathon', 'races/'],
   ['grep secrets', '/dev/'],
+  ['grep heynote', 'Heynote: scratch pad'],
   ['blah', "command not found: blah. try 'help'"],
   // Object.prototype names must not resolve to anything
   ['constructor', 'command not found: constructor'],
@@ -282,7 +337,7 @@ test('terminal: random, flip, uptime, date', async ({ page }) => {
 
 test('terminal: cd scrolls to sections', async ({ page }) => {
   await load(page);
-  for (const [arg, id] of [['races', 'races'], ['bucket', 'bucketlist'], ['now', 'currently']]) {
+  for (const [arg, id] of [['races', 'races'], ['bucket', 'bucketlist'], ['now', 'currently'], ['tools', 'tools']]) {
     await run(page, `cd ${arg}`);
     await scrollSettled(page);
     expect(await page.locator(`#${id}`).evaluate((el) => Math.abs(el.getBoundingClientRect().top)), `cd ${arg}`)
@@ -425,6 +480,17 @@ test.describe('phones', () => {
     await expect(hint).toHaveText('tap here to start typing');
     await hint.tap();
     await expect(page.locator('#terminal-input')).toBeFocused();
+  });
+
+  test('dock: first tap explains an app, second tap opens it', async ({ page }) => {
+    await load(page);
+    const item = page.locator('.dock-item').nth(1);
+    await item.scrollIntoViewIfNeeded();
+    await item.tap();
+    await expect(page.locator('#dock-caption')).toContainText('coding agents');
+    expect(await page.evaluate(() => window.__opened.length + (location.href.includes('t3.codes') ? 1 : 0))).toBe(0);
+    const [popup] = await Promise.all([page.waitForEvent('popup'), item.tap()]);
+    expect(popup.url()).toContain('t3.codes');
   });
 
   test('phone layout: location hidden, badges under the name, 2-column connect grid', async ({ page }) => {

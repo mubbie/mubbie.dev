@@ -106,7 +106,7 @@ body::after {
 
 /* ─── Header / Hero ─── */
 header {
-  padding: 80px 0 60px;
+  padding: 80px 0 48px;
   position: relative;
   z-index: 1;
 }
@@ -486,6 +486,120 @@ a.currently-item:hover .arrow {
   color: var(--accent);
 }
 
+/* ─── Fav tools dock ─── */
+.dock-label-heading {
+  margin-top: 40px;
+}
+
+.dock {
+  --dock-icon: 52px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  height: calc(var(--dock-icon) + 20px);
+  /* Headroom so a magnified icon and its name label don't run into the heading */
+  margin: 64px auto 0;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+.dock-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--dock-icon);
+  height: var(--dock-icon);
+  transition: width 0.18s ease, height 0.18s ease, transform 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dock-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Magnify: hovered icon grows most, its neighbors a little. Width (not scale) so neighbors shift over. */
+@media (hover: hover) {
+  .dock-item:hover {
+    width: calc(var(--dock-icon) * 1.45);
+    height: calc(var(--dock-icon) * 1.45);
+  }
+
+  .dock-item:hover + .dock-item,
+  .dock-item:has(+ .dock-item:hover) {
+    width: calc(var(--dock-icon) * 1.2);
+    height: calc(var(--dock-icon) * 1.2);
+  }
+}
+
+.dock-item.selected::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+
+.dock-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 22%;
+}
+
+.dock-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.dock-item.selected .dock-label {
+  opacity: 1;
+}
+
+.dock-caption {
+  margin-top: 16px;
+  min-height: 1.6em;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.footnote-ref {
+  /* Hug the heading text despite .section-label's flex gap */
+  margin-left: -10px;
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.7;
+}
+
+.footnote-ref:hover {
+  opacity: 1;
+}
+
 /* ─── Bucket list section ─── */
 .bucket-list {
   display: flex;
@@ -762,6 +876,57 @@ a.race-item:hover {
 }
 
 /* ─── Connect section ─── */
+.hangout-invite {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.hangout-invite strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.hangout-activity {
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hangout-activity.typing::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--accent);
+  animation: blink 1s steps(1) infinite;
+}
+
+.hangout-join {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 8px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 100px;
+  transition: all 0.2s ease;
+}
+
+.hangout-join:hover {
+  background: var(--accent-glow);
+}
 .connect-grid {
   display: flex;
   gap: 8px;
@@ -811,6 +976,23 @@ footer p {
   color: var(--text-dim);
 }
 
+.footer-credit {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
+.footer-credit a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+.footer-credit a:hover {
+  color: var(--accent);
+}
+
 .footer-meta {
   font-family: var(--mono);
   font-size: 12px;
@@ -820,7 +1002,8 @@ footer p {
 }
 
 .footer-status {
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
@@ -877,8 +1060,8 @@ footer p {
 
 /* ─── Responsive ─── */
 @media (max-width: 640px) {
-  header { padding: 60px 0 40px; }
-  section { padding: 36px 0; }
+  header { padding: 60px 0 36px; }
+  section, footer { padding: 36px 0; }
 
   .project-card {
     grid-template-columns: 32px 1fr;
@@ -921,6 +1104,20 @@ footer p {
   }
 
   .currently-label { display: none; }
+
+  /* Fit every icon across a phone: (screen - gutters - dock padding - gaps) / count.
+     --dock-count is set from uses.json by renderDock. */
+  .dock {
+    --dock-icon: min(44px, calc((100vw - 48px - 24px - (var(--dock-count, 8) - 1) * 5px) / var(--dock-count, 8)));
+    gap: 5px;
+    padding: 10px 12px;
+    margin-top: 40px;
+  }
+
+  .hangout-invite {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
   .bucket-item {
     padding: 10px 16px;

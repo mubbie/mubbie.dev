@@ -1,4 +1,4 @@
-// ─── Data section renderers: currently, races, bucket list, latest post ───
+// ─── Data section renderers: currently, fav tools dock, races, bucket list, latest post ───
 
 import { span } from './dom.js';
 
@@ -33,6 +33,66 @@ export function renderCurrently(items) {
 
     list.appendChild(el);
   });
+}
+
+// ─── Fav tools dock ───
+// Mac-dock style. Easter egg: hovering an icon reveals why it's there (no hint on the page).
+// On touch there's no hover, so the first tap selects an app and the second opens it.
+
+export function renderDock(items) {
+  const dock = document.getElementById('dock');
+  const caption = document.getElementById('dock-caption');
+  if (!dock || !caption) return;
+
+  dock.style.setProperty('--dock-count', items.length);
+  let lastPointer = 'mouse';
+  let selected = null;
+
+  function select(el) {
+    if (selected) selected.classList.remove('selected');
+    selected = el;
+    if (!el) {
+      caption.replaceChildren();
+      return;
+    }
+    el.classList.add('selected');
+    const item = items[el.dataset.index];
+    caption.textContent = item.note;
+  }
+
+  items.forEach((item, i) => {
+    const a = document.createElement('a');
+    a.className = 'dock-item';
+    a.href = item.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.dataset.index = i;
+    a.setAttribute('aria-label', `${item.name}: ${item.note}`);
+
+    const img = document.createElement('img');
+    img.src = item.icon;
+    img.alt = '';
+    img.width = 128;
+    img.height = 128;
+    img.loading = 'lazy';
+    a.appendChild(img);
+    a.appendChild(span('dock-label', item.name));
+
+    a.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') select(a); });
+    a.addEventListener('focus', () => select(a));
+    a.addEventListener('click', (e) => {
+      if (lastPointer !== 'mouse' && selected !== a) {
+        e.preventDefault();
+        select(a);
+      }
+    });
+
+    dock.appendChild(a);
+  });
+
+  dock.addEventListener('pointerdown', (e) => { lastPointer = e.pointerType; });
+  dock.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') select(null); });
+  dock.addEventListener('focusout', (e) => { if (!dock.contains(e.relatedTarget)) select(null); });
 }
 
 // ─── Races ───

@@ -22,6 +22,8 @@ export const SECTION_MAP = {
   'writing': 'writing',
   'currently': 'currently',
   'now': 'currently',
+  'uses': 'tools',
+  'tools': 'tools',
   'races': 'races',
   'running': 'races',
   'bucketlist': 'bucketlist',
@@ -45,6 +47,7 @@ export const OPENABLES = [
   { name: 'instagram', href: 'https://www.instagram.com/mubbiee' },
   { name: 'threads', href: 'https://www.threads.net/@mubbiee' },
   { name: 'strava', href: 'https://strava.app.link/ySjT1gEwn2b' },
+  { name: 'hangouters', href: 'https://chat.whatsapp.com/JDZW4Em5UyJEd7RS4leUNd' },
 ];
 
 // ─── 8-ball responses ───
@@ -128,9 +131,9 @@ export const COMMAND_DEFS = [
 export const MAN_PAGES = {
   help:     'Display a list of all available commands with brief descriptions.',
   ls:       'List directory contents.\n\n  Paths:\n    ~, .     home directory (site sections)\n    /dev     hidden developer files\n\n  Aliases: ll, la',
-  cd:       'Navigate to a site section by name.\n\n  Sections: projects, writing, currently, races, bucketlist, connect\n  Shortcuts: now → currently, running → races, bucket → bucketlist\n  cd ~ scrolls to top.',
+  cd:       'Navigate to a site section by name.\n\n  Sections: projects, writing, currently, races, bucketlist, connect\n  Shortcuts: now → currently, tools or uses → fav tools dock, running → races, bucket → bucketlist\n  cd ~ scrolls to top.',
   cat:      'Read the contents of a file.\n\n  Try: cat /dev/secrets.txt\n  Run ls /dev to see available files.',
-  open:     'Open a project, social link, or post in a new tab.\n\n  Projects: gx, officecat, portctl, chaos-pong, sorcery, lena\n  Social: github, linkedin, x, twitter, instagram, threads, strava\n  Links: substack, notebook\n  Special: open latest — opens the latest blog post\n\n  Exact matches are preferred. If ambiguous, suggestions are shown.',
+  open:     'Open a project, social link, or post in a new tab.\n\n  Projects: gx, officecat, portctl, chaos-pong, sorcery, lena\n  Social: github, linkedin, x, twitter, instagram, threads, strava\n  Community: hangouters\n  Links: substack, notebook\n  Special: open latest — opens the latest blog post\n\n  Exact matches are preferred. If ambiguous, suggestions are shown.',
   whoami:   'Print the current user identity.',
   theme:    'Toggle or set the color theme.\n\n  theme          toggle between dark and light\n  theme dark     switch to dark mode\n  theme light    switch to light mode\n\n  Explicit choices are persisted. Without one, the site follows your OS preference.',
   weather:  'Fetch current weather for Seattle via wttr.in.\n\n  Displays temperature (°F/°C), wind, and humidity.',
@@ -154,7 +157,7 @@ export const MAN_PAGES = {
   uptime:   'Show how long since the page was loaded.',
   curl:     'Fetch and display content from the web.\n\n  curl xkcd          today\'s xkcd comic\n  curl xkcd random   a random xkcd comic',
   popcorn:  'What\'s poppin\'! 🍿\n\n  Triggers a popcorn explosion. Because why not.',
-  grep:     'Search across all site content.\n\n  Usage: grep <term>\n  Searches: projects, writing, races, bucket list, currently, connect, /dev.\n  Results grouped by section. Only sections with matches are shown.',
+  grep:     'Search across all site content.\n\n  Usage: grep <term>\n  Searches: projects, writing, tools, races, bucket list, currently, connect, /dev.\n  Results grouped by section. Only sections with matches are shown.',
   ssh:      'Attempt to connect to a remote host.\n\n  Spoiler: you\'re already here.',
   rm:       'Nice try.',
   exit:     'There is no escape.',

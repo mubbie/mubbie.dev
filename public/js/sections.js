@@ -3,8 +3,9 @@
 import { fetchJSON, showFallback } from './dom.js';
 import { initGreeting, initWaveEmoji } from './greeting.js';
 import { initFooter, initFooterMeta } from './footer.js';
+import { initHangout } from './hangout.js';
 import { initScrollReveal, initBackToTop, initShortcutHint } from './ui.js';
-import { renderCurrently, renderRaces, renderBucketList, fetchWriting } from './render-data.js';
+import { renderCurrently, renderDock, renderRaces, renderBucketList, fetchWriting } from './render-data.js';
 
 export function initSections() {
   initGreeting();
@@ -14,10 +15,15 @@ export function initSections() {
   initScrollReveal();
   initBackToTop();
   initShortcutHint();
+  initHangout();
 
   fetchJSON('data/currently.json')
     .then(renderCurrently)
     .catch(() => showFallback('currently-list', 'could not load data.'));
+
+  fetchJSON('data/uses.json')
+    .then(renderDock)
+    .catch(() => showFallback('dock', 'could not load data.'));
 
   fetchJSON('data/races.json')
     .then(renderRaces)
