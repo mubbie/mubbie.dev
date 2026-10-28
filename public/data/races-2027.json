@@ -29,8 +29,7 @@
     "fullName": "McClinchy Camano Classic Century",
     "location": "Stanwood",
     "distance": "103 mi",
-    "url": "https://bikesclub.wildapricot.org/McClinchy",
-    "tba": true
+    "url": "https://bikesclub.wildapricot.org/McClinchy"
   },
   {
     "date": "2027-05-29",
@@ -73,14 +72,6 @@
     "location": "Port Angeles → Hurricane Ridge",
     "distance": "~40 mi",
     "url": "https://runsignup.com/Race/WA/PortAngeles/RidetheHurricane",
-    "tba": true
-  },
-  {
-    "date": "2027-08-14",
-    "name": "Obliteride",
-    "location": "Seattle",
-    "distance": "100 mi",
-    "url": "https://www.obliteride.org",
     "tba": true
   },
   {
