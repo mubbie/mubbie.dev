@@ -953,7 +953,8 @@ a.race-item:hover {
 /* ─── Month rail ─── */
 .race-rail {
   display: grid;
-  grid-template-columns: 44px 1fr;
+  /* minmax(0, 1fr): the ride column never grows past the screen to fit long text */
+  grid-template-columns: 44px minmax(0, 1fr);
 }
 
 .rail-month {
@@ -1059,13 +1060,16 @@ a.race-item:hover {
 
 .rail-meta {
   flex-basis: 100%;
+  /* Parts sit back to back with no spaces, so wrap them as flex items on narrow screens */
+  display: flex;
+  flex-wrap: wrap;
   font-family: var(--mono);
   font-size: 11px;
   color: var(--text-dim);
 }
 
 .rail-part {
-  white-space: nowrap; /* "in 137 days" wraps as one piece, never mid-phrase */
+  min-width: 0;
 }
 
 .rail-part + .rail-part::before {
@@ -1074,8 +1078,13 @@ a.race-item:hover {
   opacity: 0.6;
 }
 
-.rail-countdown {
-  color: var(--accent);
+/* Countdown: the same filled green chip as 2026's "in 32 days" */
+.rail-chip.countdown {
+  font-style: normal;
+  white-space: nowrap;
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
 }
 
 .rail-chip.goal {
@@ -1086,7 +1095,7 @@ a.race-item:hover {
 }
 
 .rail-chip {
-  white-space: nowrap;
+  max-width: 100%; /* long notes wrap inside the chip instead of running off a narrow screen */
   font-family: var(--mono);
   font-size: 11px;
   font-style: italic;
@@ -1372,7 +1381,7 @@ footer p {
     justify-content: flex-start;
   }
 
-  .race-rail { grid-template-columns: 36px 1fr; }
+  .race-rail { grid-template-columns: 36px minmax(0, 1fr); }
 
   /* Keep name + details together; the chip follows as a footnote */
   .rail-chip { order: 1; }

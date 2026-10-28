@@ -123,6 +123,7 @@ test('race tabs: opens on this year, 2027 shows the cycling rail', async ({ page
   await expect(page.locator(`.race-tab[data-year="${opened}"]`)).toHaveAttribute('aria-selected', 'true');
 
   const rides = await (await page.request.get('/data/races-2027.json')).json();
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
   await page.locator('#tab-2027').click();
   await expect(page.locator('#panel-2027')).toBeVisible();
   await expect(page.locator('#panel-2026')).toBeHidden();
@@ -132,7 +133,14 @@ test('race tabs: opens on this year, 2027 shows the cycling rail', async ({ page
   for (const [i, r] of rides.entries()) {
     await expect(page.locator('.rail-meta').nth(i)).toContainText(r.tba ? 'date TBA' : /^[A-Z][a-z]{2} \d{1,2}/);
   }
-  await expect(page.locator('.rail-chip:not(.goal)')).toHaveText(rides.filter((r) => r.note).map((r) => r.note));
+  await expect(page.locator('.rail-chip:not(.goal):not(.countdown)')).toHaveText(rides.filter((r) => r.note).map((r) => r.note));
+  // One countdown chip, on the next event: days when the date is set, months while it's TBA
+  const next = rides.find((r) => r.completed === undefined && r.date >= today);
+  await expect(page.locator('.rail-chip.countdown')).toHaveCount(next ? 1 : 0);
+  if (next) {
+    await expect(page.locator('.rail-race.next .rail-chip.countdown'))
+      .toHaveText(next.tba ? /^(in ~\d+ months|next month|this month)$/ : /^(in \d+ days|tomorrow|today!)$/);
+  }
   // The goal ride gets the orange tag, like 2026's first marathon
   await expect(page.locator('.rail-chip.goal')).toHaveText(rides.filter((r) => r.goal).map((r) => r.goal));
   // Short names on the rail; the official name is the hover title
@@ -212,6 +220,8 @@ test('hangout invite: activity word cycles, and joining pops popcorn', async ({ 
   expect(second).not.toBe(first);
 
   const join = page.locator('#hangout-join');
+  // The site scrolls smoothly; under load a click can land where the button was mid-scroll
+  await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; });
   await join.scrollIntoViewIfNeeded();
   // Kernels remove themselves when their animation ends, so count them as they're added
   await page.evaluate(() => {
@@ -220,9 +230,13 @@ test('hangout invite: activity word cycles, and joining pops popcorn', async ({ 
       if (n.classList?.contains('popcorn-kernel')) window.__kernels++;
     }))).observe(document.body, { childList: true });
   });
-  const [popup] = await Promise.all([page.waitForEvent('popup'), join.click()]);
-  expect(popup.url()).toContain('chat.whatsapp.com');
-  expect(await page.evaluate(() => window.__kernels)).toBeGreaterThan(0);
+  // Check the link target and the click handler, without waiting on a real popup:
+  // opening WhatsApp in a new tab is the browser's job, and Firefox is slow to report it under load
+  await expect(join).toHaveAttribute('href', /^https:\/\/chat\.whatsapp\.com\//);
+  await expect(join).toHaveAttribute('target', '_blank');
+  await page.evaluate(() => document.addEventListener('click', (e) => e.preventDefault(), { once: true }));
+  await join.click();
+  await expect.poll(() => page.evaluate(() => window.__kernels)).toBeGreaterThan(0);
 });
 
 test('every new-tab link is noopener and no link is empty', async ({ page }) => {

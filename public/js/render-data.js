@@ -251,6 +251,19 @@ function wireProgress(races, list, stats, rowSelector) {
   });
 }
 
+// Both dates are YYYY-MM-DD strings, so they parse as UTC midnights: whole days, no DST drift
+function daysUntil(date, today) {
+  const days = Math.round((Date.parse(date) - Date.parse(today)) / 86400000);
+  return days === 0 ? 'today!' : days === 1 ? 'tomorrow' : `in ${days} days`;
+}
+
+// For TBA dates only the month is reliable: count calendar months
+function monthsUntil(date, today) {
+  const months = (parseInt(date.slice(0, 4), 10) - parseInt(today.slice(0, 4), 10)) * 12
+    + parseInt(date.slice(5, 7), 10) - parseInt(today.slice(5, 7), 10);
+  return months <= 0 ? 'this month' : months === 1 ? 'next month' : `in ~${months} months`;
+}
+
 // ─── Month rail (2027 cycling challenge) ───
 // Races grouped by month along a vertical line. Status reads by shape as well as
 // color: filled dot = done, ✗ = missed, ringed dot = next, hollow dot = upcoming.
@@ -303,20 +316,19 @@ export function renderRail(races, list, stats) {
       pr.title = 'Personal record';
       a.appendChild(pr);
     }
-    // Line 1 is the name plus any chip; line 2 is the details
+    // Line 1 is the name plus any chips; line 2 is the details.
+    // Countdown chip on the next event, same green chip as 2026. A TBA date is only
+    // a guess at the day, so count in months instead.
+    if (i === nextIndex) a.appendChild(span('rail-chip countdown', race.tba ? monthsUntil(race.date, today) : daysUntil(race.date, today)));
     // The year's goal ride gets the same orange tag as 2026's first marathon
     if (race.goal) a.appendChild(span('rail-chip goal', race.goal));
     if (race.note) a.appendChild(span('rail-chip', race.note));
 
-    // One quiet line of details: date (or TBA until announced) · place · distance · countdown
+    // One quiet line of details: date (or TBA until announced) · place · distance
     const meta = span('rail-meta', '');
     let when = race.tba ? 'date TBA' : formatDate(race.date);
     if (!race.tba && race.endDate) when += `–${parseInt(race.endDate.slice(8), 10)}`;
     [when, race.location, race.distance].filter(Boolean).forEach((part) => meta.appendChild(span('rail-part', part)));
-    if (i === nextIndex && !race.tba) {
-      const days = Math.round((Date.parse(race.date) - Date.parse(today)) / 86400000);
-      meta.appendChild(span('rail-part rail-countdown', days === 0 ? 'today!' : days === 1 ? 'tomorrow' : `in ${days} days`));
-    }
     a.appendChild(meta);
 
     a.dataset.raceIndex = i;
