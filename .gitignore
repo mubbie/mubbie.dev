@@ -175,3 +175,6 @@ Desktop.ini
 /test-results/
 /playwright-report/
 /blob-report/
+
+# Personal notes, kept on this machine only
+TODO.md
