@@ -281,6 +281,41 @@ test('theme: follows the OS, and an explicit choice persists across reloads', as
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
 });
 
+test('terminal: every alias runs its command', async ({ page }) => {
+  // Reduced motion keeps `hack` (matrix) from taking over the screen mid-loop
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await load(page);
+  // Read the aliases from the site's own registry, so new ones are covered automatically
+  const aliases = await page.evaluate(async () => {
+    const { COMMAND_DEFS } = await import('/js/terminal/commands.js');
+    return COMMAND_DEFS.flatMap((c) => (c.aliases || []).map((a) => [a, c.name]));
+  });
+  expect(aliases.length).toBeGreaterThan(10);
+  for (const [alias, name] of aliases) {
+    const out = await run(page, alias);
+    expect.soft(out, `${alias} → ${name}`).not.toContain('command not found');
+    // clear and its aliases wipe the history; everything else echoes the command line
+    if (name !== 'clear') expect.soft(out, `${alias} → ${name}`).toContain(alias);
+  }
+  // man resolves aliases to their command's page
+  expect(await run(page, 'man cls')).toContain('clear -');
+});
+
+test('terminal: weather shows live conditions, and degrades gracefully', async ({ page }) => {
+  // Stand in for wttr.in so the test never depends on an outside service
+  const conditions = { current_condition: [{ weatherCode: '113', weatherDesc: [{ value: 'Sunny' }],
+    temp_F: '55', temp_C: '13', winddir16Point: 'NW', windspeedMiles: '5', humidity: '70' }] };
+  await page.route('https://wttr.in/**', (route) => route.fulfill({ json: conditions }));
+  await load(page);
+  await run(page, 'weather');
+  await expect(page.locator('#terminal-history')).toContainText('seattle: ☀️ 55°F/13°C · NW 5mph · 70% humidity');
+
+  await page.unroute('https://wttr.in/**');
+  await page.route('https://wttr.in/**', (route) => route.abort());
+  await run(page, 'weather');
+  await expect(page.locator('#terminal-history')).toContainText('could not fetch weather. try again later.');
+});
+
 test('theme default: forgets the explicit choice and follows the device again', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await load(page);
