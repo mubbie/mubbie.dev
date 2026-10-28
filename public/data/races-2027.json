@@ -1,11 +1,53 @@
 [
   {
+    "date": "2027-02-21",
+    "name": "Chilly Hilly",
+    "location": "Bainbridge Island",
+    "distance": "33 mi",
+    "url": "https://cascade.org/chilly-hilly",
+    "tba": true
+  },
+  {
     "date": "2027-03-14",
     "name": "Shamrock Half Marathon",
     "location": "Portland",
     "distance": "13.1 mi",
     "url": "https://www.shamrockrun.com/",
     "note": "not a bike race. i know."
+  },
+  {
+    "date": "2027-05-02",
+    "name": "Ride for Major Taylor",
+    "location": "White Center, Seattle",
+    "distance": "62 mi",
+    "url": "https://cascade.org/rides-events/ride-major-taylor-2026",
+    "tba": true
+  },
+  {
+    "date": "2027-05-29",
+    "name": "Flying Wheels",
+    "fullName": "Flying Wheels Summer Century",
+    "location": "Redmond",
+    "distance": "100 mi",
+    "url": "https://cascade.org/flying-wheels",
+    "tba": true
+  },
+  {
+    "date": "2027-05-31",
+    "name": "7 Hills of Kirkland",
+    "location": "Kirkland",
+    "distance": "62 mi",
+    "url": "https://raceroster.com/events/2026/112721/7-hills-of-kirkland-charity-bicycle-ride2026",
+    "tba": true
+  },
+  {
+    "date": "2027-06-12",
+    "name": "Volunteer Park Criterium",
+    "fullName": "Taco Time Volunteer Park Criterium",
+    "location": "Capitol Hill, Seattle",
+    "distance": "crit",
+    "url": "https://www.bikereg.com/74269",
+    "tba": true
   },
   {
     "date": "2027-07-10",
@@ -23,6 +65,24 @@
     "location": "Seattle → Vancouver",
     "distance": "184 mi",
     "url": "https://cascade.org/rsvp",
+    "tba": true
+  },
+  {
+    "date": "2027-09-12",
+    "name": "RAMROD",
+    "fullName": "RAMROD: Ride Around Mount Rainier in One Day",
+    "location": "Enumclaw",
+    "distance": "150 mi",
+    "url": "https://www.redmondcycling.club/ramrod",
+    "tba": true,
+    "note": "if it comes back"
+  },
+  {
+    "date": "2027-10-10",
+    "name": "Kitsap Color Classic",
+    "location": "Edmonds → Kingston",
+    "distance": "52 mi",
+    "url": "https://cascade.org/kitsap-color-classic",
     "tba": true
   }
 ]

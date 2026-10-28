@@ -132,7 +132,7 @@ test('race tabs: opens on this year, 2027 shows the cycling rail', async ({ page
   for (const [i, r] of rides.entries()) {
     await expect(page.locator('.rail-meta').nth(i)).toContainText(r.tba ? 'date TBA' : /^[A-Z][a-z]{2} \d{1,2}/);
   }
-  await expect(page.locator('.rail-chip')).toHaveText(rides.find((r) => r.note).note);
+  await expect(page.locator('.rail-chip')).toHaveText(rides.filter((r) => r.note).map((r) => r.note));
   // Short names on the rail; the official name is the hover title
   for (const r of rides.filter((x) => x.fullName)) {
     await expect(page.locator('.rail-race', { hasText: r.name }).first()).toHaveAttribute('title', r.fullName);
