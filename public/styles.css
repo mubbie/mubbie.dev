@@ -1246,6 +1246,110 @@ a.race-item:hover {
   flex-shrink: 0;
 }
 
+/* ─── Editors (emacs, vim) ─── */
+body.editor-open {
+  overflow: hidden;
+}
+
+.editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+}
+
+.editor-buffer {
+  flex: 1;
+  width: 100%;
+  margin: 0;
+  padding: 16px 20px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.6;
+  caret-color: var(--accent);
+}
+
+.editor-buffer::placeholder {
+  color: var(--blue);
+  opacity: 1;
+}
+
+/* The Emacs mode line: inverted, like the real thing */
+.editor-mode-line {
+  padding: 2px 12px;
+  background: var(--text);
+  color: var(--bg);
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-vim .editor-mode-line {
+  background: none;
+  color: var(--text-dim);
+}
+
+.editor-echo {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: 1.9em;
+  padding: 2px 12px;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+}
+
+.editor-mini-prompt {
+  color: var(--accent);
+  white-space: pre;
+}
+
+.editor-mini-input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  padding: 0;
+}
+
+.editor-link {
+  color: var(--accent);
+}
+
+/* On-screen chords for phones */
+.editor-keys {
+  display: none;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+}
+
+.editor-touch .editor-keys {
+  display: flex;
+}
+
+.editor-key {
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
 /* ─── Footer ─── */
 footer {
   padding: 48px 0;

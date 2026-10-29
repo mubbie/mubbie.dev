@@ -8,6 +8,7 @@ import { createHistory } from './history.js';
 import { createOutput } from './output.js';
 import { tabComplete } from './completer.js';
 import { HOME, displayPath, resolveDir, list, readFile, pageTarget } from './fs.js';
+import { openEmacs, openVim } from './editor.js';
 import { parseLine, syntaxError, expandHistory, expandVars, unquote, FILTERS, cowsay, suggest } from './shell.js';
 import { applyTheme, toggleTheme, setThemePreference, useSystemTheme } from '../theme.js';
 import { startMatrix, isMatrixActive, stopMatrix } from '../matrix.js';
@@ -675,9 +676,44 @@ function createHandlers(out, history, getFortunes, sh) {
       }
     },
 
-    vim(trimmed) {
+    emacs(trimmed, arg) {
+      if (!out.live) {
+        out.addLine('$', trimmed, 'emacs: needs a screen, not a pipe', true);
+        return;
+      }
       out.addLine('$', trimmed, null);
-      out.addLine(null, null, 'vim: you meant emacs.');
+      const backToTerminal = () => document.getElementById('terminal-input')?.focus();
+      const target = arg.trim();
+      if (!target) {
+        openEmacs({ onExit: backToTerminal });
+        return;
+      }
+      const file = readFile(sh.cwd, target);
+      if (file.error && /Is a directory/.test(file.error)) {
+        out.addLine(null, null, `emacs: ${target}: is a directory`, true);
+        return;
+      }
+      openEmacs({
+        name: target.split('/').pop(),
+        text: file.error ? '' : `${file.text}\n`,
+        readOnly: !file.error,
+        mode: 'Text',
+        onExit: backToTerminal,
+      });
+    },
+
+    vim(trimmed) {
+      if (!out.live) {
+        out.addLine('$', trimmed, 'vim: needs a screen, not a pipe', true);
+        return;
+      }
+      out.addLine('$', trimmed, null);
+      openVim({
+        onExit: () => {
+          out.addOk('you escaped vim. an emacs user would never have been trapped.');
+          document.getElementById('terminal-input')?.focus();
+        },
+      });
     },
 
     true(trimmed) {

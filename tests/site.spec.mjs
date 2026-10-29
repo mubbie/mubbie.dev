@@ -425,6 +425,72 @@ test.describe('shell keys', () => {
   });
 });
 
+test('emacs: scratch, M-x doctor and butterfly, read-only files, C-x C-c', async ({ page }, testInfo) => {
+  test.skip(isMobile(testInfo), 'hardware keyboard; phones get on-screen chords (tested separately)');
+  await load(page);
+  await run(page, 'emacs');
+  const modeLine = page.locator('.editor-mode-line');
+  await expect(modeLine).toContainText('*scratch*');
+  await expect(modeLine).toContainText('(Lisp Interaction)');
+  // M-x via Esc then x, with Tab completion
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('x');
+  await page.keyboard.type('doc');
+  await page.keyboard.press('Tab');
+  await expect(page.locator('.editor-mini-input')).toHaveValue('doctor');
+  await page.keyboard.press('Enter');
+  await expect(modeLine).toContainText('(Doctor)');
+  await page.keyboard.type('I am worried about vim');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.editor-buffer')).toHaveValue(/vim might be the source of your problems/);
+  // M-x via Alt+x
+  await page.keyboard.press('Alt+x');
+  await page.keyboard.type('butterfly');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('yes');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.editor-echo a')).toHaveAttribute('href', 'https://xkcd.com/378/', { timeout: 5000 });
+  await page.keyboard.press('Control+x');
+  await page.keyboard.press('Control+c');
+  await expect(page.locator('.editor-overlay')).toHaveCount(0);
+  await expect(page.locator('#terminal-input')).toBeFocused();
+
+  await run(page, 'emacs bucketlist.md');
+  await expect(modeLine).toContainText('%%');
+  await page.keyboard.type('x');
+  await expect(page.locator('.editor-echo')).toContainText('Buffer is read-only');
+  await page.keyboard.press('Control+x');
+  await page.keyboard.press('Control+c');
+  await expect(page.locator('.editor-overlay')).toHaveCount(0);
+});
+
+test('vim: easy to get in, :q to get out', async ({ page }, testInfo) => {
+  test.skip(isMobile(testInfo), 'hardware keyboard');
+  await load(page);
+  await run(page, 'vim');
+  await expect(page.locator('.editor-vim')).toBeVisible();
+  for (const k of ['j', 'k', 'Escape', 'h']) await page.keyboard.press(k);
+  await expect(page.locator('.editor-echo')).toContainText('everyone gets stuck');
+  await page.keyboard.type(':q');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.editor-overlay')).toHaveCount(0);
+  await expect(page.locator('#terminal-history')).toContainText('you escaped vim');
+});
+
+test('editors on phones: chords are buttons', async ({ page }, testInfo) => {
+  test.skip(!isMobile(testInfo), 'phone-only');
+  await load(page);
+  await run(page, 'emacs');
+  const keys = page.locator('.editor-key');
+  await expect(keys.filter({ hasText: 'M-x' })).toBeVisible();
+  await keys.filter({ hasText: 'C-x C-c' }).tap();
+  await expect(page.locator('.editor-overlay')).toHaveCount(0);
+  await run(page, 'vi');
+  await page.locator('.editor-key', { hasText: ':q' }).tap();
+  await expect(page.locator('#terminal-history')).toContainText('you escaped vim');
+});
+
 test('terminal: every alias runs its command', async ({ page }) => {
   // Reduced motion keeps `hack` (matrix) from taking over the screen mid-loop
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -606,7 +672,7 @@ test('terminal: every command produces the expected output', async ({ page }) =>
 test('terminal: help lists all visible commands', async ({ page }, testInfo) => {
   await load(page);
   await run(page, 'help');
-  await expect(page.locator('.terminal-help-row')).toHaveCount(35);
+  await expect(page.locator('.terminal-help-row')).toHaveCount(36);
   const hint = page.locator('.terminal-help-hint');
   if (isMobile(testInfo)) await expect(hint).toHaveText('tap the prompt, type a command, and hit enter.');
   else await expect(hint).toContainText('to autocomplete');

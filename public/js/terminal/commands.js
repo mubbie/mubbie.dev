@@ -112,6 +112,7 @@ export const COMMAND_DEFS = [
   { name: 'env',      aliases: ['printenv'],            usage: 'env',               help: 'environment variables ($USER, $PWD, …)' },
   { name: 'which',    aliases: ['type'],                usage: 'which <command>',   help: 'where a command lives' },
   { name: 'cowsay',                                     usage: 'cowsay <text>',     help: 'a cow says it. try: random | cowsay' },
+  { name: 'emacs',                                      usage: 'emacs [file]',      help: 'the one true editor. M-x doctor inside' },
   // Pipe filters (documented in man pages; reachable via Tab)
   { name: 'head' },
   { name: 'tail' },
@@ -174,7 +175,8 @@ export const MAN_PAGES = {
   uniq:     'Collapse repeated adjacent lines.\n\n  Usage: … | uniq [-c]',
   export:   'Set a variable for this visit.\n\n  Usage: export NAME=value, then echo $NAME',
   sl:       'You meant ls. Here is a train anyway. (Ctrl+C to stop it.)',
-  vim:      'Opens vim. Getting out is your problem.\n\n  Alias: vi',
+  vim:      'Opens vim. Getting out is your problem. (Hint: :q)\n\n  Alias: vi',
+  emacs:    'Open Emacs. With no file you get *scratch*; with a file you get it read-only.\n\n  Keys (Meta is Alt, or Esc then the key):\n    C-x C-c        leave\n    C-x C-s        save (the filesystem is read-only, though)\n    M-x doctor     the built-in psychotherapist (RET twice to talk)\n    M-x butterfly  as seen in xkcd #378\n    C-a C-e C-n C-p C-f C-b C-k C-d   move and edit\n    C-g            quit whatever you started\n\n  On a phone, the chords are buttons at the bottom.',
   nano:     'A text editor. Opinions available on request.',
   true:     'Do nothing, successfully. Handy with && and ||.',
   false:    'Do nothing, unsuccessfully. Try: false || echo recovered',
@@ -223,6 +225,7 @@ export const HINTS = [
   'cd into a section and the prompt follows you',
   'Ctrl+R searches your history, !! reruns the last command',
   'try "random | cowsay"',
+  'emacs, then M-x doctor, if you need to talk',
   'typo? the terminal will suggest what you meant',
   'there are hidden easter eggs. can you find them?',
 ];
