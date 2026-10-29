@@ -1,2 +1,10 @@
 # Copy to .dev.vars for local dev. In production: wrangler secret put REFRESH_TOKEN
 REFRESH_TOKEN=change-me
+
+# Guestbook. Local testing can use Cloudflare's Turnstile test keys (always pass):
+#   https://developers.cloudflare.com/turnstile/troubleshooting/testing/
+# In production: TURNSTILE_SITE_KEY goes in wrangler.jsonc "vars" (it's public),
+# and `wrangler secret put TURNSTILE_SECRET` / `wrangler secret put ADMIN_TOKEN`.
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+ADMIN_TOKEN=change-me

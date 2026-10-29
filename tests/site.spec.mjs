@@ -491,6 +491,97 @@ test('editors on phones: chords are buttons', async ({ page }, testInfo) => {
   await expect(page.locator('#terminal-history')).toContainText('you escaped vim');
 });
 
+// Stand-ins for the guestbook API and Cloudflare Turnstile (no outside calls in tests)
+async function mockGuestbook(page, { open = true, notes = [], onPost } = {}) {
+  await page.route('**/api/guestbook/config', (r) => r.fulfill({ json: { open, siteKey: open ? 'test-site-key' : null } }));
+  await page.route('**/api/guestbook', async (r) => {
+    if (r.request().method() === 'POST') {
+      const body = r.request().postDataJSON();
+      if (onPost) onPost(body);
+      await r.fulfill({ json: { ok: true, message: 'Thanks! Notes appear after a quick review.' } });
+    } else {
+      await r.fulfill({ json: notes });
+    }
+  });
+  await page.route('https://challenges.cloudflare.com/**', (r) => r.fulfill({
+    contentType: 'text/javascript',
+    body: 'window.turnstile = { render(el, o) { setTimeout(() => o.callback("test-token"), 50); return 1; }, reset() {} };',
+  }));
+}
+
+test('guestbook: the section shows approved notes, and the terminal reads them', async ({ page }) => {
+  await mockGuestbook(page, { notes: [{ name: 'Ada', message: 'love the dock', createdAt: '2026-10-28T12:00:00Z' }] });
+  await load(page);
+  await expect(page.locator('.guestbook-note')).toHaveCount(1);
+  await expect(page.locator('.guestbook-msg')).toHaveText('"love the dock"');
+  await expect(page.locator('.guestbook-who')).toHaveText('· Ada, oct 28, 2026');
+  expect(await run(page, 'cat guestbook.txt')).toContain('love the dock');
+  await run(page, 'guestbook');
+  await expect(page.locator('#terminal-history')).toContainText('1 note. add yours: guestbook sign');
+  expect(await run(page, 'ls')).toContain('guestbook.txt');
+});
+
+test('guestbook: closed until configured', async ({ page }) => {
+  await mockGuestbook(page, { open: false });
+  await load(page);
+  await expect(page.locator('#guestbook-sign')).toHaveText('opens soon');
+  await expect(page.locator('#guestbook-sign')).toBeDisabled();
+  await expect(page.locator('.guestbook-empty')).toHaveText('# no notes yet. be the first.');
+  await run(page, 'guestbook sign');
+  await expect(page.locator('#terminal-history')).toContainText('the guestbook opens soon');
+  await expect(page.locator('.editor-overlay')).toHaveCount(0);
+});
+
+test('guestbook: sign from the page with the send button', async ({ page }) => {
+  let sent = null;
+  await mockGuestbook(page, { onPost: (b) => { sent = b; } });
+  await load(page);
+  await page.locator('#guestbook-sign').click();
+  const buffer = page.locator('.editor-buffer');
+  await expect(buffer).toBeFocused();
+  // the cursor starts right after "Name: "
+  await page.keyboard.type('Ada');
+  await buffer.evaluate((t) => { t.value = t.value.replace('Message:\n', 'Message:\nhello from a test\n'); t.dispatchEvent(new Event('input')); });
+  // empty message would be refused before anything is sent
+  await page.locator('.editor-key', { hasText: 'send' }).click();
+  await expect.poll(() => sent).not.toBeNull();
+  expect(sent).toEqual({ name: 'Ada', message: 'hello from a test', token: 'test-token' });
+  await expect(page.locator('#guestbook-status')).toContainText('note sent');
+  await expect(page.locator('.editor-overlay')).toHaveCount(0, { timeout: 5000 });
+});
+
+test('guestbook: refuses an empty note without sending', async ({ page }) => {
+  let posts = 0;
+  await mockGuestbook(page, { onPost: () => { posts++; } });
+  await load(page);
+  await page.locator('#guestbook-sign').click();
+  await page.locator('.editor-key', { hasText: 'send' }).click();
+  await expect(page.locator('.editor-echo')).toContainText('Add your name');
+  await page.locator('.editor-key', { hasText: 'C-x C-c' }).click();
+  expect(posts).toBe(0);
+});
+
+test('guestbook: emacs guestbook + C-c C-c, the Emacs way', async ({ page }, testInfo) => {
+  test.skip(isMobile(testInfo), 'hardware keyboard');
+  let sent = null;
+  await mockGuestbook(page, { onPost: (b) => { sent = b; } });
+  await load(page);
+  await run(page, 'emacs guestbook');
+  await expect(page.locator('.editor-mode-line')).toContainText('guestbook.txt');
+  await page.keyboard.type('Grace');
+  await page.keyboard.press('Control+n');
+  await page.keyboard.press('Control+e');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('C-c C-c is muscle memory');
+  await page.waitForTimeout(150); // let the bot check token arrive
+  await page.keyboard.press('Control+c');
+  await page.keyboard.press('Control+c');
+  await expect.poll(() => sent).not.toBeNull();
+  expect(sent.name).toBe('Grace');
+  expect(sent.message).toBe('C-c C-c is muscle memory');
+  await expect(page.locator('#terminal-history')).toContainText('note sent');
+});
+
 test('terminal: every alias runs its command', async ({ page }) => {
   // Reduced motion keeps `hack` (matrix) from taking over the screen mid-loop
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -672,7 +763,7 @@ test('terminal: every command produces the expected output', async ({ page }) =>
 test('terminal: help lists all visible commands', async ({ page }, testInfo) => {
   await load(page);
   await run(page, 'help');
-  await expect(page.locator('.terminal-help-row')).toHaveCount(36);
+  await expect(page.locator('.terminal-help-row')).toHaveCount(37);
   const hint = page.locator('.terminal-help-hint');
   if (isMobile(testInfo)) await expect(hint).toHaveText('tap the prompt, type a command, and hit enter.');
   else await expect(hint).toContainText('to autocomplete');

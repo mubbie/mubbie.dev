@@ -113,6 +113,7 @@ export const COMMAND_DEFS = [
   { name: 'which',    aliases: ['type'],                usage: 'which <command>',   help: 'where a command lives' },
   { name: 'cowsay',                                     usage: 'cowsay <text>',     help: 'a cow says it. try: random | cowsay' },
   { name: 'emacs',                                      usage: 'emacs [file]',      help: 'the one true editor. M-x doctor inside' },
+  { name: 'guestbook',                                  usage: 'guestbook [sign]',  help: 'read notes from visitors, or leave one' },
   // Pipe filters (documented in man pages; reachable via Tab)
   { name: 'head' },
   { name: 'tail' },
@@ -179,6 +180,7 @@ export const MAN_PAGES = {
   emacs:    'Open Emacs. With no file you get *scratch*; with a file you get it read-only.\n\n  Keys (Meta is Alt, or Esc then the key):\n    C-x C-c        leave\n    C-x C-s        save (the filesystem is read-only, though)\n    M-x doctor     the built-in psychotherapist (RET twice to talk)\n    M-x butterfly  as seen in xkcd #378\n    C-a C-e C-n C-p C-f C-b C-k C-d   move and edit\n    C-g            quit whatever you started\n\n  On a phone, the chords are buttons at the bottom.',
   nano:     'A text editor. Opinions available on request.',
   true:     'Do nothing, successfully. Handy with && and ||.',
+  guestbook: 'Read notes visitors left, or leave your own.\n\n  guestbook          read approved notes\n  guestbook sign     write one (opens the editor; C-c C-c or the send button)\n  emacs guestbook    the same, the Emacs way\n  cat guestbook.txt  the notes shown on the page\n\n  Notes are reviewed before they appear. No links, emails, or phone numbers.',
   false:    'Do nothing, unsuccessfully. Try: false || echo recovered',
   ssh:      'Attempt to connect to a remote host.\n\n  Spoiler: you\'re already here.',
   rm:       'Nice try.',
@@ -226,6 +228,7 @@ export const HINTS = [
   'Ctrl+R searches your history, !! reruns the last command',
   'try "random | cowsay"',
   'emacs, then M-x doctor, if you need to talk',
+  'leave a note: guestbook sign',
   'typo? the terminal will suggest what you meant',
   'there are hidden easter eggs. can you find them?',
 ];

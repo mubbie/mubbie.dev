@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Guestbook Review · mubbie.dev</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script>
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem('mubbie-theme-explicit'); } catch (e) { /* storage blocked */ }
+      document.documentElement.setAttribute('data-theme', saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+    })();
+  </script>
+  <style>
+    .gb-admin { max-width: 780px; margin: 0 auto; padding: 48px 24px 96px; font-family: var(--mono); }
+    .gb-admin h1 { font-size: 22px; margin-bottom: 4px; }
+    .gb-admin .sub { color: var(--text-dim); font-size: 13px; margin-bottom: 32px; }
+    .gb-note { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; }
+    .gb-note .who { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+    .gb-note .who strong { color: var(--text); }
+    .gb-note .msg { white-space: pre-wrap; font-size: 14px; line-height: 1.6; }
+    .gb-note .why { font-size: 12px; color: var(--orange); margin-top: 6px; }
+    .gb-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .gb-actions button, .gb-token button { font: inherit; font-size: 12px; padding: 6px 12px; border-radius: 100px; border: 1px solid var(--border); background: none; color: var(--text); cursor: pointer; }
+    .gb-actions .approve { border-color: var(--accent); color: var(--accent); }
+    .gb-actions .danger { color: #ef4444; }
+    .gb-empty { color: var(--text-dim); font-size: 13px; padding: 8px 0 16px; }
+    .gb-status { font-size: 12px; color: var(--text-dim); margin-bottom: 24px; }
+    .gb-token { display: flex; gap: 8px; margin-bottom: 24px; }
+    .gb-token input { flex: 1; font: inherit; font-size: 13px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+    details summary { cursor: pointer; color: var(--text-dim); font-size: 13px; margin: 24px 0 12px; }
+  </style>
+</head>
+<body>
+  <main class="gb-admin">
+    <h1>guestbook review</h1>
+    <p class="sub">Nothing is public until you approve it.</p>
+    <form class="gb-token" id="token-form" hidden>
+      <input id="token" type="password" placeholder="admin token" autocomplete="off" aria-label="Admin token">
+      <button type="submit">unlock</button>
+    </form>
+    <div class="gb-status" id="status"></div>
+
+    <div class="section-label">// pending</div>
+    <div id="pending"></div>
+
+    <div class="section-label">// published</div>
+    <div id="approved"></div>
+
+    <details>
+      <summary>auto-rejected (kept 30 days)</summary>
+      <div id="rejected"></div>
+    </details>
+  </main>
+
+  <script>
+    const API = '/api/guestbook/admin';
+    let token = '';
+    try { token = sessionStorage.getItem('gb-admin-token') || ''; } catch (e) { /* storage blocked */ }
+
+    function headers() {
+      const h = { 'Content-Type': 'application/json' };
+      if (token) h.Authorization = 'Bearer ' + token;
+      return h;
+    }
+
+    function when(iso) {
+      return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function noteEl(note, actions) {
+      const div = document.createElement('div');
+      div.className = 'gb-note';
+      const who = document.createElement('div');
+      who.className = 'who';
+      const name = document.createElement('strong');
+      name.textContent = note.name;
+      who.append(name, ' · ' + when(note.createdAt) + (note.aiChecked === false ? ' · not AI-screened' : ''));
+      const msg = document.createElement('div');
+      msg.className = 'msg';
+      msg.textContent = note.message;
+      div.append(who, msg);
+      if (note.rejectedFor) {
+        const why = document.createElement('div');
+        why.className = 'why';
+        why.textContent = 'rejected: ' + note.rejectedFor;
+        div.append(why);
+      }
+      const row = document.createElement('div');
+      row.className = 'gb-actions';
+      actions.forEach(([label, action, cls]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        if (cls) b.className = cls;
+        b.addEventListener('click', () => act(action, note.id));
+        row.append(b);
+      });
+      div.append(row);
+      return div;
+    }
+
+    function fill(id, notes, actions, empty) {
+      const box = document.getElementById(id);
+      box.replaceChildren();
+      if (!notes.length) {
+        const p = document.createElement('p');
+        p.className = 'gb-empty';
+        p.textContent = empty;
+        box.append(p);
+        return;
+      }
+      notes.forEach((n) => box.append(noteEl(n, actions)));
+    }
+
+    async function load() {
+      const status = document.getElementById('status');
+      const res = await fetch(API, { headers: headers(), credentials: 'same-origin' });
+      if (res.status === 401) {
+        document.getElementById('token-form').hidden = false;
+        status.textContent = 'locked. sign in through Cloudflare Access, or unlock with the admin token.';
+        return;
+      }
+      document.getElementById('token-form').hidden = true;
+      const data = await res.json();
+      status.textContent = [
+        data.pending.length + ' waiting',
+        'AI screening ' + (data.aiScreening ? 'on' : 'off'),
+        'email alerts ' + (data.emailAlerts ? 'on' : 'off'),
+      ].join(' · ');
+      fill('pending', data.pending, [['approve', 'approve', 'approve'], ['reject', 'reject'], ['block sender', 'block', 'danger']], 'all caught up.');
+      fill('approved', data.approved, [['delete', 'delete', 'danger'], ['block sender', 'block', 'danger']], 'nothing published yet.');
+      fill('rejected', data.rejected, [['approve anyway', 'approve'], ['delete now', 'delete', 'danger']], 'nothing here.');
+    }
+
+    async function act(action, id) {
+      if ((action === 'block' || action === 'delete') && !confirm(action === 'block' ? 'Block this sender? Their future notes will be hidden.' : 'Delete this note for good?')) return;
+      await fetch(API, { method: 'POST', headers: headers(), credentials: 'same-origin', body: JSON.stringify({ action, id }) });
+      load();
+    }
+
+    document.getElementById('token-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      token = document.getElementById('token').value.trim();
+      try { sessionStorage.setItem('gb-admin-token', token); } catch (err) { /* storage blocked */ }
+      load();
+    });
+
+    load();
+  </script>
+</body>
+</html>

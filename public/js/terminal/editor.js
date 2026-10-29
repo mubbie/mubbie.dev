@@ -132,7 +132,7 @@ const MX_COMMANDS = ['doctor', 'butterfly', 'tetris', 'version', 'kill-emacs'];
 
 // ─── Emacs ───
 
-export function openEmacs({ name = '*scratch*', text = SCRATCH, readOnly = false, mode = 'Lisp Interaction', onSubmit = null, submitLabel = 'submit', onExit = () => {} } = {}) {
+export function openEmacs({ name = '*scratch*', text = SCRATCH, readOnly = false, mode = 'Lisp Interaction', onSubmit = null, submitLabel = 'submit', widget = null, caret = null, onExit = () => {} } = {}) {
   const frame = createFrame('Emacs');
   const { buffer, modeLine, echo } = frame;
   frame.overlay.classList.add('editor-emacs');
@@ -351,9 +351,12 @@ export function openEmacs({ name = '*scratch*', text = SCRATCH, readOnly = false
   addKey(frame, 'M-x', mx);
   if (onSubmit) addKey(frame, `C-c C-c (${submitLabel})`, () => onSubmit({ text: buffer.value, message, exit }));
   addKey(frame, 'C-x C-c (exit)', () => exit('quit'));
-  if (isTouch()) frame.overlay.classList.add('editor-touch');
+  // Something to submit means non-Emacs visitors need visible buttons, on any device
+  if (isTouch() || onSubmit) frame.overlay.classList.add('editor-touch');
+  if (widget) frame.keys.appendChild(widget);
 
   setBuffer({ text });
+  if (caret !== null) buffer.setSelectionRange(caret, caret);
   message(onSubmit ? `C-c C-c to ${submitLabel}, C-x C-c to leave` : 'C-x C-c to leave. M-x doctor if you need to talk.', { sticky: true });
   buffer.focus();
   return { message, exit, buffer };

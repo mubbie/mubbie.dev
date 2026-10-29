@@ -12,8 +12,24 @@
   "assets": {
     "directory": "public",
     "binding": "ASSETS",
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+    // These paths always go to the Worker. Listing any path here means unlisted ones are
+    // served from assets only, so the APIs must be listed too. /admin/* must pass the
+    // Worker's auth check and never be served straight from assets.
+    "run_worker_first": ["/api/*", "/admin/*"]
   },
+  // Public, not secret. Paired with the TURNSTILE_SECRET secret; without both the guestbook stays closed.
+  "vars": {
+    "TURNSTILE_SITE_KEY": ""
+  },
+  // Workers AI: Llama Guard screens guestbook notes (free tier). Without it, notes still get human review.
+  "ai": {
+    "binding": "AI"
+  },
+  // Email when a guestbook note is waiting. Needs Cloudflare Email Routing turned on for the
+  // domain and the destination address verified there first, then uncomment:
+  // "send_email": [{ "name": "GUESTBOOK_EMAIL", "destination_address": "you@example.com" }],
+  // and add "NOTIFY_FROM": "guestbook@mubbie.dev" to "vars".
   "kv_namespaces": [
     {
       "binding": "POSTS_CACHE",

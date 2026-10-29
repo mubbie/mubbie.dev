@@ -1,7 +1,9 @@
-// ─── Worker: serves assets + /api/posts ───
+// ─── Worker: serves assets + /api/posts + the guestbook ───
 //
 // Routes:
 //   /api/posts       → cached Substack posts (same-origin proxy; Substack sends no CORS)
+//   /api/guestbook*  → guestbook notes and moderation (see guestbook.js)
+//   /admin/*         → admin pages, behind Cloudflare Access or ADMIN_TOKEN
 //   *                → static assets via env.ASSETS
 //
 // Caching: KV shared across all visitors (free-tier friendly), plus short
@@ -10,6 +12,8 @@
 // Forcing a refresh: GET /api/posts?refresh=1 with header
 // `Authorization: Bearer <REFRESH_TOKEN>` (set via `wrangler secret put REFRESH_TOKEN`).
 // Without a valid token the param is ignored, so the public can't bypass the cache.
+
+import { handleGuestbook, handleAdminPage } from './guestbook.js';
 
 const STALE_GRACE_SECONDS = 24 * 60 * 60; // 24 hours: serve stale if upstream is down
 
@@ -31,8 +35,17 @@ export default {
       return handleXkcd(request);
     }
 
+    if (url.pathname === '/api/guestbook' || url.pathname.startsWith('/api/guestbook/')) {
+      return handleGuestbook(request, env, ctx);
+    }
+
     if (url.pathname.startsWith('/api/')) {
       return jsonResponse({ error: 'not-found' }, {}, 404);
+    }
+
+    if (url.pathname.startsWith('/admin/')) {
+      if (/^\/admin\/guestbook(\.html|\/)?$/.test(url.pathname)) return handleAdminPage(request, env);
+      return new Response('Not found', { status: 404 });
     }
 
     return env.ASSETS.fetch(request);

@@ -1246,6 +1246,56 @@ a.race-item:hover {
   flex-shrink: 0;
 }
 
+/* ─── Guestbook section ─── */
+.guestbook-notes {
+  margin: 4px 0 2px;
+  padding-left: 2ch;
+}
+
+.guestbook-note + .guestbook-note {
+  margin-top: 10px;
+}
+
+.guestbook-msg {
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.guestbook-who,
+.guestbook-empty,
+.guestbook-status {
+  color: var(--text-dim);
+}
+
+.guestbook-status:empty {
+  display: none;
+}
+
+.guestbook-sign-line {
+  margin-top: 4px;
+}
+
+.guestbook-sign {
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.guestbook-sign:disabled {
+  color: var(--text-dim);
+  cursor: default;
+  text-decoration: none;
+}
+
+.editor-turnstile:empty {
+  display: none;
+}
+
 /* ─── Editors (emacs, vim) ─── */
 body.editor-open {
   overflow: hidden;

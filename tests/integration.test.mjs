@@ -113,3 +113,36 @@ test('nested missing page → styled 404', async () => {
   const html = await res.text();
   assert.match(html, /href="\/styles\.css"/);
 });
+
+test('guestbook: config, public list, and a locked admin', async () => {
+  const cfg = await get('/api/guestbook/config');
+  assert.equal(cfg.status, 200);
+  const { open, siteKey } = await cfg.json();
+  assert.equal(typeof open, 'boolean');
+  assert.ok(open ? typeof siteKey === 'string' && siteKey.length > 0 : siteKey === null);
+
+  const list = await get('/api/guestbook');
+  assert.equal(list.status, 200);
+  const notes = await list.json();
+  assert.ok(Array.isArray(notes));
+  assert.ok(notes.every((n) => typeof n.name === 'string' && typeof n.message === 'string' && !('visitor' in n)), 'no visitor hashes in public notes');
+
+  // The admin API never answers without credentials
+  assert.equal((await get('/api/guestbook/admin')).status, 401);
+  // The review page always goes through the Worker's auth check, never straight from assets:
+  // either refused, or (token mode, where the page asks for the token) marked no-store by the Worker
+  for (const path of ['/admin/guestbook', '/admin/guestbook.html']) {
+    const page = await get(path);
+    assert.ok(page.status === 401 || page.headers.get('Cache-Control') === 'no-store', `${path}: ${page.status} ${page.headers.get('Cache-Control')}`);
+  }
+});
+
+test('guestbook: submissions without a bot-check token are refused', async () => {
+  const res = await fetch(`${BASE}/api/guestbook`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'integration test', message: 'should never be stored' }),
+  });
+  // closed (503) or failed bot check (403); never accepted
+  assert.ok([403, 503].includes(res.status), `got ${res.status}`);
+});

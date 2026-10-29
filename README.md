@@ -23,3 +23,27 @@ npm run test:browser        # Playwright: desktop Chrome/Safari/Firefox + iPhone
 - `BASE_URL=https://mubbie.dev npm run test:integration` runs the integration
   checks against production.
 - First time only, install the browser engines with `npx playwright install chromium webkit firefox`.
+
+## Guestbook
+
+Visitors leave notes with `guestbook sign` (or `emacs guestbook`, or the button on the
+page). Nothing is public until approved at `/admin/guestbook`.
+
+Spam and abuse checks, in order: Cloudflare Turnstile → block list → 3 notes/hour per
+visitor → no links, emails or phone numbers → spam phrases → Llama Guard (Workers AI) →
+the pending queue. Visitors are stored as a salted hash, never a raw IP. The code is in
+`workers/guestbook.js`.
+
+Setup (everything is optional and fails closed):
+
+1. **Accept notes:** create a Turnstile widget for `mubbie.dev` in the Cloudflare dashboard.
+   Put its site key in `wrangler.jsonc` → `vars.TURNSTILE_SITE_KEY`, then
+   `npx wrangler secret put TURNSTILE_SECRET`. Until both are set the guestbook says
+   "opens soon".
+2. **Review notes:** protect `mubbie.dev/admin/*` and `mubbie.dev/api/guestbook/admin*` with a
+   Cloudflare Access application (email one-time code), and add `ACCESS_TEAM_DOMAIN`
+   (e.g. `you.cloudflareaccess.com`) and `ACCESS_AUD` (the application's audience tag) to
+   `vars`. Or, simpler: `npx wrangler secret put ADMIN_TOKEN` and paste it on the review page.
+3. **Email alerts (optional):** see the `send_email` comment in `wrangler.jsonc`.
+
+Locally, `.dev.vars.example` has Cloudflare's Turnstile test keys, which always pass.

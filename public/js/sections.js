@@ -5,6 +5,7 @@ import { initGreeting, initWaveEmoji } from './greeting.js';
 import { initFooter, initFooterMeta } from './footer.js';
 import { initHangout } from './hangout.js';
 import { initRaceTabs } from './race-tabs.js';
+import { initGuestbookSection } from './guestbook.js';
 import { initScrollReveal, initBackToTop, initShortcutHint } from './ui.js';
 import { renderCurrently, renderDock, renderRaces, renderRail, renderBucketList, fetchWriting } from './render-data.js';
 
@@ -18,6 +19,7 @@ export function initSections() {
   initShortcutHint();
   initHangout();
   initRaceTabs();
+  initGuestbookSection();
 
   fetchJSON('data/currently.json')
     .then(renderCurrently)

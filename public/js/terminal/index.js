@@ -9,6 +9,7 @@ import { createOutput } from './output.js';
 import { tabComplete } from './completer.js';
 import { HOME, displayPath, resolveDir, list, readFile, pageTarget } from './fs.js';
 import { openEmacs, openVim } from './editor.js';
+import { fetchNotes, signGuestbook, formatDate } from '../guestbook.js';
 import { parseLine, syntaxError, expandHistory, expandVars, unquote, FILTERS, cowsay, suggest } from './shell.js';
 import { applyTheme, toggleTheme, setThemePreference, useSystemTheme } from '../theme.js';
 import { startMatrix, isMatrixActive, stopMatrix } from '../matrix.js';
@@ -290,6 +291,8 @@ function createHandlers(out, history, getFortunes, sh) {
         out.addLine(null, null, '[sudo] password for recruiter: ••••••••');
         out.addOk('authenticated. email queued → midoko.dev@gmail.com');
         out.addLine(null, null, 'just kidding. drop a note at midoko.dev@gmail.com 👋🏾');
+      } else if (lower === 'guestbook review') {
+        handlersRef.guestbook(trimmed, 'review');
       } else if (isRmRf(lower)) {
         out.addLine('$', trimmed, null);
         out.addLine(null, null, '[sudo] password for root: ••••••••');
@@ -684,6 +687,11 @@ function createHandlers(out, history, getFortunes, sh) {
       out.addLine('$', trimmed, null);
       const backToTerminal = () => document.getElementById('terminal-input')?.focus();
       const target = arg.trim();
+      // emacs guestbook: the Emacs way to sign it
+      if (/^(~\/)?guestbook(\.txt)?$/i.test(target)) {
+        signGuestbook({ onDone: ({ ok, text }) => out.addLine(null, null, text, !ok) });
+        return;
+      }
       if (!target) {
         openEmacs({ onExit: backToTerminal });
         return;
@@ -714,6 +722,36 @@ function createHandlers(out, history, getFortunes, sh) {
           document.getElementById('terminal-input')?.focus();
         },
       });
+    },
+
+    guestbook(trimmed, arg) {
+      const sub = arg.trim().toLowerCase();
+      if (sub === 'sign') {
+        out.addLine('$', trimmed, null);
+        signGuestbook({ onDone: ({ ok, text }) => out.addLine(null, null, text, !ok) });
+        return;
+      }
+      if (sub === 'review') {
+        out.addLine('$', trimmed, null);
+        if (openUrl(out, '/admin/guestbook', 'the review page')) out.addOk('→ opening the review page (admins only)');
+        return;
+      }
+      if (sub) {
+        out.addLine('$', trimmed, `guestbook: unknown option '${sub}'. try: guestbook, guestbook sign`, true);
+        return;
+      }
+      out.addLine('$', trimmed, null);
+      out.addLine(null, null, 'fetching notes...');
+      fetchNotes()
+        .then((notes) => {
+          if (!notes.length) {
+            out.addLine(null, null, 'no notes yet. be the first: guestbook sign');
+            return;
+          }
+          notes.slice(0, 20).forEach((n) => out.addLine(null, null, `"${n.message}"\n  · ${n.name}, ${formatDate(n.createdAt)}`));
+          out.addLine(null, null, `\n${notes.length} note${notes.length === 1 ? '' : 's'}. add yours: guestbook sign`);
+        })
+        .catch(() => out.addLine(null, null, 'could not load the guestbook. try again later.', true));
     },
 
     true(trimmed) {
@@ -851,7 +889,7 @@ function createHandlers(out, history, getFortunes, sh) {
 // ─── Init ───
 
 // Commands whose output arrives later over the network can't feed a pipe
-const NETWORK_COMMANDS = new Set(['weather', 'curl', 'open']);
+const NETWORK_COMMANDS = new Set(['weather', 'curl', 'open', 'guestbook']);
 // Aliases that carry flags, like a real shell's ll / la
 const ALIAS_ARGS = { ll: '-l', la: '-a' };
 
