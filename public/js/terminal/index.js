@@ -1,55 +1,27 @@
 // ─── Terminal: init, command processing, event wiring ───
 
 import {
-  FILESYSTEM, FILES, SECTION_MAP, HELP_ITEMS, OPENABLES, ALIASES,
+  FILESYSTEM, HELP_ITEMS, OPENABLES, ALIASES, ALL_COMMANDS,
   EIGHT_BALL_RESPONSES, NEOFETCH_LINES, MAN_PAGES, COMMAND_DEFS, HINTS,
 } from './commands.js';
 import { createHistory } from './history.js';
 import { createOutput } from './output.js';
 import { tabComplete } from './completer.js';
+import { HOME, displayPath, resolveDir, list, readFile, pageTarget } from './fs.js';
+import { parseLine, syntaxError, expandHistory, expandVars, unquote, FILTERS, cowsay, suggest } from './shell.js';
 import { applyTheme, toggleTheme, setThemePreference, useSystemTheme } from '../theme.js';
-import { startMatrix } from '../matrix.js';
+import { startMatrix, isMatrixActive, stopMatrix } from '../matrix.js';
 import { scrollToTop, scrollToEl } from '../scroll.js';
 import { fetchWeather } from '../weather.js';
 import { popPopcorn } from '../popcorn.js';
 import { ACTIVITIES } from '../hangout.js';
 import { selectRaceTab } from '../race-tabs.js';
 
-// cd/ls names that mean a specific year's challenge tab in the races section
-const RACE_TABS = { running: '2026', cycling: '2027' };
-
 const PAGE_LOAD_TIME = Date.now();
 
 // Own-property lookup, so input like "constructor" never resolves to Object.prototype members
 function lookup(obj, key) {
   return Object.hasOwn(obj, key) ? obj[key] : undefined;
-}
-
-// ─── ls <section>: what's in a section, read from the rendered page (like grep) ───
-
-const texts = (selector, pick = (el) => el.textContent) =>
-  [...document.querySelectorAll(selector)].map((el) => pick(el).trim()).filter(Boolean);
-
-const SECTION_LISTINGS = {
-  projects: () => texts('.project-card h3'),
-  writing: () => texts('.writing-item h3'),
-  currently: () => [...texts('.currently-label'), 'tools/'],
-  tools: () => texts('.dock-item', (el) => el.querySelector('.dock-label')?.textContent || ''),
-  races: () => texts('#races-list .race-name', (el) => el.firstChild?.textContent || ''),
-  cycling: () => texts('#race-rail .rail-name'),
-  bucketlist: () => texts('.bucket-text'),
-  connect: () => texts('.connect-link'),
-};
-
-function listSection(target) {
-  const key = target.toLowerCase().replace(/\/+$/, '').replace(/^~\//, '').replace(/^currently\//, '');
-  const section = lookup(SECTION_MAP, key);
-  const lister = lookup(SECTION_LISTINGS, key) || (section && lookup(SECTION_LISTINGS, section));
-  if (!lister) return null;
-  const items = lister();
-  if (!items.length) return '(empty)';
-  // Like ls -1: names with spaces read better one per line
-  return items.some((s) => s.includes(' ')) ? items.join('\n') : items.join('  ');
 }
 
 // Open a URL in a new tab. Browsers block window.open outside a direct user gesture
@@ -101,9 +73,56 @@ function rejectFlags(out, trimmed, cmd, arg) {
 // ─── Command handlers ───
 // Each handler receives (ctx) with: { out, trimmed, arg, argLower, history, fortunes }
 
-function createHandlers(out, history, getFortunes) {
+// sh: shared shell state { cwd, prevCwd, env, visitedDev }
+function createHandlers(out, history, getFortunes, sh) {
+  // Names of things in a directory listing, laid out like ls does
+  function formatListing(entries, flags) {
+    if (flags.includes('l')) {
+      return entries.map((e) => `${e.endsWith('/') ? 'drwxr-xr-x' : '-rw-r--r--'}  mubbie  staff  ${e}`).join('\n');
+    }
+    // names with spaces (race names, post titles) read better one per line
+    if (flags.includes('1') || entries.some((e) => e.includes(' '))) return entries.join('\n');
+    return entries.join('  ');
+  }
 
-  return {
+  function goTo(dest) {
+    if (dest !== sh.cwd) sh.prevCwd = sh.cwd;
+    sh.cwd = dest;
+    const target = pageTarget(dest);
+    if (!target) return;
+    const [id, year] = target;
+    if (year) selectRaceTab(year);
+    if (id) scrollToEl(document.getElementById(id));
+    else scrollToTop();
+  }
+
+  // head/tail/wc/sort/uniq outside a pipe: read the named file instead
+  function fileFilter(name) {
+    return (trimmed, arg) => {
+      const words = arg.trim() ? arg.trim().split(/\s+/) : [];
+      // the file is the first word that isn't a flag or the number after -n
+      const fileArg = words.find((w, i) => !w.startsWith('-') && !(i > 0 && words[i - 1] === '-n'));
+      if (!fileArg) {
+        out.addLine('$', trimmed, `${name}: reads from a pipe or a file. try: ls races | ${name}${name === 'head' || name === 'tail' ? ' -3' : ''}`, true);
+        return;
+      }
+      const file = readFile(sh.cwd, fileArg);
+      if (file.error) {
+        out.addLine('$', trimmed, `${name}: ${file.error}`, true);
+        return;
+      }
+      const r = FILTERS[name](file.text.split('\n'), words.filter((w) => w !== fileArg));
+      out.addLine('$', trimmed, r.lines.join('\n'));
+    };
+  }
+
+  const handlersRef = {
+    head: fileFilter('head'),
+    tail: fileFilter('tail'),
+    wc: fileFilter('wc'),
+    sort: fileFilter('sort'),
+    uniq: fileFilter('uniq'),
+
     help(trimmed) {
       out.addLine('$', trimmed, null);
       out.addHelpTable(HELP_ITEMS);
@@ -120,57 +139,53 @@ function createHandlers(out, history, getFortunes) {
         out.addLine('$', trimmed, `ls: unknown option: ${badFlag}`, true);
         return;
       }
-      const lower = target.toLowerCase();
-      if (!lower || lower === '~' || lower === '.') {
-        out.addLine('$', trimmed, FILESYSTEM['~'].join('  '));
-      } else if (lower === '/dev' || lower === '/dev/') {
-        out.addLine('$', trimmed, FILESYSTEM['/dev'].join('  '));
-      } else {
-        const listing = listSection(target);
-        if (listing !== null) {
-          out.addLine('$', trimmed, listing);
-        } else {
-          out.addLine('$', trimmed, `ls: ${target}: No such file or directory`, true);
-        }
+      const flagChars = flags.join('');
+      const dir = target ? resolveDir(sh.cwd, target) : sh.cwd;
+      if (!dir) {
+        // ls on a file prints its name, like a real shell
+        const file = target && readFile(sh.cwd, target);
+        if (file && !file.error) out.addLine('$', trimmed, target);
+        else out.addLine('$', trimmed, `ls: ${target}: No such file or directory`, true);
+        return;
       }
+      let entries = list(dir);
+      if (flagChars.includes('a')) entries = ['./', '../', ...entries];
+      out.addLine('$', trimmed, entries.length ? formatListing(entries, flagChars) : null);
     },
 
     cd(trimmed, arg) {
-      const target = rejectFlags(out, trimmed, 'cd', arg);
+      // "cd -" goes back; it isn't a flag
+      const target = arg.trim() === '-' ? '-' : rejectFlags(out, trimmed, 'cd', arg);
       if (target === null) return;
-      const lower = target.toLowerCase();
-      if (!target || target === '~') {
-        out.addLine('$', trimmed, null);
-        scrollToTop();
-      } else if (lower === '/dev' || lower === '/dev/' || lower === 'dev') {
-        out.addLine('$', trimmed, 'you found the secret directory. try: ls /dev');
-      } else {
-        const section = lookup(SECTION_MAP, lower.replace(/\/$/, ''));
-        if (section) {
-          out.addLine('$', trimmed, null);
-          const name = lower.replace(/\/$/, '');
-          out.addOk(`→ /${name}`);
-          const year = lookup(RACE_TABS, name);
-          if (year) selectRaceTab(year);
-          scrollToEl(document.getElementById(section));
-        } else {
-          out.addLine('$', trimmed, `cd: ${target || arg}: No such directory`, true);
-        }
+      let dest;
+      if (!target || target === '~') dest = HOME;
+      else if (target === '-') dest = sh.prevCwd;
+      else dest = resolveDir(sh.cwd, target);
+
+      if (!dest) {
+        const file = readFile(sh.cwd, target);
+        const why = file && !file.error ? 'Not a directory' : 'No such file or directory';
+        out.addLine('$', trimmed, `cd: ${target}: ${why}`, true);
+        return;
       }
+      const firstDevVisit = dest === '/dev' && !sh.visitedDev;
+      if (dest === '/dev') sh.visitedDev = true;
+      goTo(dest);
+      // cd - prints where it went, like bash; the secret directory gets a welcome
+      if (target === '-') out.addLine('$', trimmed, displayPath(dest));
+      else out.addLine('$', trimmed, firstDevVisit ? 'you found the secret directory. try: ls' : null);
     },
 
     cat(trimmed, arg) {
       const target = rejectFlags(out, trimmed, 'cat', arg);
       if (target === null) return;
-      const lower = target.toLowerCase();
       if (!target) {
-        out.addLine('$', trimmed, 'usage: cat <file> (try: ls /dev)', true);
-      } else if (lookup(FILES, lower) || lookup(FILES, `/dev/${lower.replace(/^\.\//, '')}`)) {
-        // Bare names from `ls /dev` (e.g. "secrets.txt") resolve to /dev
-        out.addLine('$', trimmed, lookup(FILES, lower) || lookup(FILES, `/dev/${lower.replace(/^\.\//, '')}`));
-      } else {
-        out.addLine('$', trimmed, `cat: ${target}: No such file or directory`, true);
+        out.addLine('$', trimmed, 'usage: cat <file> (try: ls, then cat about.txt)', true);
+        return;
       }
+      const file = readFile(sh.cwd, target);
+      if (file.error) out.addLine('$', trimmed, `cat: ${file.error}`, true);
+      else out.addLine('$', trimmed, file.text);
     },
 
     open(trimmed, arg) {
@@ -251,7 +266,7 @@ function createHandlers(out, history, getFortunes) {
     },
 
     pwd(trimmed) {
-      out.addLine('$', trimmed, '~/mubbie');
+      out.addLine('$', trimmed, displayPath(sh.cwd));
     },
 
     date(trimmed) {
@@ -264,7 +279,7 @@ function createHandlers(out, history, getFortunes) {
     },
 
     echo(trimmed, arg) {
-      out.addLine('$', trimmed, arg || '');
+      out.addLine('$', trimmed, unquote(arg || ''));
     },
 
     sudo(trimmed, arg) {
@@ -426,8 +441,20 @@ function createHandlers(out, history, getFortunes) {
 
     grep(trimmed, arg) {
       if (!arg.trim()) {
-        out.addLine('$', trimmed, 'usage: grep <term>', true);
+        out.addLine('$', trimmed, 'usage: grep <term>  (or: … | grep <pattern>)', true);
         return;
+      }
+      // grep <pattern> <file>: search a file, like a real grep
+      const words = arg.trim().split(/\s+/);
+      if (words.length > 1) {
+        const file = readFile(sh.cwd, words[words.length - 1]);
+        if (!file.error) {
+          const r = FILTERS.grep(file.text.split('\n'), words.slice(0, -1));
+          if (r.error) out.addLine('$', trimmed, r.error, true);
+          else out.addLine('$', trimmed, r.lines.length ? r.lines.join('\n') : null, false);
+          if (r.failed) sh.lastFailed = true;
+          return;
+        }
       }
       const term = arg.trim().toLowerCase();
       const sections = [];
@@ -548,6 +575,124 @@ function createHandlers(out, history, getFortunes) {
       });
     },
 
+    tree(trimmed, arg) {
+      const target = rejectFlags(out, trimmed, 'tree', arg);
+      if (target === null) return;
+      const root = target ? resolveDir(sh.cwd, target) : sh.cwd;
+      if (!root) {
+        out.addLine('$', trimmed, `tree: ${target}: No such directory`, true);
+        return;
+      }
+      const rows = [root === sh.cwd && !target ? '.' : displayPath(root)];
+      let dirs = 0;
+      let files = 0;
+      (function walk(path, indent) {
+        const entries = list(path) || [];
+        entries.forEach((entry, i) => {
+          const last = i === entries.length - 1;
+          rows.push(`${indent}${last ? '└── ' : '├── '}${entry.replace(/\/$/, '')}`);
+          if (entry.endsWith('/')) {
+            dirs++;
+            walk(`${path === '/' ? '' : path}/${entry.slice(0, -1)}`, indent + (last ? '    ' : '│   '));
+          } else {
+            files++;
+          }
+        });
+      }(root, ''));
+      rows.push('', `${dirs} director${dirs === 1 ? 'y' : 'ies'}, ${files} file${files === 1 ? '' : 's'}`);
+      out.addLine('$', trimmed, rows.join('\n'));
+    },
+
+    env(trimmed) {
+      const shown = Object.entries(sh.env).filter(([k]) => k !== '?').sort(([a], [b]) => a.localeCompare(b));
+      out.addLine('$', trimmed, shown.map(([k, v]) => `${k}=${v}`).join('\n'));
+    },
+
+    export(trimmed, arg) {
+      const m = /^([A-Za-z_]\w*)=(.*)$/.exec(arg.trim());
+      if (!m) {
+        out.addLine('$', trimmed, arg.trim() ? `export: not valid: ${arg.trim()}. usage: export NAME=value` : null, Boolean(arg.trim()));
+        if (!arg.trim()) handlersRef.env(trimmed);
+        return;
+      }
+      if (['PWD', 'HOME', 'USER'].includes(m[1])) {
+        out.addLine('$', trimmed, `export: ${m[1]}: read-only variable (nice try)`, true);
+        return;
+      }
+      sh.env[m[1]] = unquote(m[2]);
+      out.addLine('$', trimmed, null);
+    },
+
+    which(trimmed, arg) {
+      const name = arg.trim().toLowerCase();
+      if (!name) {
+        out.addLine('$', trimmed, 'usage: which <command>', true);
+        return;
+      }
+      const special = { ll: 'll: aliased to ls -l', la: 'la: aliased to ls -a', vim: '/usr/bin/vim (are you sure? try emacs)', vi: 'vi: aliased to vim', emacs: '/usr/bin/emacs', nano: '/usr/bin/nano' };
+      if (Object.hasOwn(special, name)) {
+        out.addLine('$', trimmed, special[name]);
+      } else if (Object.hasOwn(ALIASES, name)) {
+        out.addLine('$', trimmed, `${name}: aliased to ${ALIASES[name]}`);
+      } else if (Object.hasOwn(FILTERS, name)) {
+        out.addLine('$', trimmed, `/usr/bin/${name}`);
+      } else if (Object.hasOwn(handlersRef, name)) {
+        out.addLine('$', trimmed, `/usr/local/bin/${name}`);
+      } else {
+        out.addLine('$', trimmed, `${name} not found`, true);
+      }
+    },
+
+    cowsay(trimmed, arg) {
+      out.addLine('$', trimmed, cowsay(unquote(arg.trim()) || 'moo. (try: random | cowsay)').join('\n'));
+    },
+
+    sl(trimmed) {
+      // You typed sl, not ls. Real terminals punish this with a train.
+      const train = [
+        '      ====        ________                ___________ ',
+        '  _D _|  |_______/        \\__I_I_____===__|_________| ',
+        '   |(_)---  |   H\\________/ |   |        =|___ ___|  ',
+        '   /     |  |   H  |  |     |   |         ||_| |_||  ',
+        '  |      |  |   H  |__--------------------| [___] |  ',
+        '  | ________|___H__/__|_____/[][]~\\_______|       |  ',
+        '  |/ |   |-----------I_____I [][] []  D   |=======|__',
+        '__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__',
+        ' |/-=|___|=    ||    ||    ||    |_____/~\\___/        ',
+        '  \\_/      \\O=====O=====O=====O_/      \\_/            ',
+      ];
+      out.addLine('$', trimmed, null);
+      out.addLine(null, null, train.join('\n'));
+      if (!out.live || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const el = document.getElementById('terminal-history')?.lastElementChild?.firstElementChild;
+      if (!el) return;
+      const width = 46;
+      for (let f = 0; f <= width + train[0].length; f += 2) {
+        out.later(() => {
+          const shift = width - f;
+          el.textContent = train.map((row) => (shift >= 0 ? ' '.repeat(shift) + row : row.slice(-shift))).join('\n');
+        }, f * 25);
+      }
+    },
+
+    vim(trimmed) {
+      out.addLine('$', trimmed, null);
+      out.addLine(null, null, 'vim: you meant emacs.');
+    },
+
+    true(trimmed) {
+      out.addLine('$', trimmed, null);
+    },
+
+    false(trimmed) {
+      out.addLine('$', trimmed, null);
+      sh.lastFailed = true;
+    },
+
+    nano(trimmed) {
+      out.addLine('$', trimmed, 'nano? in this economy? (try: emacs)');
+    },
+
     exit(trimmed) {
       out.addLine('$', trimmed, null);
       out.addLine(null, null, 'there is no escape. you live here now. 🏠');
@@ -579,7 +724,12 @@ function createHandlers(out, history, getFortunes) {
       NEOFETCH_LINES.forEach((line) => out.addLine(null, null, line));
     },
 
-    history(trimmed) {
+    history(trimmed, arg) {
+      if (arg.trim() === '-c') {
+        history.clear();
+        out.addLine('$', trimmed, null);
+        return;
+      }
       const all = history.getAll();
       if (all.length === 0) {
         out.addLine('$', trimmed, 'no commands in history yet');
@@ -659,20 +809,119 @@ function createHandlers(out, history, getFortunes) {
       }
     },
   };
+  return handlersRef;
 }
 
 // ─── Init ───
+
+// Commands whose output arrives later over the network can't feed a pipe
+const NETWORK_COMMANDS = new Set(['weather', 'curl', 'open']);
+// Aliases that carry flags, like a real shell's ll / la
+const ALIAS_ARGS = { ll: '-l', la: '-a' };
 
 export function initTerminal() {
   const terminalEl = document.getElementById('terminal');
   const historyEl = document.getElementById('terminal-history');
   const typedEl = document.getElementById('terminal-typed');
+  const typedAfterEl = document.getElementById('terminal-typed-after');
   const inputEl = document.getElementById('terminal-input');
+  const promptEl = document.querySelector('.terminal-input-line .terminal-prompt');
 
   if (!terminalEl || !inputEl) return;
 
-  const out = createOutput(historyEl);
+  // ─── Shell state ───
+  const sh = {
+    cwd: HOME,
+    prevCwd: HOME,
+    visitedDev: false,
+    env: {
+      USER: 'mubbie',
+      HOME,
+      SHELL: '/bin/mubsh',
+      EDITOR: 'emacs',
+      TERM: 'xterm-256color',
+      LANG: 'en_US.UTF-8',
+      '?': '0',
+    },
+  };
+  Object.defineProperty(sh.env, 'PWD', { get: () => displayPath(sh.cwd), enumerable: true });
+
+  const promptText = () => `${displayPath(sh.cwd)} $`;
+  const base = createOutput(historyEl, promptText);
   const cmdHistory = createHistory();
+
+  // ─── Output routing ───
+  // Handlers write to `out`, which forwards to whatever is current: a runner that
+  // prints (echoing the typed line once), or a capture that collects a pipe's input.
+  function runner(ctx) {
+    const echo = () => {
+      if (!ctx.echoed) {
+        base.addLine(ctx.prompt, ctx.line, null);
+        ctx.echoed = true;
+      }
+    };
+    const self = {
+      live: true,
+      addLine(prompt, cmd, output, isError) {
+        if (prompt !== null) echo();
+        if (output != null) base.addLine(null, null, output, isError);
+        if (isError) ctx.failed = true;
+      },
+      addOk(text) { echo(); base.addOk(text); },
+      addHelpTable(items) { echo(); base.addHelpTable(items); },
+      addImage(...a) { echo(); base.addImage(...a); },
+      addLink(...a) { echo(); base.addLink(...a); },
+      later(fn, delay) { base.later(() => withCurrent(self, fn), delay); },
+      cancelPending: () => base.cancelPending(),
+      clear() { base.clear(); ctx.echoed = true; ctx.cleared = true; },
+    };
+    return self;
+  }
+
+  function capture(ctx) {
+    const self = {
+      live: false,
+      lines: [],
+      addLine(prompt, cmd, output, isError) {
+        if (output == null) return;
+        if (isError) {
+          // errors go to the screen (stderr), not down the pipe
+          runner(ctx).addLine('$', null, output, true);
+          self.failed = true;
+        } else {
+          self.lines.push(...String(output).split('\n'));
+        }
+      },
+      addOk(text) { self.lines.push(text); },
+      addHelpTable(items) { items.forEach((h) => self.lines.push(`${h.c.padEnd(28)}${h.d}`)); },
+      addImage(src, alt) { self.lines.push(alt || src); },
+      addLink(text) { self.lines.push(text); },
+      // a pipe waits for the whole output, so animations run instantly
+      later(fn) { withCurrent(self, fn); },
+      cancelPending: () => false,
+      clear() {},
+    };
+    return self;
+  }
+
+  let current = runner({ echoed: true });
+  const idle = current;
+  function withCurrent(target, fn) {
+    const prev = current;
+    current = target;
+    try { fn(); } finally { current = prev; }
+  }
+  const out = {
+    get live() { return current.live; },
+    addLine: (...a) => current.addLine(...a),
+    addOk: (...a) => current.addOk(...a),
+    addHelpTable: (...a) => current.addHelpTable(...a),
+    addImage: (...a) => current.addImage(...a),
+    addLink: (...a) => current.addLink(...a),
+    later: (...a) => current.later(...a),
+    cancelPending: () => base.cancelPending(),
+    clear: () => current.clear(),
+  };
 
   let fortunes = [
     'the best time to start was yesterday. the second best time is now.',
@@ -684,10 +933,13 @@ export function initTerminal() {
     .then((data) => { fortunes = data; })
     .catch(() => {});
 
-  const handlers = createHandlers(out, cmdHistory, () => fortunes);
+  const handlers = createHandlers(out, cmdHistory, () => fortunes, sh);
 
   // quit is an alias for exit at the handler level
   handlers.quit = handlers.exit;
+
+  // Everything Tab can complete as a command name
+  const commandNames = [...new Set([...ALL_COMMANDS, ...Object.keys(FILTERS)])].sort();
 
   // ─── Rotating hint placeholder ───
   let hintEl = document.getElementById('terminal-hint');
@@ -726,50 +978,257 @@ export function initTerminal() {
 
   // ─── Command dispatch ───
 
-  function processCommand(rawInput) {
-    const trimmed = rawInput.trim();
-    if (!trimmed) return;
+  // Split "ls -l races" into a command name (aliases resolved) and its argument string
+  function splitCommand(stage) {
+    const text = stage.trim();
+    const word = text.split(/\s+/)[0];
+    const lower = word.toLowerCase();
+    let arg = text.slice(word.length).trim();
+    if (Object.hasOwn(ALIAS_ARGS, lower)) arg = `${ALIAS_ARGS[lower]} ${arg}`.trim();
+    const name = Object.hasOwn(ALIASES, lower) ? ALIASES[lower] : lower;
+    return { name, arg, text };
+  }
 
-    cmdHistory.push(trimmed);
-
-    const parts = trimmed.split(/\s+/);
-    let cmd = parts[0].toLowerCase();
-    const arg = parts.slice(1).join(' ');
-
-    // Resolve aliases
-    cmd = lookup(ALIASES, cmd) || cmd;
-
-    const handler = lookup(handlers, cmd);
+  function runHandler(name, text, arg, ctx) {
+    const handler = Object.hasOwn(handlers, name) ? handlers[name] : null;
     if (handler) {
-      handler(trimmed, arg);
-    } else {
-      out.addLine('$', trimmed, `command not found: ${cmd}. try 'help'`, true);
+      handler(text, arg);
+      return;
     }
+    const guess = suggest(name, commandNames);
+    out.addLine('$', text, `command not found: ${name}.${guess ? ` did you mean ${guess}?` : " try 'help'"}`, true);
+    ctx.notFound = true;
+  }
+
+  // Run one pipeline; returns its exit status (0 ok, 1 error, 127 not found)
+  function runPipeline(stages, ctx) {
+    ctx.failed = false;
+    ctx.notFound = false;
+    sh.lastFailed = false;
+    let stdin = null;
+
+    for (let i = 0; i < stages.length; i++) {
+      const isLast = i === stages.length - 1;
+      const { name, arg, text } = splitCommand(expandVars(stages[i], sh.env));
+      const words = arg ? arg.split(/\s+/) : [];
+
+      // A filter reading the previous command's output
+      if (stdin !== null && (Object.hasOwn(FILTERS, name) || (name === 'cat' && !arg))) {
+        const result = name === 'cat' ? { lines: stdin } : FILTERS[name](stdin, words);
+        if (result.error) {
+          withCurrent(runner(ctx), () => out.addLine('$', text, `${name}: ${result.error}`, true));
+          return 1;
+        }
+        if (isLast) {
+          withCurrent(runner(ctx), () => out.addLine('$', text, result.lines.length ? result.lines.join('\n') : null));
+          return result.failed ? 1 : 0;
+        }
+        stdin = result.lines;
+        continue;
+      }
+
+      if (!isLast) {
+        if (NETWORK_COMMANDS.has(name)) {
+          withCurrent(runner(ctx), () => out.addLine('$', text, `${name}: its output arrives over the network and can't be piped`, true));
+          return 1;
+        }
+        const cap = capture(ctx);
+        withCurrent(cap, () => runHandler(name, text, arg, ctx));
+        if (ctx.notFound) return 127;
+        stdin = cap.lines;
+        continue;
+      }
+
+      // Last stage, a regular command (it ignores any piped input, like echo does)
+      withCurrent(runner(ctx), () => runHandler(name, text, arg, ctx));
+    }
+    if (ctx.notFound) return 127;
+    return ctx.failed || sh.lastFailed ? 1 : 0;
+  }
+
+  function processCommand(rawInput) {
+    const typed = rawInput.trim();
+    if (!typed) return;
+    const prompt = promptText();
+
+    // !! / !n / !prefix, before anything else (like bash)
+    const expansion = expandHistory(typed, cmdHistory.getAll());
+    if (expansion.error) {
+      cmdHistory.push(typed);
+      base.addLine(prompt, typed, expansion.error, true);
+      sh.env['?'] = '1';
+      return;
+    }
+    const line = expansion.line;
+    cmdHistory.push(line);
+
+    // the echoed line is what actually ran
+    const ctx = { prompt, line, echoed: false };
+    const sequence = parseLine(line);
+    const bad = syntaxError(sequence);
+    if (bad) {
+      base.addLine(prompt, line, bad, true);
+      sh.env['?'] = '2';
+      return;
+    }
+
+    let status = 0;
+    sequence.forEach((pipeline, i) => {
+      if (i > 0 && pipeline.op === '&&' && status !== 0) return;
+      if (i > 0 && pipeline.op === '||' && status === 0) return;
+      status = runPipeline(pipeline.stages, ctx);
+      // $? is updated after every pipeline, so "nope; echo $?" prints 127
+      sh.env['?'] = String(status);
+    });
+
+    // cd, export… print nothing, but the line still shows on screen
+    if (!ctx.echoed) base.addLine(prompt, line, null);
+    updatePrompt();
+  }
+
+  // ─── Input line: prompt, caret, Ctrl+R search ───
+
+  let search = null; // { query, index, original } while in Ctrl+R mode
+
+  function updatePrompt() {
+    if (!promptEl) return;
+    promptEl.textContent = search
+      ? `(reverse-i-search)\`${search.query}': `
+      : `${promptText()} `;
+  }
+
+  // Draw the typed text with the caret where the input's cursor really is
+  function render() {
+    if (search) {
+      const match = search.index >= 0 ? cmdHistory.get(search.index) : '';
+      typedEl.textContent = match;
+      if (typedAfterEl) typedAfterEl.textContent = '';
+      return;
+    }
+    const value = inputEl.value;
+    const caret = typedAfterEl ? (inputEl.selectionStart ?? value.length) : value.length;
+    typedEl.textContent = value.slice(0, caret);
+    if (typedAfterEl) typedAfterEl.textContent = value.slice(caret);
+  }
+
+  function setInput(value, caret = value.length) {
+    inputEl.value = value;
+    inputEl.setSelectionRange(caret, caret);
+    render();
+  }
+
+  function startSearch() {
+    search = { query: '', index: -1, original: inputEl.value };
+    inputEl.value = '';
+    stopHintCycle();
+    updatePrompt();
+    render();
+  }
+
+  function endSearch(accept) {
+    if (!search) return;
+    const match = search.index >= 0 ? cmdHistory.get(search.index) : null;
+    const value = accept && match ? match : search.original;
+    search = null;
+    updatePrompt();
+    setInput(value);
+  }
+
+  // Ctrl+C: abandon the line (and stop anything running), like a real terminal
+  function interrupt() {
+    const typed = search ? '' : inputEl.value;
+    search = null;
+    base.cancelPending();
+    if (isMatrixActive()) stopMatrix();
+    base.addLine(promptText(), `${typed}^C`, null);
+    setInput('');
+    updatePrompt();
+    startHintCycle();
+    sh.env['?'] = '130';
+  }
+
+  // Tab: complete; a second Tab with nothing new to add lists the options
+  let lastTab = null;
+  function complete() {
+    const result = tabComplete(inputEl.value, { cwd: sh.cwd, commands: commandNames });
+    if (!result) return false;
+    if (result.value !== inputEl.value) {
+      setInput(result.value);
+      lastTab = null;
+      return true;
+    }
+    if (result.candidates.length > 1) {
+      if (lastTab === inputEl.value) {
+        base.addLine(promptText(), inputEl.value, result.candidates.join('  '));
+        lastTab = null;
+      } else {
+        lastTab = inputEl.value;
+      }
+    }
+    return true;
   }
 
   // ─── Event wiring ───
 
-  function setInput(value) {
-    inputEl.value = value;
-    typedEl.textContent = value;
-  }
-
   terminalEl.addEventListener('click', () => inputEl.focus());
 
   inputEl.addEventListener('input', () => {
-    typedEl.textContent = inputEl.value;
-    if (inputEl.value) {
-      stopHintCycle();
-    } else {
-      startHintCycle();
+    if (search) {
+      search.query = inputEl.value;
+      search.index = cmdHistory.search(search.query);
+      updatePrompt();
+      render();
+      return;
     }
+    render();
+    if (inputEl.value) stopHintCycle();
+    else startHintCycle();
+  });
+
+  // Keep the drawn caret in step with clicks and arrow keys
+  ['keyup', 'click', 'select'].forEach((type) => inputEl.addEventListener(type, () => { if (!search) render(); }));
+  document.addEventListener('selectionchange', () => {
+    if (document.activeElement === inputEl && !search) render();
   });
 
   inputEl.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') lastTab = null;
+    const ctrl = e.ctrlKey && !e.metaKey && !e.altKey;
+    const key = e.key.toLowerCase();
+
+    // While searching history (Ctrl+R)
+    if (search) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const match = search.index >= 0 ? cmdHistory.get(search.index) : '';
+        search = null;
+        updatePrompt();
+        setInput('');
+        if (match) processCommand(match);
+        startHintCycle();
+      } else if (ctrl && key === 'r') {
+        e.preventDefault();
+        const next = cmdHistory.search(search.query, search.index);
+        if (next >= 0) search.index = next;
+        render();
+      } else if (e.key === 'Escape' || (ctrl && key === 'g')) {
+        e.preventDefault();
+        endSearch(false);
+      } else if (ctrl && key === 'c') {
+        e.preventDefault();
+        interrupt();
+      } else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'].includes(e.key) || (ctrl && (key === 'a' || key === 'e'))) {
+        e.preventDefault();
+        endSearch(true);
+      }
+      return;
+    }
+
     if (e.key === 'Enter') {
       e.preventDefault();
-      processCommand(inputEl.value);
+      const value = inputEl.value;
       setInput('');
+      processCommand(value);
       startHintCycle();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
@@ -786,14 +1245,46 @@ export function initTerminal() {
         if (!val) startHintCycle(); else stopHintCycle();
       }
     } else if (e.key === 'Tab') {
-      const result = tabComplete(inputEl.value);
-      if (result) {
-        e.preventDefault();
-        setInput(result);
-      }
-    } else if (e.key === 'l' && e.ctrlKey) {
+      if (complete()) e.preventDefault();
+    } else if (ctrl && key === 'l') {
       e.preventDefault();
-      out.clear();
+      base.clear();
+    } else if (ctrl && key === 'c') {
+      // with text selected, Ctrl+C is copy; otherwise it's interrupt
+      if (inputEl.selectionStart !== inputEl.selectionEnd) return;
+      e.preventDefault();
+      interrupt();
+    } else if (ctrl && key === 'r') {
+      e.preventDefault();
+      startSearch();
+    } else if (ctrl && key === 'a') {
+      e.preventDefault();
+      setInput(inputEl.value, 0);
+    } else if (ctrl && key === 'e') {
+      e.preventDefault();
+      setInput(inputEl.value);
+    } else if (ctrl && key === 'u') {
+      // delete everything before the cursor
+      e.preventDefault();
+      const caret = inputEl.selectionStart;
+      setInput(inputEl.value.slice(caret), 0);
+    } else if (ctrl && key === 'k') {
+      // delete everything after the cursor
+      e.preventDefault();
+      const caret = inputEl.selectionStart;
+      setInput(inputEl.value.slice(0, caret), caret);
+    } else if (ctrl && key === 'w') {
+      // delete the word before the cursor
+      e.preventDefault();
+      const caret = inputEl.selectionStart;
+      const before = inputEl.value.slice(0, caret).replace(/\S+\s*$/, '');
+      setInput(before + inputEl.value.slice(caret), before.length);
+    } else if (ctrl && key === 'd' && !inputEl.value) {
+      e.preventDefault();
+      base.addLine(promptText(), 'logout', 'there is no escape. you live here now. 🏠');
     }
   });
+
+  updatePrompt();
+  render();
 }

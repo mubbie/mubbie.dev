@@ -4,7 +4,9 @@ function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-export function createOutput(historyEl) {
+// getPrompt: the live prompt ("~/mubbie/races $"). A prompt argument of '$' means
+// "use the live prompt"; any other string is printed as-is (the prompt a line was typed at).
+export function createOutput(historyEl, getPrompt = () => '~/mubbie $') {
   // Timers for multi-step animations (sudo, coffee, ssh…), cancelled by clear()
   const pending = new Set();
 
@@ -25,7 +27,7 @@ export function createOutput(historyEl) {
       line.className = 'terminal-history-line';
       const promptSpan = document.createElement('span');
       promptSpan.className = 'terminal-prompt';
-      promptSpan.textContent = '~/mubbie $ ';
+      promptSpan.textContent = `${prompt === '$' ? getPrompt() : prompt} `;
       const cmdSpan = document.createElement('span');
       cmdSpan.className = 'terminal-cmd';
       cmdSpan.textContent = cmd;
@@ -113,11 +115,18 @@ export function createOutput(historyEl) {
     scrollToBottom();
   }
 
-  function clear() {
+  // Ctrl+C: stop running animations but keep what's on screen
+  function cancelPending() {
+    const wasRunning = pending.size > 0;
     pending.forEach(clearTimeout);
     pending.clear();
+    return wasRunning;
+  }
+
+  function clear() {
+    cancelPending();
     historyEl.innerHTML = '';
   }
 
-  return { addLine, addOk, addHelpTable, addImage, addLink, later, clear };
+  return { addLine, addOk, addHelpTable, addImage, addLink, later, cancelPending, clear };
 }

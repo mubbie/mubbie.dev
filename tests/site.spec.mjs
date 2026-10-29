@@ -281,6 +281,150 @@ test('theme: follows the OS, and an explicit choice persists across reloads', as
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
 });
 
+// Type a command and wait for the next prompt; returns the terminal text
+const promptOf = (page) => page.locator('.terminal-input-line .terminal-prompt');
+
+test('shell: a real working directory (cd, pwd, ls, prompt)', async ({ page }) => {
+  await load(page);
+  await run(page, 'cd races');
+  await expect(promptOf(page)).toHaveText(/^~\/mubbie\/races \$/);
+  expect(await run(page, 'pwd')).toContain('~/mubbie/races');
+  const ls = await run(page, 'ls');
+  expect(ls).toContain('cycling/');
+  expect(ls).toContain('Hot Chocolate 15K');
+  await run(page, 'cd cycling');
+  await expect(promptOf(page)).toHaveText(/^~\/mubbie\/races\/cycling \$/);
+  await expect(page.locator('#tab-2027')).toHaveAttribute('aria-selected', 'true');
+  expect(await run(page, 'ls')).toContain('STP');
+  await run(page, 'cd ..');
+  expect(await run(page, 'pwd')).toContain('~/mubbie/races');
+  expect(await run(page, 'cd -')).toContain('~/mubbie/races/cycling'); // cd - prints where it went
+  await run(page, 'cd ~/mubbie/currently');
+  expect(await run(page, 'cat reading')).toContain('Designing Data-Intensive Applications');
+  await run(page, 'cd /');
+  expect(await run(page, 'ls')).toContain('dev/  home/');
+  await run(page, 'cd ~');
+  await expect(promptOf(page)).toHaveText(/^~\/mubbie \$/);
+  expect(await run(page, 'cd about.txt')).toContain('Not a directory');
+  expect(await run(page, 'cat bucketlist.md')).toContain('- [x] Run a half marathon');
+});
+
+test('shell: pipes, chaining, variables, and exit status', async ({ page }) => {
+  await load(page);
+  const races = await (await page.request.get('/data/races.json')).json();
+  const halves = races.filter((r) => /half/i.test(r.name)).length;
+  expect(await run(page, 'ls races | grep half | wc -l')).toContain(`\n${halves}`);
+  expect(await run(page, 'ls races | head -2')).toContain(`${races[0].name}`);
+  const bucket = await (await page.request.get('/data/bucketlist.json')).json();
+  expect(await run(page, 'cat bucketlist.md | grep -c "[x]"')).toContain(`\n${bucket.filter((b) => b.done).length}`);
+  expect(await run(page, 'help | grep theme')).toContain('theme [dark|light|default]');
+  expect(await run(page, 'random | cowsay')).toContain('(oo)');
+  expect(await run(page, 'ls |')).toContain('syntax error');
+  expect(await run(page, 'weather | head')).toContain("can't be piped");
+  expect(await run(page, 'echo "a|b; c"')).toContain('a|b; c'); // quotes protect | and ;
+  expect(await run(page, 'false || echo recovered')).toContain('recovered');
+  expect(await run(page, 'true && echo chained')).toContain('chained');
+  // only the echoed command line may mention it, not the output below it
+  expect((await run(page, 'cd nowhere && echo SHOULD-NOT-PRINT')).split('\n').slice(1).join('\n')).not.toContain('SHOULD-NOT-PRINT');
+  expect(await run(page, 'nope; echo $?')).toContain('127');
+  expect(await run(page, 'echo $USER $EDITOR')).toContain('mubbie emacs');
+  await run(page, 'export GREETING=hey');
+  expect(await run(page, 'echo $GREETING')).toContain('hey');
+  expect(await run(page, "echo '$GREETING'")).toContain('$GREETING'); // single quotes don't expand
+  expect(await run(page, 'env')).toContain('PWD=~/mubbie');
+  expect(await run(page, 'which ll')).toContain('aliased to ls -l');
+  expect(await run(page, 'tree races')).toContain('└──');
+  expect(await run(page, 'grpe marathon')).toContain('did you mean grep?');
+  expect(await run(page, 'head -n 1 bucketlist.md')).toContain('- [x]');
+});
+
+test('shell: history expansion and persistence', async ({ page }) => {
+  await load(page);
+  await run(page, 'whoami');
+  expect(await run(page, '!!')).toContain('mubbie idoko');
+  await run(page, 'ping');
+  expect(await run(page, '!who')).toContain('mubbie idoko');
+  expect(await run(page, '!9999')).toContain('event not found');
+  await run(page, 'ls');
+  const sudo = await run(page, 'sudo !!');
+  expect(sudo).toContain('sudo ls'); // the expanded line is what's echoed
+  expect(sudo).toContain('nice try');
+  await page.reload();
+  await expect(page.locator('#terminal-input')).toBeAttached();
+  await page.locator('#terminal-input').press('ArrowUp');
+  await expect(page.locator('#terminal-input')).toHaveValue('sudo ls');
+  expect(await run(page, 'history -c && history')).toContain('no commands in history yet');
+});
+
+test.describe('shell keys', () => {
+  test.skip(({ isMobile }) => isMobile, 'hardware keyboard');
+
+  test('Ctrl+C cancels the line and stops running output', async ({ page }) => {
+    await load(page);
+    const input = page.locator('#terminal-input');
+    await input.focus();
+    await input.fill('half typed');
+    await input.press('Control+c');
+    await expect(input).toHaveValue('');
+    await expect(page.locator('#terminal-history')).toContainText('half typed^C');
+    await run(page, 'coffee');
+    await input.press('Control+c');
+    await page.waitForTimeout(2600);
+    await expect(page.locator('#terminal-history')).not.toContainText('freshly brewed');
+  });
+
+  test('Ctrl+R searches history; Enter runs the match, Esc restores', async ({ page }) => {
+    await load(page);
+    for (const c of ['pwd', 'echo needle in history', 'whoami']) await run(page, c);
+    const input = page.locator('#terminal-input');
+    await input.focus();
+    await input.press('Control+r');
+    await input.pressSequentially('needle');
+    await expect(promptOf(page)).toContainText('(reverse-i-search)`needle\'');
+    await expect(page.locator('#terminal-typed')).toHaveText('echo needle in history');
+    await input.press('Escape');
+    await expect(promptOf(page)).toHaveText(/^~\/mubbie \$/);
+    await input.press('Control+r');
+    await input.pressSequentially('needle');
+    await input.press('Enter');
+    await expect(page.locator('#terminal-history')).toContainText('\nneedle in history');
+  });
+
+  test('line editing: Ctrl+A/E/U/K/W, and the caret is drawn where it really is', async ({ page }) => {
+    await load(page);
+    const input = page.locator('#terminal-input');
+    await input.focus();
+    await input.fill('echo hello world');
+    await input.press('Control+a');
+    await expect(page.locator('#terminal-typed')).toHaveText('');
+    await expect(page.locator('#terminal-typed-after')).toHaveText('echo hello world');
+    await input.press('Control+e');
+    await input.press('Control+w');
+    await expect(input).toHaveValue('echo hello ');
+    await input.press('Control+a');
+    await input.press('ArrowRight');
+    await input.press('ArrowRight');
+    await input.press('Control+k');
+    await expect(input).toHaveValue('ec');
+    await input.press('Control+u');
+    await expect(input).toHaveValue('');
+  });
+
+  test('Tab completes as far as matches agree; a second Tab lists them', async ({ page }) => {
+    await load(page);
+    const input = page.locator('#terminal-input');
+    await input.focus();
+    await input.fill('open s');
+    await input.press('Tab');
+    await expect(input).toHaveValue('open s');
+    await input.press('Tab');
+    await expect(page.locator('#terminal-history')).toContainText('sorcery  substack  strava');
+    await input.fill('cd races && ls cyc');
+    await input.press('Tab');
+    await expect(input).toHaveValue('cd races && ls cycling/');
+  });
+});
+
 test('terminal: every alias runs its command', async ({ page }) => {
   // Reduced motion keeps `hack` (matrix) from taking over the screen mid-loop
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -390,11 +534,11 @@ const COMMANDS = [
   ['whoami', 'mubbie idoko'],
   ['pwd', '~/mubbie'],
   ['ls', 'projects/  writing/  currently/  races/  bucketlist/  connect/'],
-  ['ls -la', 'projects/  writing/'],
-  ['ll', 'projects/  writing/'],
+  ['ls -la', 'drwxr-xr-x  mubbie  staff  ./'],
+  ['ll', 'drwxr-xr-x  mubbie  staff  projects/'],
   ['ls /dev', 'secrets.txt  fuel  goals  mood  about.txt'],
   ['ls -x', 'ls: unknown option: -x'],
-  ['ls currently', 'reading  playing  learning  watching  planning  listening  tools/'],
+  ['ls currently', 'tools/  reading  playing  learning  watching  planning  listening'],
   ['ls tools', 'Heynote'],
   ['ls projects', 'gx  officecat'],
   ['ls nope', 'No such file or directory'],
@@ -408,7 +552,8 @@ const COMMANDS = [
   ['cat', 'usage: cat'],
   ['cat nope', 'No such file or directory'],
   ['cd /dev', 'you found the secret directory'],
-  ['cd nowhere', 'No such directory'],
+  ['cd ~', '/dev $ cd ~'], // echoed at the prompt it was typed at
+  ['cd nowhere', 'No such file or directory'],
   ['open', 'usage: open'],
   ['open s', 'ambiguous'],
   ['open zzz', 'not found'],
@@ -444,7 +589,7 @@ const COMMANDS = [
   ['constructor', 'command not found: constructor'],
   ['__proto__', 'command not found: __proto__'],
   ['cat constructor', 'No such file or directory'],
-  ['cd toString', 'No such directory'],
+  ['cd toString', 'No such file or directory'],
   ['man constructor', 'no manual entry'],
 ];
 
@@ -461,7 +606,7 @@ test('terminal: every command produces the expected output', async ({ page }) =>
 test('terminal: help lists all visible commands', async ({ page }, testInfo) => {
   await load(page);
   await run(page, 'help');
-  await expect(page.locator('.terminal-help-row')).toHaveCount(31);
+  await expect(page.locator('.terminal-help-row')).toHaveCount(35);
   const hint = page.locator('.terminal-help-hint');
   if (isMobile(testInfo)) await expect(hint).toHaveText('tap the prompt, type a command, and hit enter.');
   else await expect(hint).toContainText('to autocomplete');
@@ -567,7 +712,7 @@ test.describe('keyboard', () => {
   test('Tab completes commands and arguments', async ({ page }) => {
     await load(page);
     const input = page.locator('#terminal-input');
-    for (const [typed, expected] of [['neo', 'neofetch '], ['cd ra', 'cd races'], ['open gi', 'open github'],
+    for (const [typed, expected] of [['neo', 'neofetch '], ['cd ra', 'cd races/'], ['open gi', 'open github'],
       ['cat /dev/s', 'cat /dev/secrets.txt'], ['theme l', 'theme light'], ['curl xkcd r', 'curl xkcd random']]) {
       await input.fill(typed);
       await input.press('Tab');

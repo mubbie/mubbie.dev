@@ -4,7 +4,7 @@
 
 export const FILESYSTEM = {
   '~': ['projects/', 'writing/', 'currently/', 'races/', 'bucketlist/', 'connect/'],
-  '/dev': ['secrets.txt', 'fuel', 'goals', 'mood', 'about.txt'],
+  '/dev': ['secrets.txt', 'fuel', 'goals', 'mood', 'about.txt', 'editor'],
 };
 
 export const FILES = {
@@ -13,23 +13,9 @@ export const FILES = {
   '/dev/goals': 'ironman  marathon  pilot-license  startup',
   '/dev/mood': 'optimistic with a chance of debugging',
   '/dev/about.txt': 'engineer. builder. writer. based in seattle.',
+  '/dev/editor': 'emacs. obviously.',
   'about': 'mubbie idoko. software engineer at microsoft security. building things, breaking things, writing about things that make me curious. currently in seattle, training for a marathon.',
   'about.txt': 'mubbie idoko. software engineer at microsoft security. building things, breaking things, writing about things that make me curious. currently in seattle, training for a marathon.',
-};
-
-export const SECTION_MAP = {
-  'projects': 'projects',
-  'writing': 'writing',
-  'currently': 'currently',
-  'now': 'currently',
-  'uses': 'tools',
-  'tools': 'tools',
-  'races': 'races',
-  'running': 'races',
-  'cycling': 'races',
-  'bucketlist': 'bucketlist',
-  'bucket': 'bucketlist',
-  'connect': 'connect',
 };
 
 export const OPENABLES = [
@@ -92,8 +78,8 @@ export const NEOFETCH_LINES = [
 
 export const COMMAND_DEFS = [
   { name: 'help',     aliases: ['?'],                   usage: 'help',               help: 'show this list' },
-  { name: 'ls',       aliases: ['ll', 'la'],            usage: 'ls [path]',          help: 'list sections, a section, or /dev' },
-  { name: 'cd',                                         usage: 'cd <section>',       help: 'jump to a section' },
+  { name: 'ls',       aliases: ['ll', 'la'],            usage: 'ls [-l] [path]',     help: 'list what\'s here, or in a path' },
+  { name: 'cd',                                         usage: 'cd <dir>',           help: 'move to a section (cd .., cd -, cd ~)' },
   { name: 'cat',                                        usage: 'cat <file>',         help: 'read a file' },
   { name: 'open',                                       usage: 'open <name>',        help: 'open a project or post by name' },
   { name: 'whoami',                                     usage: 'whoami',             help: 'who is this' },
@@ -122,6 +108,22 @@ export const COMMAND_DEFS = [
   { name: 'hangout',  aliases: ['hang'],                usage: 'hangout',           help: 'roll a seattle hangout idea' },
   { name: 'popcorn',                                     usage: 'popcorn',           help: "what's poppin'" },
   { name: 'ssh',                                        usage: 'ssh',               help: 'connect to a remote host' },
+  { name: 'tree',                                       usage: 'tree [path]',       help: 'the whole site as a tree' },
+  { name: 'env',      aliases: ['printenv'],            usage: 'env',               help: 'environment variables ($USER, $PWD, …)' },
+  { name: 'which',    aliases: ['type'],                usage: 'which <command>',   help: 'where a command lives' },
+  { name: 'cowsay',                                     usage: 'cowsay <text>',     help: 'a cow says it. try: random | cowsay' },
+  // Pipe filters (documented in man pages; reachable via Tab)
+  { name: 'head' },
+  { name: 'tail' },
+  { name: 'wc' },
+  { name: 'sort' },
+  { name: 'uniq' },
+  { name: 'export' },
+  { name: 'sl' },
+  { name: 'vim',      aliases: ['vi'] },
+  { name: 'nano' },
+  { name: 'true' },
+  { name: 'false' },
   // Hidden commands (no help text — won't appear in help table but still tab-complete)
   { name: 'rm' },
   { name: 'exit' },
@@ -132,9 +134,9 @@ export const COMMAND_DEFS = [
 
 export const MAN_PAGES = {
   help:     'Display a list of all available commands with brief descriptions.',
-  ls:       'List directory contents.\n\n  Paths:\n    ~, .        home directory (site sections)\n    <section>   what\'s in a section (try: ls currently, ls cycling)\n    /dev        hidden developer files\n\n  Aliases: ll, la',
-  cd:       'Navigate to a site section by name.\n\n  Sections: projects, writing, currently, races, bucketlist, connect\n  Shortcuts: now → currently, tools or uses → fav tools dock, running → races, bucket → bucketlist\n  cd running or cd cycling also opens that year\'s challenge tab.\n  cd ~ scrolls to top.',
-  cat:      'Read the contents of a file.\n\n  Try: cat /dev/secrets.txt\n  Run ls /dev to see available files.',
+  ls:       'List directory contents. With no path, lists the current directory.\n\n  Paths:\n    ~, .        home directory (site sections)\n    ..          one level up\n    <section>   what\'s in a section (try: ls currently, ls cycling)\n    /dev        hidden developer files\n\n  Options:\n    -l          long format\n    -a          include . and ..\n    -1          one entry per line\n\n  Aliases: ll, la',
+  cd:       'Change directory. The prompt shows where you are, and the page scrolls there.\n\n  cd <section>   projects, writing, currently, races, bucketlist, connect\n  cd ..          up one level\n  cd -           back to the previous directory\n  cd ~ (or cd)   home\n  cd /dev        the hidden developer directory\n\n  Shortcuts work from anywhere: now, tools/uses, running, cycling, bucket.\n  cd running / cd cycling also open that year\'s race tab.',
+  cat:      'Print a file. Paths are relative to where you are.\n\n  Try: cat about.txt, cat bucketlist.md, cat /dev/secrets.txt\n  In ~/currently: cat reading, cat watching, …\n  Run ls (or ls /dev) to see what\'s there. Works in pipes: cat bucketlist.md | grep x',
   open:     'Open a project, social link, or post in a new tab.\n\n  Projects: gx, officecat, portctl, chaos-pong, sorcery, lena\n  Social: github, linkedin, x, twitter, instagram, threads, strava\n  Community: hangouters\n  Links: substack, notebook\n  Special: open latest (opens the latest blog post)\n\n  Exact matches are preferred. If ambiguous, suggestions are shown.',
   whoami:   'Print the current user identity.',
   theme:    'Toggle or set the color theme.\n\n  theme          toggle between dark and light\n  theme dark     switch to dark mode\n  theme light    switch to light mode\n  theme default  follow your device again (aliases: system, auto)\n\n  Explicit choices are persisted. Without one, or after theme default, the site follows your OS preference.',
@@ -146,13 +148,13 @@ export const MAN_PAGES = {
   flip:     'Flip a fair coin. Heads or tails.\n\n  Alias: coin',
   '8ball':  'Ask the Magic 8-Ball a yes/no question.\n\n  Usage: 8ball <question>',
   random:   'Get a random fortune cookie message.\n\n  Alias: fortune',
-  echo:     'Print text to the terminal.\n\n  Usage: echo <text>',
+  echo:     'Print text. Variables expand: echo $USER, echo $PWD, echo $?\n\n  Usage: echo <text>',
   date:     'Print the current date and time.',
-  pwd:      'Print the current working directory.',
+  pwd:      'Print the current working directory (it follows cd).',
   repo:     'Open the mubbie.dev GitHub repository in a new tab.',
   clear:    'Clear all terminal history.\n\n  Aliases: c, cls\n  Shortcut: Ctrl+L',
   claude:   'The AI that helped build this site.',
-  history:  'Show the last 20 commands entered in this session.',
+  history:  'Show recent commands. History is kept across visits in this browser.\n\n  history        list recent commands\n  history -c     clear it\n\n  Expansion:\n    !!             rerun the last command (try: sudo !!)\n    !n             rerun command number n\n    !prefix        rerun the latest command starting with prefix\n\n  Keys: up/down walk history, Ctrl+R searches it.',
   neofetch: 'Display system information in a stylized format.',
   ping:     'Send a ping. Receive a pong.',
   man:      'Show the manual page for a command.\n\n  Usage: man <command>',
@@ -160,7 +162,22 @@ export const MAN_PAGES = {
   curl:     'Fetch and display content from the web.\n\n  curl xkcd          today\'s xkcd comic\n  curl xkcd random   a random xkcd comic',
   hangout:  'Roll a random Seattle Hangouters activity.\n\n  Run it again for another one. To join: open hangouters\n  Alias: hang',
   popcorn:  'What\'s poppin\'! 🍿\n\n  Triggers a popcorn explosion. Because why not.',
-  grep:     'Search across all site content.\n\n  Usage: grep <term>\n  Searches: projects, writing, tools, races (both years), bucket list, currently, connect, /dev.\n  Results grouped by section. Only sections with matches are shown.',
+  grep:     'Search. On its own it searches the whole site; in a pipe it filters lines.\n\n  grep <term>                 search projects, writing, tools, races, bucket list, …\n  … | grep [-i -v -c -n] <x>  keep lines containing x\n\n  Smart case: lowercase matches any case; a capital letter makes it exact.\n  Example: ls races | grep half | wc -l',
+  tree:     'Print the site as a directory tree, from here or a given path.\n\n  Usage: tree [path]',
+  env:      'Print environment variables. Set your own for this visit with export.\n\n  Try: echo $USER, echo $PWD, echo $EDITOR\n  Alias: printenv',
+  which:    'Show where a command lives, or what an alias points to.\n\n  Usage: which <command>\n  Alias: type',
+  cowsay:   'A cow says your text. Reads from a pipe too.\n\n  Try: cowsay hello, random | cowsay, whoami | cowsay',
+  head:     'First lines of input (default 10).\n\n  Usage: … | head [-n N | -N]\n  Example: ls races | head -3',
+  tail:     'Last lines of input (default 10).\n\n  Usage: … | tail [-n N | -N]',
+  wc:       'Count lines, words, and characters.\n\n  Usage: … | wc [-l] [-w] [-c]\n  Example: ls races/cycling | wc -l',
+  sort:     'Sort lines.\n\n  Usage: … | sort [-r] [-n] [-u]',
+  uniq:     'Collapse repeated adjacent lines.\n\n  Usage: … | uniq [-c]',
+  export:   'Set a variable for this visit.\n\n  Usage: export NAME=value, then echo $NAME',
+  sl:       'You meant ls. Here is a train anyway. (Ctrl+C to stop it.)',
+  vim:      'Opens vim. Getting out is your problem.\n\n  Alias: vi',
+  nano:     'A text editor. Opinions available on request.',
+  true:     'Do nothing, successfully. Handy with && and ||.',
+  false:    'Do nothing, unsuccessfully. Try: false || echo recovered',
   ssh:      'Attempt to connect to a remote host.\n\n  Spoiler: you\'re already here.',
   rm:       'Nice try.',
   exit:     'There is no escape.',
@@ -202,6 +219,11 @@ export const HINTS = [
   'try "ls currently" to peek inside a section',
   'type "help" if you\'re lost. no judgment.',
   'press / from anywhere to jump here',
+  'pipes work: ls races | grep half | wc -l',
+  'cd into a section and the prompt follows you',
+  'Ctrl+R searches your history, !! reruns the last command',
+  'try "random | cowsay"',
+  'typo? the terminal will suggest what you meant',
   'there are hidden easter eggs. can you find them?',
 ];
 

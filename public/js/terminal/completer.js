@@ -1,74 +1,94 @@
-// ─── Tab completion for terminal commands and arguments ───
+// ─── Tab completion, bash style ───
+// One match completes it. Several complete as far as they agree (the common prefix);
+// the caller lists them on a second Tab. Paths complete relative to the cwd.
 
-import { ALL_COMMANDS, SECTION_MAP, OPENABLES, FILES } from './commands.js';
+import { ALIASES, OPENABLES, FILES } from './commands.js';
+import { resolve, list, SHORTCUTS } from './fs.js';
 
-export function tabComplete(input) {
+const DIR_COMMANDS = new Set(['cd']);
+const PATH_COMMANDS = new Set(['ls', 'cat', 'head', 'tail', 'wc', 'sort', 'less', 'more', 'tree', 'emacs', 'vim', 'vi', 'nano']);
+
+function commonPrefix(words) {
+  if (!words.length) return '';
+  let prefix = words[0];
+  for (const w of words) {
+    while (!w.toLowerCase().startsWith(prefix.toLowerCase())) prefix = prefix.slice(0, -1);
+  }
+  return prefix;
+}
+
+// Candidates for a path argument, e.g. "currently/t" → ["currently/tools/"]
+function pathCandidates(cwd, word, dirsOnly) {
+  const slash = word.lastIndexOf('/');
+  const dirPart = slash >= 0 ? word.slice(0, slash + 1) : '';
+  const namePart = word.slice(slash + 1).toLowerCase();
+  const dir = dirPart ? resolve(cwd, dirPart) : cwd;
+  const entries = (list(dir) || [])
+    .filter((e) => !dirsOnly || e.endsWith('/'))
+    // only single-word names complete cleanly on a command line
+    .filter((e) => !/\s/.test(e))
+    .filter((e) => e.toLowerCase().startsWith(namePart))
+    .map((e) => dirPart + e);
+  // Section shortcuts work from anywhere (cd tools, ls cycling)
+  if (!dirPart) {
+    for (const key of Object.keys(SHORTCUTS)) {
+      if (key.startsWith(namePart) && !entries.some((e) => e.replace(/\/$/, '') === key)) entries.push(`${key}/`);
+    }
+    if ('..'.startsWith(word) && word) entries.push('../');
+  }
+  return [...new Set(entries)];
+}
+
+function argCandidates(cmd, word, ctx) {
+  const lower = word.toLowerCase();
+  const starts = (list) => list.filter((x) => x.toLowerCase().startsWith(lower));
+  if (DIR_COMMANDS.has(cmd)) return pathCandidates(ctx.cwd, word, true);
+  if (PATH_COMMANDS.has(cmd)) {
+    const extra = cmd === 'cat' ? starts(Object.keys(FILES).filter((f) => f.startsWith('/'))) : [];
+    return [...new Set([...pathCandidates(ctx.cwd, word, false), ...extra])];
+  }
+  if (cmd === 'open') return starts([...OPENABLES.map((x) => x.name), 'latest']);
+  if (cmd === 'theme') return starts(['dark', 'light', 'default']);
+  if (cmd === 'man' || cmd === 'which' || cmd === 'type') return starts(ctx.commands);
+  if (cmd === 'cocktail') return starts(['random', 'tavern', 'merchant', 'alchemist', 'archmage']);
+  if (cmd === 'history') return starts(['-c']);
+  if (cmd === 'guestbook') return starts(['sign', 'review']);
+  return [];
+}
+
+// Returns { value, candidates } (value is the new input), or null for no match
+export function tabComplete(input, ctx) {
   if (!input.trim()) return null;
 
-  const val = input.toLowerCase();
-  const parts = val.trim().split(/\s+/);
-  const hasTrailingSpace = input.endsWith(' ');
+  // Only the last command in a chain or pipe is being typed
+  const and = input.lastIndexOf('&&');
+  const segStart = Math.max(input.lastIndexOf('|'), input.lastIndexOf(';'), and >= 0 ? and + 1 : -1);
+  const head = segStart >= 0 ? input.slice(0, segStart + 1) : '';
+  const segment = input.slice(segStart + 1);
+  const lead = segment.match(/^\s*/)[0];
+  const words = segment.slice(lead.length).split(/\s+/);
+  const typingCommand = words.length === 1;
 
-  // Complete command name (no space typed yet)
-  if (parts.length === 1 && !hasTrailingSpace) {
-    const hit = ALL_COMMANDS.find((c) => c.startsWith(parts[0]));
-    return hit ? hit + ' ' : null;
+  // curl's only target is two words, so complete it whole
+  if (/^curl\s+xkcd\s+\S*$/i.test(segment.trim()) && 'xkcd random'.startsWith(segment.trim().slice(5).toLowerCase())) {
+    return { value: `${head}${lead}curl xkcd random`, candidates: ['xkcd random'] };
   }
 
-  const cmd = parts[0];
-  const arg = parts.slice(1).join(' ');
+  const word = words[words.length - 1];
+  const before = head + lead + words.slice(0, -1).join(' ') + (typingCommand ? '' : ' ');
+  const first = words[0].toLowerCase();
+  const cmd = typingCommand ? null : (Object.hasOwn(ALIASES, first) ? ALIASES[first] : first);
 
-  // Complete cd argument with section names
-  if (cmd === 'cd') {
-    const prefix = hasTrailingSpace && parts.length === 1 ? '' : (parts[1] || '');
-    const hit = Object.keys(SECTION_MAP).find((s) => s.startsWith(prefix));
-    return hit ? 'cd ' + hit : null;
+  const candidates = typingCommand
+    ? ctx.commands.filter((c) => c.startsWith(word.toLowerCase()))
+    : argCandidates(cmd, word, ctx);
+  if (!candidates.length) return null;
+
+  if (candidates.length === 1) {
+    const only = candidates[0];
+    // Commands get a space after them; directories end in / so you can keep typing
+    return { value: before + only + (typingCommand ? ' ' : ''), candidates };
   }
-
-  // Complete ls argument with section names and /dev
-  if (cmd === 'ls') {
-    const prefix = hasTrailingSpace && parts.length === 1 ? '' : (parts[1] || '');
-    const hit = [...Object.keys(SECTION_MAP), '/dev'].find((s) => s.startsWith(prefix));
-    return hit ? 'ls ' + hit : null;
-  }
-
-  // Complete open argument with project/link names + "latest"
-  if (cmd === 'open') {
-    const prefix = hasTrailingSpace ? arg : (arg || '');
-    const allNames = [...OPENABLES.map((x) => x.name), 'latest'];
-    const hit = allNames.find((n) => n.toLowerCase().startsWith(prefix || ''));
-    return hit ? 'open ' + hit : null;
-  }
-
-  // Complete cat argument with file paths
-  if (cmd === 'cat') {
-    const prefix = hasTrailingSpace && parts.length === 1 ? '' : (parts[1] || '');
-    const hit = Object.keys(FILES).find((f) => f.toLowerCase().startsWith(prefix));
-    return hit ? 'cat ' + hit : null;
-  }
-
-  // Complete theme argument
-  if (cmd === 'theme') {
-    const themes = ['dark', 'light', 'default'];
-    const prefix = hasTrailingSpace && parts.length === 1 ? '' : (parts[1] || '');
-    const hit = themes.find((t) => t.startsWith(prefix));
-    return hit ? 'theme ' + hit : null;
-  }
-
-  // Complete man argument with command names
-  if (cmd === 'man') {
-    const prefix = hasTrailingSpace && parts.length === 1 ? '' : (parts[1] || '');
-    const hit = ALL_COMMANDS.find((c) => c.startsWith(prefix));
-    return hit ? 'man ' + hit : null;
-  }
-
-  // Complete curl argument
-  if (cmd === 'curl') {
-    const options = ['xkcd', 'xkcd random'];
-    const prefix = hasTrailingSpace ? arg : (arg || '');
-    const hit = options.find((o) => o.startsWith(prefix || ''));
-    return hit ? 'curl ' + hit : null;
-  }
-
-  return null;
+  const prefix = commonPrefix(candidates);
+  return { value: before + (prefix.length > word.length ? prefix : word), candidates };
 }
