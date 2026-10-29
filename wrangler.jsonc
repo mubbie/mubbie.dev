@@ -20,16 +20,18 @@
   },
   // Public, not secret. Paired with the TURNSTILE_SECRET secret; without both the guestbook stays closed.
   "vars": {
-    "TURNSTILE_SITE_KEY": "0x4AAAAAAFqZRZk7emqQPEBa"
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFqZRZk7emqQPEBa",
+    // Guestbook alerts: sent from this address on mubbie.dev to the verified destination below
+    "NOTIFY_FROM": "guestbook@mubbie.dev",
+    "NOTIFY_TO": "midoko.dev@gmail.com"
   },
   // Workers AI: Llama Guard screens guestbook notes (free tier). Without it, notes still get human review.
   "ai": {
     "binding": "AI"
   },
-  // Email when a guestbook note is waiting. Needs Cloudflare Email Routing turned on for the
-  // domain and the destination address verified there first, then uncomment:
-  // "send_email": [{ "name": "GUESTBOOK_EMAIL", "destination_address": "you@example.com" }],
-  // and add "NOTIFY_FROM": "guestbook@mubbie.dev" to "vars".
+  // Email when a guestbook note is waiting. Needs Email Routing on for mubbie.dev (its DNS
+  // records added) and the destination verified in Email Routing → Destination addresses.
+  "send_email": [{ "name": "GUESTBOOK_EMAIL", "destination_address": "midoko.dev@gmail.com" }],
   "kv_namespaces": [
     {
       "binding": "POSTS_CACHE",

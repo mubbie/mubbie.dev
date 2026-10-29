@@ -24,7 +24,7 @@
 // Config (all optional; missing pieces fail closed):
 //   TURNSTILE_SITE_KEY (var) + TURNSTILE_SECRET (secret)  → guestbook accepts notes
 //   AI binding                                             → AI screening
-//   GUESTBOOK_EMAIL send_email binding + NOTIFY_FROM (var) → email when a note waits
+//   GUESTBOOK_EMAIL send_email binding + NOTIFY_FROM, NOTIFY_TO (vars) → email when a note waits
 //   ACCESS_TEAM_DOMAIN + ACCESS_AUD (vars)                 → admin via Cloudflare Access
 //   ADMIN_TOKEN (secret)                                   → admin via bearer token instead
 
@@ -133,24 +133,35 @@ async function aiScreen(text, env) {
   }
 }
 
+// Header text as RFC 2047 UTF-8, so a name like "Zoë 😀" survives the subject line
+const encodeHeader = (text) => `=?UTF-8?B?${btoa(String.fromCharCode(...new TextEncoder().encode(text)))}?=`;
+
+// The alert as a raw MIME message (exported for tests)
+export function alertEmail(note, env) {
+  return [
+    `From: mubbie.dev guestbook <${env.NOTIFY_FROM}>`,
+    `To: <${env.NOTIFY_TO}>`,
+    `Subject: ${encodeHeader(`New guestbook note from ${note.name}`)}`,
+    `Date: ${new Date(note.createdAt).toUTCString()}`,
+    `Message-ID: <${note.id}@mubbie.dev>`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=utf-8',
+    'Content-Transfer-Encoding: 8bit',
+    '',
+    `${note.name} wrote:`,
+    '',
+    note.message.replace(/\r?\n/g, '\r\n'),
+    '',
+    'Review it: https://mubbie.dev/admin/guestbook',
+  ].join('\r\n');
+}
+
 async function notify(note, env) {
-  if (!env.GUESTBOOK_EMAIL || !env.NOTIFY_FROM) return;
+  if (!env.GUESTBOOK_EMAIL || !env.NOTIFY_FROM || !env.NOTIFY_TO) return;
   try {
     const { EmailMessage } = await import('cloudflare:email');
-    const raw = [
-      `From: mubbie.dev guestbook <${env.NOTIFY_FROM}>`,
-      'To: guestbook-owner',
-      `Subject: New guestbook note from ${note.name.replace(/[\r\n]/g, ' ')}`,
-      `Message-ID: <${note.id}@mubbie.dev>`,
-      'Content-Type: text/plain; charset=utf-8',
-      '',
-      `${note.name} wrote:`,
-      '',
-      note.message,
-      '',
-      'Review it: https://mubbie.dev/admin/guestbook',
-    ].join('\r\n');
-    await env.GUESTBOOK_EMAIL.send(new EmailMessage(env.NOTIFY_FROM, undefined, raw));
+    // the recipient must match the binding's verified destination_address
+    await env.GUESTBOOK_EMAIL.send(new EmailMessage(env.NOTIFY_FROM, env.NOTIFY_TO, alertEmail(note, env)));
   } catch {
     // a failed email never blocks a submission; the note is safely queued
   }
@@ -313,7 +324,7 @@ async function handleAdmin(request, env, kv) {
       readApproved(kv),
       listByPrefix(kv, 'gb:r:'),
     ]);
-    return json({ pending, approved, rejected, aiScreening: Boolean(env.AI), emailAlerts: Boolean(env.GUESTBOOK_EMAIL && env.NOTIFY_FROM) });
+    return json({ pending, approved, rejected, aiScreening: Boolean(env.AI), emailAlerts: Boolean(env.GUESTBOOK_EMAIL && env.NOTIFY_FROM && env.NOTIFY_TO) });
   }
   if (request.method !== 'POST') return json({ error: 'method-not-allowed' }, 405);
 

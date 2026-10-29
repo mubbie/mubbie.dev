@@ -45,6 +45,6 @@ Setup (everything is optional and fails closed):
    Cloudflare Access application (email one-time code), and add `ACCESS_TEAM_DOMAIN`
    (e.g. `you.cloudflareaccess.com`) and `ACCESS_AUD` (the application's audience tag) to
    `vars`. Or, simpler: `npx wrangler secret put ADMIN_TOKEN` and paste it on the review page.
-3. **Email alerts (optional):** see the `send_email` comment in `wrangler.jsonc`.
+3. **Email alerts:** on. Alerts go from `NOTIFY_FROM` to `NOTIFY_TO` (vars in `wrangler.jsonc`) through the `send_email` binding. Email Routing must stay on for mubbie.dev, with the destination verified.
 
 Locally, `.dev.vars.example` has Cloudflare's Turnstile test keys, which always pass.

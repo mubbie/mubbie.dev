@@ -481,3 +481,19 @@ test('guestbook hardening: notes that break the rules do not use up the hourly l
   for (let i = 0; i < 3; i++) assert.equal((await post(env, NOTE)).res.status, 200, `good note ${i + 1} still allowed`);
   assert.equal((await post(env, NOTE)).res.status, 429);
 });
+
+test('guestbook alert email: real recipient, encoded subject, CRLF lines', async () => {
+  const { alertEmail } = await import('../workers/guestbook.js');
+  const raw = alertEmail(
+    { id: 'abc', name: 'Zoë 😀', message: 'hi\nthere', createdAt: '2026-10-28T12:00:00Z' },
+    { NOTIFY_FROM: 'guestbook@mubbie.dev', NOTIFY_TO: 'midoko.dev@gmail.com' },
+  );
+  assert.match(raw, /^From: mubbie\.dev guestbook <guestbook@mubbie\.dev>\r\n/);
+  assert.match(raw, /\r\nTo: <midoko\.dev@gmail\.com>\r\n/);
+  const subject = /\r\nSubject: =\?UTF-8\?B\?([^?]+)\?=\r\n/.exec(raw);
+  assert.ok(subject, 'subject is RFC 2047 encoded');
+  assert.equal(Buffer.from(subject[1], 'base64').toString('utf8'), 'New guestbook note from Zoë 😀');
+  assert.match(raw, /\r\nDate: Wed, 28 Oct 2026 12:00:00 GMT\r\n/);
+  assert.ok(raw.includes('hi\r\nthere'), 'body lines use CRLF');
+  assert.ok(!/[^\r]\n/.test(raw), 'no bare LF anywhere');
+});
