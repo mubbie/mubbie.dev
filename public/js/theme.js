@@ -1,6 +1,6 @@
 // ─── Theme (light/dark) ───
 
-// Tracks whether the user has explicitly toggled the theme in this session
+// Tracks whether the user has explicitly chosen a theme (kept in localStorage)
 // vs. just inheriting from system preference.
 const USER_PREF_KEY = 'mubbie-theme-explicit';
 
@@ -38,7 +38,7 @@ export function applyTheme(theme) {
   meta.content = theme === 'light' ? '#fff' : '#000';
 }
 
-export function getTheme() {
+function getTheme() {
   return document.documentElement.getAttribute('data-theme') || 'dark';
 }
 

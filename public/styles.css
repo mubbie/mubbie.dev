@@ -1441,13 +1441,13 @@ footer p {
 }
 
 /* ─── Scroll reveal ─── */
-.reveal {
+.js .reveal {
   opacity: 0;
   transform: translateY(20px);
   transition: all 0.5s ease;
 }
 
-.reveal.visible {
+.js .reveal.visible {
   opacity: 1;
   transform: translateY(0);
 }
@@ -1928,7 +1928,7 @@ footer p {
     scroll-behavior: auto;
   }
 
-  .reveal {
+  .js .reveal {
     opacity: 1;
     transform: none;
   }

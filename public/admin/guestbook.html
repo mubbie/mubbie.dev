@@ -117,11 +117,64 @@
       notes.forEach((n) => box.append(noteEl(n, actions)));
     }
 
+    // An expired Access session answers with a redirect to the login page, which fetch
+    // can't follow across origins; treat that (and any failure) as "reload to sign in".
+    async function api(init) {
+      let res;
+      try {
+        res = await fetch(API, { headers: headers(), credentials: 'same-origin', ...init });
+      } catch {
+        throw new Error('Session expired or offline. Reload the page to sign in again.');
+      }
+      if (res.status === 401) return null;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error('Something went wrong (' + (data.error || res.status) + '). Try again.');
+      }
+      return res.json();
+    }
+
+    function showError(err) {
+      document.getElementById('status').textContent = err.message;
+    }
+
     async function load() {
       const status = document.getElementById('status');
-      const res = await fetch(API, { headers: headers(), credentials: 'same-origin' });
-      if (res.status === 401) {
+      let data;
+      try {
+        data = await api();
+      } catch (err) {
+        showError(err);
+        return;
+      }
+      if (!data) {
         document.getElementById('token-form').hidden = false;
+        status.textContent = 'locked. sign in through Cloudflare Access, or unlock with the admin token.';
+        return;
+      }
+      document.getElementById('token-form').hidden = true;
+      status.textContent = [
+        data.pending.length + ' waiting',
+        'AI screening ' + (data.aiScreening ? 'on' : 'off'),
+        'email alerts ' + (data.emailAlerts ? 'on' : 'off'),
+      ].join(' · ');
+      fill('pending', data.pending, [['approve', 'approve', 'approve'], ['reject', 'reject'], ['block sender', 'block', 'danger']], 'all caught up.');
+      fill('approved', data.approved, [['delete', 'delete', 'danger'], ['block sender', 'block', 'danger']], 'nothing published yet.');
+      fill('rejected', data.rejected, [['approve anyway', 'approve'], ['delete now', 'delete', 'danger']], 'nothing here.');
+    }
+
+    async function act(action, id) {
+      if ((action === 'block' || action === 'delete') && !confirm(action === 'block' ? 'Block this sender? Their future notes will be hidden.' : 'Delete this note for good?')) return;
+      try {
+        await api({ method: 'POST', body: JSON.stringify({ action, id }) });
+      } catch (err) {
+        showError(err);
+        return;
+      }
+      load();
+    }
+
+    document.getElementById('token-form').hidden = false;
         status.textContent = 'locked. sign in through Cloudflare Access, or unlock with the admin token.';
         return;
       }

@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000">
   <title>Mubbie Idoko · Engineer, Builder, Writer</title>
   <meta name="description" content="I am a software engineer at Microsoft Security. I enjoy building software, breaking systems, and writing about things that make me curious.">
   <meta property="og:title" content="Mubbie Idoko - Engineer, Builder, Writer">
@@ -27,6 +28,8 @@
     try { saved = localStorage.getItem('mubbie-theme-explicit'); } catch (e) { /* storage blocked */ }
     const t = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', t);
+    // sections fade in on scroll only when JS runs; without it they're simply visible
+    document.documentElement.classList.add('js');
   </script>
 </head>
 <body>
@@ -152,7 +155,7 @@
     <div class="section-label">// what I'm up to</div>
     <div class="currently-list" id="currently-list"></div>
     <div class="section-label dock-label-heading" id="tools">// my fav tools atm<a class="footnote-ref" href="#credits" aria-label="credit">*</a></div>
-    <div class="dock" id="dock" aria-label="Favorite tools"></div>
+    <div class="dock" id="dock" role="group" aria-label="Favorite tools"></div>
     <p class="dock-caption" id="dock-caption" aria-live="polite"></p>
   </section>
 
@@ -202,35 +205,35 @@
     </div>
     <div class="connect-grid">
       <a class="connect-link" href="https://github.com/mubbie" target="_blank" rel="noopener noreferrer">
-        <svg><use href="icons.svg#github"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#github"/></svg>
         GitHub
       </a>
       <a class="connect-link" href="https://twitter.com/imubbiee" target="_blank" rel="noopener noreferrer">
-        <svg><use href="icons.svg#x"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#x"/></svg>
         @imubbiee
       </a>
       <a class="connect-link" href="https://www.linkedin.com/in/mubarak-idoko" target="_blank" rel="noopener noreferrer">
-        <svg><use href="icons.svg#linkedin"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#linkedin"/></svg>
         LinkedIn
       </a>
       <a class="connect-link" href="https://notebook.mubbie.dev" target="_blank" rel="noopener noreferrer">
-        <svg><use href="icons.svg#substack"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#substack"/></svg>
         Substack
       </a>
       <a class="connect-link" href="https://www.threads.net/@mubbiee" target="_blank" rel="noopener noreferrer">
-        <svg><use href="icons.svg#threads"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#threads"/></svg>
         Threads
       </a>
       <a class="connect-link" href="https://www.instagram.com/mubbiee" target="_blank" rel="noopener noreferrer">
-        <svg><use href="icons.svg#instagram"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#instagram"/></svg>
         Instagram
       </a>
       <a class="connect-link" href="https://strava.app.link/ySjT1gEwn2b" target="_blank" rel="noopener noreferrer">
-        <svg><use href="icons.svg#strava"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#strava"/></svg>
         Strava
       </a>
       <a class="connect-link" href="mailto:hi@mubbie.dev">
-        <svg><use href="icons.svg#email"/></svg>
+        <svg aria-hidden="true"><use href="icons.svg#email"/></svg>
         Email
       </a>
     </div>

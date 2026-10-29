@@ -1,6 +1,6 @@
 // ─── Data section renderers: currently, fav tools dock, races, bucket list, latest post ───
 
-import { span } from './dom.js';
+import { span, showFallback } from './dom.js';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -73,7 +73,8 @@ export function renderDock(items) {
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
     a.dataset.index = i;
-    a.setAttribute('aria-label', `${item.name}: ${item.note}`);
+    a.setAttribute('aria-label', item.name);
+    a.dataset.note = item.note; // the caption shows it; grep searches it
 
     const img = document.createElement('img');
     img.src = item.icon;
@@ -109,21 +110,29 @@ export function renderDock(items) {
 
 // ─── Races ───
 
+// Today in Seattle as YYYY-MM-DD, comparable as a string with race dates
+const seattleToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
+
+// The [ ■■□□ ] bar and "3 run · 1 PR · 2 to go" line shared by every challenge tab
+function renderProgress(races, stats, { doneLabel, countPRs = false }) {
+  const done = races.filter((r) => r.completed === true).length;
+  const missed = races.filter((r) => r.completed === false).length;
+  const prs = countPRs ? races.filter((r) => r.pr).length : 0;
+  const blocks = races.map((r, idx) => `<span class="race-block${r.completed === true ? ' filled' : ''}${r.completed === false ? ' missed' : ''}" data-race-index="${idx}"></span>`).join('');
+  const parts = [
+    `${done} ${doneLabel}`,
+    prs && `${prs} PR${prs === 1 ? '' : 's'}`,
+    missed && `${missed} missed`,
+    `${races.length - done - missed} to go`,
+  ].filter(Boolean);
+  stats.innerHTML = `<div class="race-blocks">[ ${blocks} ]</div><div class="race-summary">${parts.join(' · ')}</div>`;
+}
+
 export function renderRaces(races) {
   const list = document.getElementById('races-list');
   const stats = document.getElementById('race-stats');
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
-
+  const today = seattleToday();
   const nextIndex = races.findIndex((r) => r.completed === undefined && r.date >= today);
-  let daysUntilNext = null;
-  if (nextIndex >= 0) {
-    // Both are YYYY-MM-DD strings (today is in Seattle time), so they parse as UTC
-    // midnights and the difference is always a whole number of days — no DST drift.
-    daysUntilNext = Math.round((Date.parse(races[nextIndex].date) - Date.parse(today)) / 86400000);
-  }
-  let completedCount = 0;
-  let missedCount = 0;
-
   races.forEach((race, i) => {
     const a = document.createElement('a');
     a.className = 'race-item';
@@ -136,11 +145,9 @@ export function renderRaces(races) {
     if (race.completed === true) {
       a.classList.add('completed');
       statusIcon = '✓';
-      completedCount++;
     } else if (race.completed === false) {
       a.classList.add('skipped');
       statusIcon = '✗';
-      missedCount++;
     } else if (i === nextIndex) {
       a.classList.add('next');
       statusIcon = '→';
@@ -160,15 +167,7 @@ export function renderRaces(races) {
     a.appendChild(name);
     a.appendChild(span('race-location', race.location));
     const badges = span('race-badges', '');
-    if (i === nextIndex) {
-      if (daysUntilNext === 0) {
-        badges.appendChild(span('race-badge countdown', 'today!'));
-      } else if (daysUntilNext === 1) {
-        badges.appendChild(span('race-badge countdown', 'tomorrow'));
-      } else if (daysUntilNext !== null) {
-        badges.appendChild(span('race-badge countdown', `in ${daysUntilNext} days`));
-      }
-    }
+    if (i === nextIndex) badges.appendChild(span('race-badge countdown', daysUntil(race.date, today)));
     if (race.goal) badges.appendChild(span('race-badge goal', 'first marathon 🤞🏾'));
     if (race.note) badges.appendChild(span('race-badge note', race.note));
     a.appendChild(badges);
@@ -177,28 +176,7 @@ export function renderRaces(races) {
     list.appendChild(a);
   });
 
-  // Block progress + stats
-  const remaining = races.length - completedCount - missedCount;
-
-  let blocksHtml = '<div class="race-blocks">[ ';
-  races.forEach((race, idx) => {
-    const filled = race.completed === true;
-    const missed = race.completed === false;
-    blocksHtml += `<span class="race-block${filled ? ' filled' : ''}${missed ? ' missed' : ''}" data-race-index="${idx}"></span>`;
-  });
-  blocksHtml += ' ]</div>';
-
-  const prCount = races.filter((r) => r.pr).length;
-  const summaryParts = [`${completedCount} run`];
-  if (prCount > 0) {
-    summaryParts.push(`${prCount} PR${prCount === 1 ? '' : 's'}`);
-  }
-  if (missedCount > 0) summaryParts.push(`${missedCount} missed`);
-  summaryParts.push(`${remaining} to go`);
-  const summaryHtml = `<div class="race-summary">${summaryParts.join(' · ')}</div>`;
-
-  stats.innerHTML = blocksHtml + summaryHtml;
-
+  renderProgress(races, stats, { doneLabel: 'run', countPRs: true });
   wireProgress(races, list, stats, '.race-item');
 }
 
@@ -270,7 +248,7 @@ function monthsUntil(date, today) {
 
 export function renderRail(races, list, stats) {
   if (!list) return;
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
+  const today = seattleToday();
   const nextIndex = races.findIndex((r) => r.completed === undefined && r.date >= today);
 
   let group = null;
@@ -337,11 +315,7 @@ export function renderRail(races, list, stats) {
 
   // Progress bar + summary, same as the running challenge
   if (stats) {
-    const done = races.filter((r) => r.completed === true).length;
-    const missed = races.filter((r) => r.completed === false).length;
-    const blocks = races.map((r, idx) => `<span class="race-block${r.completed === true ? ' filled' : ''}${r.completed === false ? ' missed' : ''}" data-race-index="${idx}"></span>`).join('');
-    const parts = [`${done} done`, missed && `${missed} missed`, `${races.length - done - missed} to go`].filter(Boolean);
-    stats.innerHTML = `<div class="race-blocks">[ ${blocks} ]</div><div class="race-summary">${parts.join(' · ')}</div>`;
+    renderProgress(races, stats, { doneLabel: 'done' });
     wireProgress(races, list, stats, '.rail-race');
   }
 }
@@ -379,63 +353,41 @@ export function renderBucketList(items) {
     `<span>${doneCount} done · ${someday} someday · ${mystery} ???</span>`;
 }
 
-// ─── Writing (fetched from Substack) ───
+// ─── Writing (posts come from /api/posts, the Substack proxy) ───
 
-export function fetchWriting() {
+export function renderWriting(posts) {
   const writingList = document.getElementById('writing-list');
   if (!writingList) return;
+  const valid = (Array.isArray(posts) ? posts : []).filter((p) => p.title && (p.canonical_url || p.slug));
+  if (!valid.length) {
+    showFallback('writing-list', 'no posts yet.');
+    return;
+  }
 
-  fetch('/api/posts?limit=4')
-    .then((res) => {
-      if (!res.ok) throw new Error(res.status);
-      return res.json();
-    })
-    .then((posts) => {
-      if (!posts || !posts.length) return;
+  valid.forEach((post, i) => {
+    const a = document.createElement('a');
+    a.className = 'writing-item';
+    a.href = post.canonical_url || `https://notebook.mubbie.dev/p/${encodeURIComponent(post.slug)}`;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
 
-      posts.forEach((post, i) => {
-        const title = post.title;
-        const link = post.canonical_url || `https://notebook.mubbie.dev/p/${post.slug}`;
-        if (!title || !link) return;
+    const h3 = document.createElement('h3');
+    h3.textContent = post.title;
+    a.appendChild(h3);
 
-        const a = document.createElement('a');
-        a.className = 'writing-item';
-        a.href = link;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
+    // the latest post is always "new"
+    if (i === 0) a.appendChild(span('writing-badge', 'new'));
 
-        const h3 = document.createElement('h3');
-        h3.textContent = title;
-        a.appendChild(h3);
+    const date = post.post_date ? new Date(post.post_date) : null;
+    if (date) {
+      const sameYear = date.getFullYear() === new Date().getFullYear();
+      a.appendChild(span('writing-date', date.toLocaleDateString('en-US', sameYear
+        ? { month: 'short', day: 'numeric' }
+        : { month: 'short', year: 'numeric' })));
+    }
 
-        if (i === 0) a.appendChild(span('writing-badge', 'new'));
-
-        if (post.post_date) {
-          const d = new Date(post.post_date);
-          const sameYear = d.getFullYear() === new Date().getFullYear();
-          const label = d.toLocaleDateString('en-US', sameYear
-            ? { month: 'short', day: 'numeric' }
-            : { month: 'short', year: 'numeric' });
-          a.appendChild(span('writing-date', label));
-        }
-
-        const wc = post.wordcount || post.word_count;
-        if (wc) {
-          const mins = Math.max(1, Math.round(wc / 250));
-          a.appendChild(span('writing-time', `${mins} min`));
-        }
-
-        a.appendChild(span('arrow', '→'));
-
-        writingList.appendChild(a);
-      });
-    })
-    .catch(() => {
-      writingList.appendChild(
-        Object.assign(document.createElement('div'), {
-          className: 'section-fallback',
-          textContent: 'could not load posts.',
-        })
-      );
-    });
+    if (post.wordcount) a.appendChild(span('writing-time', `${Math.max(1, Math.round(post.wordcount / 250))} min`));
+    a.appendChild(span('arrow', '→'));
+    writingList.appendChild(a);
+  });
 }

@@ -6,11 +6,9 @@ let raf = null;
 const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 export function startMatrix() {
-  if (active) return;
-  active = true;
-
   const canvas = document.getElementById('matrix-canvas');
-  if (!canvas) return;
+  if (active || !canvas) return;
+  active = true;
   canvas.classList.add('on');
 
   // Show tap-to-exit hint

@@ -1,14 +1,12 @@
 // ─── Terminal DOM output helpers ───
 
-function escapeHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
 // getPrompt: the live prompt ("~/mubbie/races $"). A prompt argument of '$' means
 // "use the live prompt"; any other string is printed as-is (the prompt a line was typed at).
 export function createOutput(historyEl, getPrompt = () => '~/mubbie $') {
   // Timers for multi-step animations (sudo, coffee, ssh…), cancelled by clear()
   const pending = new Set();
+  // Bumped by Ctrl+C and clear, so a network reply that lands afterwards is dropped
+  let generation = 0;
 
   function later(fn, delay) {
     const id = setTimeout(() => {
@@ -21,7 +19,9 @@ export function createOutput(historyEl, getPrompt = () => '~/mubbie $') {
     historyEl.scrollTop = historyEl.scrollHeight;
   }
 
+  // Returns the output element (or null), e.g. for sl to animate its train
   function addLine(prompt, cmd, output, isError) {
+    let outSpan = null;
     if (prompt !== null) {
       const line = document.createElement('div');
       line.className = 'terminal-history-line';
@@ -39,7 +39,7 @@ export function createOutput(historyEl, getPrompt = () => '~/mubbie $') {
     if (output != null) {
       const outLine = document.createElement('div');
       outLine.className = 'terminal-history-line';
-      const outSpan = document.createElement('span');
+      outSpan = document.createElement('span');
       outSpan.className = isError ? 'terminal-error' : 'terminal-output';
       outSpan.textContent = output;
       outLine.appendChild(outSpan);
@@ -47,6 +47,7 @@ export function createOutput(historyEl, getPrompt = () => '~/mubbie $') {
     }
 
     scrollToBottom();
+    return outSpan;
   }
 
   function addOk(text) {
@@ -64,15 +65,23 @@ export function createOutput(historyEl, getPrompt = () => '~/mubbie $') {
     const table = document.createElement('div');
     table.className = 'terminal-history-line terminal-help-table';
 
-    let html = '';
     helpItems.forEach((h) => {
-      html += `<div class="terminal-help-row"><span class="terminal-help-cmd">${escapeHtml(h.c)}</span><span class="terminal-help-desc">${escapeHtml(h.d)}</span></div>`;
+      const row = document.createElement('div');
+      row.className = 'terminal-help-row';
+      const cmd = document.createElement('span');
+      cmd.className = 'terminal-help-cmd';
+      cmd.textContent = h.c;
+      const desc = document.createElement('span');
+      desc.className = 'terminal-help-desc';
+      desc.textContent = h.d;
+      row.append(cmd, desc);
+      table.appendChild(row);
     });
+    // static markup only
     const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-    html += isTouch
+    table.insertAdjacentHTML('beforeend', isTouch
       ? '<div class="terminal-help-hint">tap the prompt, type a command, and hit enter.</div>'
-      : '<div class="terminal-help-hint">press <kbd>/</kbd> from anywhere to jump here. <kbd>Tab</kbd> to autocomplete. <kbd>↑</kbd><kbd>↓</kbd> for history.</div>';
-    table.innerHTML = html;
+      : '<div class="terminal-help-hint">press <kbd>/</kbd> from anywhere to jump here. <kbd>Tab</kbd> to autocomplete. <kbd>↑</kbd><kbd>↓</kbd> for history.</div>');
     historyEl.appendChild(table);
     scrollToBottom();
   }
@@ -117,10 +126,9 @@ export function createOutput(historyEl, getPrompt = () => '~/mubbie $') {
 
   // Ctrl+C: stop running animations but keep what's on screen
   function cancelPending() {
-    const wasRunning = pending.size > 0;
+    generation++;
     pending.forEach(clearTimeout);
     pending.clear();
-    return wasRunning;
   }
 
   function clear() {
@@ -128,5 +136,5 @@ export function createOutput(historyEl, getPrompt = () => '~/mubbie $') {
     historyEl.innerHTML = '';
   }
 
-  return { addLine, addOk, addHelpTable, addImage, addLink, later, cancelPending, clear };
+  return { addLine, addOk, addHelpTable, addImage, addLink, later, cancelPending, clear, generation: () => generation };
 }

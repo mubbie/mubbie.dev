@@ -70,7 +70,8 @@ test('xkcd: latest + specific comic', async () => {
 });
 
 test('xkcd: errors are not cacheable', async () => {
-  for (const [path, status] of [['/api/xkcd?num=abc', 400], ['/api/xkcd?num=0', 502]]) {
+  // bad numbers are refused before calling xkcd; a comic that doesn't exist is a 502
+  for (const [path, status] of [['/api/xkcd?num=abc', 400], ['/api/xkcd?num=0', 400], ['/api/xkcd?num=404', 502]]) {
     const res = await get(path);
     assert.equal(res.status, status, path);
     assert.equal(res.headers.get('cache-control'), 'no-store', path);

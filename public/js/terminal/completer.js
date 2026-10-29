@@ -6,7 +6,7 @@ import { ALIASES, OPENABLES, FILES } from './commands.js';
 import { resolve, list, SHORTCUTS } from './fs.js';
 
 const DIR_COMMANDS = new Set(['cd']);
-const PATH_COMMANDS = new Set(['ls', 'cat', 'head', 'tail', 'wc', 'sort', 'less', 'more', 'tree', 'emacs', 'vim', 'vi', 'nano']);
+const PATH_COMMANDS = new Set(['ls', 'cat', 'head', 'tail', 'wc', 'sort', 'uniq', 'tree', 'emacs']);
 
 function commonPrefix(words) {
   if (!words.length) return '';
@@ -49,10 +49,10 @@ function argCandidates(cmd, word, ctx) {
   }
   if (cmd === 'open') return starts([...OPENABLES.map((x) => x.name), 'latest']);
   if (cmd === 'theme') return starts(['dark', 'light', 'default']);
-  if (cmd === 'man' || cmd === 'which' || cmd === 'type') return starts(ctx.commands);
+  if (cmd === 'man' || cmd === 'which') return starts(ctx.commands);
   if (cmd === 'cocktail') return starts(['random', 'tavern', 'merchant', 'alchemist', 'archmage']);
   if (cmd === 'history') return starts(['-c']);
-  if (cmd === 'guestbook') return starts(['sign', 'review']);
+  if (cmd === 'guestbook') return starts(['sign']);
   return [];
 }
 

@@ -57,7 +57,10 @@ export function initHangout() {
     pitch.style.minHeight = `${tallest}px`;
   }
   let resizeTimer;
+  let lastWidth = window.innerWidth;
   window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth) return;
+    lastWidth = window.innerWidth;
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(reserveHeight, 150);
   });

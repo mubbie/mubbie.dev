@@ -12,9 +12,12 @@
 // Paths are kept as absolute strings ("/home/mubbie/races"). Directory contents
 // that mirror page content are read from the rendered page, like grep does.
 
-import { FILES, FILESYSTEM } from './commands.js';
+import { FILES } from './commands.js';
 
 export const HOME = '/home/mubbie';
+
+// /dev lists its files, so adding one to FILES is all it takes
+export const DEV_FILES = Object.keys(FILES).filter((k) => k.startsWith('/dev/')).map((k) => k.slice('/dev/'.length));
 
 const texts = (selector, pick = (el) => el.textContent) =>
   [...document.querySelectorAll(selector)].map((el) => pick(el).trim()).filter(Boolean);
@@ -22,7 +25,7 @@ const texts = (selector, pick = (el) => el.textContent) =>
 // Directory → its subdirectories and files (files are read lazily from the page)
 const DIRS = {
   '/': { dirs: ['dev', 'home'], files: () => [] },
-  '/dev': { dirs: [], files: () => FILESYSTEM['/dev'] },
+  '/dev': { dirs: [], files: () => DEV_FILES },
   '/home': { dirs: ['mubbie'], files: () => [] },
   [HOME]: { dirs: ['projects', 'writing', 'currently', 'races', 'bucketlist', 'connect'], files: () => ['about.txt', 'bucketlist.md'] },
   [`${HOME}/projects`]: { dirs: [], files: () => texts('.project-card h3') },
@@ -69,7 +72,7 @@ export function pageTarget(path) {
   return Object.hasOwn(PAGE_TARGETS, path) ? PAGE_TARGETS[path] : undefined;
 }
 
-export function isDir(path) {
+function isDir(path) {
   return Object.hasOwn(DIRS, path);
 }
 
@@ -150,9 +153,4 @@ export function readFile(cwd, input) {
   if (Object.hasOwn(FILES, String(input).toLowerCase())) return { text: FILES[String(input).toLowerCase()] };
 
   return { error: `${input}: No such file or directory` };
-}
-
-// Every directory, for tree
-export function allDirs() {
-  return Object.keys(DIRS);
 }

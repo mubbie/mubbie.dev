@@ -1,7 +1,7 @@
 {
-  "name": "mubbie-dev-wrangler",
+  "name": "mubbie-dev",
   "private": true,
-  "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",

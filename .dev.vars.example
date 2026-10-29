@@ -4,7 +4,9 @@ REFRESH_TOKEN=change-me
 # Guestbook. Local testing can use Cloudflare's Turnstile test keys (always pass):
 #   https://developers.cloudflare.com/turnstile/troubleshooting/testing/
 # In production: TURNSTILE_SITE_KEY goes in wrangler.jsonc "vars" (it's public),
-# and `wrangler secret put TURNSTILE_SECRET` / `wrangler secret put ADMIN_TOKEN`.
+# and `wrangler secret put TURNSTILE_SECRET` / `wrangler secret put GUESTBOOK_SALT`.
+# Production reviews through Cloudflare Access; ADMIN_TOKEN is for local review only.
 TURNSTILE_SITE_KEY=1x00000000000000000000AA
 TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+GUESTBOOK_SALT=any-long-random-string
 ADMIN_TOKEN=change-me

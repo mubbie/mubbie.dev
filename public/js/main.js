@@ -2,14 +2,16 @@
 
 import { initTheme } from './theme.js';
 import { initSections } from './sections.js';
-import { initTerminal } from './terminal/index.js';
 import { isMatrixActive, stopMatrix } from './matrix.js';
 import { scrollToEl } from './scroll.js';
 
 // ─── Init ───
 initTheme();
 initSections();
-initTerminal();
+// Loaded separately: a failure in the terminal (or its easter eggs) can't take the page down
+import('./terminal/index.js')
+  .then(({ initTerminal }) => initTerminal())
+  .catch((err) => console.error('terminal failed to load:', err));
 
 // ─── Global keyboard shortcuts ───
 const NAV_SHORTCUTS = {

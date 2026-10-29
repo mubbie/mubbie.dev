@@ -114,7 +114,7 @@ const DOCTOR_RULES = [
 const DOCTOR_DEFAULTS = ['Can you elaborate on that?', 'Why do you say that?', 'I see. And how does that make you feel?', 'What makes you believe that?', 'Go on.', 'Earlier you said something similar. Is that connected?'];
 
 let defaultIndex = 0;
-export function doctorReply(text) {
+function doctorReply(text) {
   for (const [pattern, reply] of DOCTOR_RULES) {
     const m = pattern.exec(text);
     if (m) return reply(m);
@@ -171,7 +171,11 @@ export function openEmacs({ name = '*scratch*', text = SCRATCH, readOnly = false
     if (!sticky) echoTimer = setTimeout(() => { if (!minibuffer) echo.textContent = ''; }, 4000);
   }
 
+  let closed = false;
   function exit(why) {
+    if (closed) return;
+    closed = true;
+    clearTimeout(echoTimer);
     document.removeEventListener('keydown', onKey, true);
     closeFrame(frame);
     onExit(why);
@@ -188,13 +192,14 @@ export function openEmacs({ name = '*scratch*', text = SCRATCH, readOnly = false
     echo.append(label, input);
     minibuffer = input;
     input.focus();
+    input.addEventListener('blur', () => { if (minibuffer === input) closeMini(false); });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         const answer = input.value.trim();
         closeMini();
         onAnswer(answer);
-      } else if (e.key === 'Escape' || (e.ctrlKey && e.key.toLowerCase() === 'g')) {
+      } else if (e.key === 'Escape' || (e.ctrlKey && (e.key || '').toLowerCase() === 'g')) {
         e.preventDefault();
         closeMini();
         message('Quit');
@@ -208,10 +213,10 @@ export function openEmacs({ name = '*scratch*', text = SCRATCH, readOnly = false
     });
   }
 
-  function closeMini() {
+  function closeMini(refocus = true) {
     minibuffer = null;
     echo.textContent = '';
-    buffer.focus();
+    if (refocus) buffer.focus();
   }
 
   function mx() {
@@ -261,7 +266,7 @@ export function openEmacs({ name = '*scratch*', text = SCRATCH, readOnly = false
   function onKey(e) {
     if (minibuffer) return; // the minibuffer handles its own keys
     const ctrl = e.ctrlKey && !e.metaKey;
-    const key = e.key.toLowerCase();
+    const key = (e.key || '').toLowerCase();
     const meta = e.altKey || prefix === 'M';
 
     // Prefix sequences: C-x …, C-c …
@@ -388,7 +393,10 @@ export function openVim({ onExit = () => {} } = {}) {
 
   function status(text) { echo.textContent = text; }
 
+  let closed = false;
   function exit(how) {
+    if (closed) return;
+    closed = true;
     document.removeEventListener('keydown', onKey, true);
     closeFrame(frame);
     onExit(how);

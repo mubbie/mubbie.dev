@@ -22,6 +22,7 @@ async function load(page, path = '/') {
   page.on('pageerror', (e) => errors.push(e.message));
   await stubWindowOpen(page);
   await page.goto(path);
+  await expect(page.locator('#terminal[data-ready]')).toHaveCount(1);
   await expect(page.locator('.race-item')).toHaveCount(16);
   await expect(page.locator('.writing-item').first()).toBeVisible();
   return errors;
@@ -32,6 +33,8 @@ async function load(page, path = '/') {
 // off-screen input into view itself, that scroll can land after (and cancel) a
 // smooth scroll the command just started.
 async function run(page, cmd, { wait = 0 } = {}) {
+  // the terminal loads after the page (and again after a reload)
+  await expect(page.locator('#terminal[data-ready]')).toHaveCount(1);
   await page.evaluate(async () => {
     document.getElementById('terminal-history').innerHTML = '';
     const r = document.getElementById('terminal-input').getBoundingClientRect();
@@ -350,7 +353,7 @@ test('shell: history expansion and persistence', async ({ page }) => {
   expect(sudo).toContain('sudo ls'); // the expanded line is what's echoed
   expect(sudo).toContain('nice try');
   await page.reload();
-  await expect(page.locator('#terminal-input')).toBeAttached();
+  await expect(page.locator('#terminal[data-ready]')).toHaveCount(1);
   await page.locator('#terminal-input').press('ArrowUp');
   await expect(page.locator('#terminal-input')).toHaveValue('sudo ls');
   expect(await run(page, 'history -c && history')).toContain('no commands in history yet');
@@ -505,7 +508,7 @@ async function mockGuestbook(page, { open = true, notes = [], onPost } = {}) {
   });
   await page.route('https://challenges.cloudflare.com/**', (r) => r.fulfill({
     contentType: 'text/javascript',
-    body: 'window.turnstile = { render(el, o) { setTimeout(() => o.callback("test-token"), 50); return 1; }, reset() {} };',
+    body: 'window.__turnstileRemoved = 0; window.turnstile = { render(el, o) { setTimeout(() => o.callback("test-token"), 50); return 1; }, reset() {}, remove() { window.__turnstileRemoved++; } };',
   }));
 }
 
@@ -655,6 +658,103 @@ test('editors: one at a time, and the page behind is unreachable while open', as
   await expect(page.locator('.editor-overlay')).toHaveCount(0);
   expect(await page.locator('[inert]').count()).toBe(0);
   expect(await page.evaluate(() => document.body.classList.contains('editor-open'))).toBe(false);
+});
+
+// ─── Regressions from the production review ───
+
+test('review: the page shows its content even if JavaScript fails', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto('/');
+  for (const id of ['projects', 'currently', 'races', 'connect']) {
+    await expect(page.locator(`#${id}`)).toHaveCSS('opacity', '1');
+  }
+  await context.close();
+});
+
+test('review: links from APIs only open over https; javascript: is refused', async ({ page }) => {
+  await page.route('**/api/posts?limit=1', (r) => r.fulfill({ json: [{ title: 'evil', canonical_url: 'javascript:alert(1)' }] }));
+  await load(page);
+  await run(page, 'open latest', { wait: 300 });
+  await expect(page.locator('#terminal-history')).toContainText('refusing to open that link');
+  expect(await page.evaluate(() => window.__opened)).toEqual([]);
+  expect(await page.locator('#terminal-history a[href^="javascript:"]').count()).toBe(0);
+});
+
+test('review: Ctrl+C and clear drop network output that arrives afterwards', async ({ page }, testInfo) => {
+  test.skip(isMobile(testInfo), 'hardware keyboard');
+  let release;
+  const gate = new Promise((done) => { release = done; });
+  await page.route('**/api/xkcd', async (r) => { await gate; await r.fulfill({ json: { num: 1, title: 'late comic', img: '/favicon.svg', alt: 'x' } }); });
+  await load(page);
+  await run(page, 'curl xkcd');
+  await page.locator('#terminal-input').press('Control+c');
+  release();
+  await page.waitForTimeout(400);
+  await expect(page.locator('#terminal-history')).not.toContainText('late comic');
+});
+
+test('review: shell details (quotes, pipes, exit codes, man, history position)', async ({ page }, testInfo) => {
+  await load(page);
+  expect(await run(page, 'echo "it\'s $USER"')).toContain("it's mubbie");
+  expect(await run(page, 'grep "half marathon"')).toMatch(/match/);
+  expect(await run(page, 'grep "half marathon"')).not.toContain('no matches');
+  await run(page, 'false | cat');
+  expect(await run(page, 'echo $?')).toContain('0');
+  expect(await run(page, 'man sl')).not.toMatch(/sl - \n/);
+  expect(await run(page, 'matrix | cat')).toContain('needs a screen');
+  expect(await page.locator('#matrix-canvas.on').count()).toBe(0);
+  expect(await run(page, 'cocktail random | wc')).toContain('needs a screen');
+  if (isMobile(testInfo)) return;
+  // Up, Up, clear the line, Enter: the next Up starts from the newest entry again
+  await run(page, 'whoami');
+  await run(page, 'pwd');
+  const input = page.locator('#terminal-input');
+  await input.press('ArrowUp');
+  await input.press('ArrowUp');
+  await input.press('Control+u');
+  await expect(page.locator('#terminal-hint')).toBeVisible(); // the hint comes back on an empty line
+  await input.press('Enter');
+  await input.press('ArrowUp');
+  await expect(input).toHaveValue('pwd');
+  // Enter while an input method is composing doesn't submit
+  await input.fill('ls');
+  await input.evaluate((el) => el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true })));
+  await expect(input).toHaveValue('ls');
+});
+
+test('review: emacs M-x prompt never traps you; closing the guestbook editor cleans up', async ({ page }, testInfo) => {
+  test.skip(isMobile(testInfo), 'hardware keyboard');
+  await mockGuestbook(page);
+  await load(page);
+  await run(page, 'emacs');
+  const buffer = page.locator('.editor-buffer');
+  await buffer.press('Alt+x');
+  await expect(page.locator('.editor-mini-input')).toBeFocused();
+  await buffer.click(); // wander back into the buffer with the prompt open
+  await buffer.press('Control+x');
+  await buffer.press('Control+c');
+  await expect(page.locator('.editor-overlay')).toHaveCount(0);
+
+  await run(page, 'guestbook sign');
+  await expect(page.locator('.editor-overlay')).toHaveCount(1);
+  await page.waitForTimeout(200); // the bot-check widget renders
+  await page.locator('.editor-buffer').press('Control+x');
+  await page.locator('.editor-buffer').press('Control+c');
+  await expect(page.locator('.editor-overlay')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__turnstileRemoved)).toBe(1);
+  await expect(page.locator('#terminal-input')).toBeFocused();
+});
+
+test('review: back to top moves keyboard focus to the top too', async ({ page }, testInfo) => {
+  test.skip(isMobile(testInfo), 'keyboard focus');
+  await load(page);
+  await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, document.body.scrollHeight); });
+  const btn = page.locator('.back-to-top');
+  await expect(btn).toHaveClass(/visible/);
+  await btn.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.skip-link')).toBeFocused();
 });
 
 test('terminal: every alias runs its command', async ({ page }) => {

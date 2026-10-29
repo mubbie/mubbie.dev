@@ -9,6 +9,7 @@ import { timingSafeEqual } from 'node:crypto';
 crypto.subtle.timingSafeEqual ??= (a, b) => timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
 const { default: worker } = await import('../workers/index.js');
+const { resetAccessCache } = await import('../workers/access.js');
 
 const POST = {
   title: 'T', slug: 's', canonical_url: 'https://x/p/s', post_date: '2026-01-01',
@@ -25,6 +26,11 @@ function makeKV() {
       return e ? { value: JSON.parse(e.value), metadata: e.metadata } : { value: null, metadata: null };
     },
     async get(key, type) {
+      // bulk get: an array of keys → Map of key → value (null when missing)
+      if (Array.isArray(key)) return new Map(key.map((k) => [k, this._one(k, type)]));
+      return this._one(key, type);
+    },
+    _one(key, type) {
       const e = store.get(key);
       if (!e) return null;
       return type === 'json' ? JSON.parse(e.value) : e.value;
@@ -51,6 +57,7 @@ globalThis.fetch = async (url, init) => {
 };
 
 beforeEach(() => {
+  resetAccessCache();
   upstreamCalls = [];
   upstream = async () => { throw new Error('unexpected upstream call'); };
 });
@@ -260,7 +267,7 @@ test('routing: unknown /api → JSON 404; everything else → static assets', as
 
 // ─── /api/guestbook ───
 
-const GB_OPEN = { TURNSTILE_SITE_KEY: 'site', TURNSTILE_SECRET: 'secret' };
+const GB_OPEN = { TURNSTILE_SITE_KEY: 'site', TURNSTILE_SECRET: 'secret', GUESTBOOK_SALT: 'pepper' };
 const turnstileOk = async (url) => (url.includes('turnstile') ? Response.json({ success: true }) : Response.json({}));
 const post = (env, body, headers = {}) => call('/api/guestbook', env, { 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.7', ...headers }, { method: 'POST', body: JSON.stringify(body) });
 const NOTE = { name: 'Ada', message: 'love the dock', token: 't' };
@@ -360,7 +367,7 @@ test('guestbook: spam and AI-flagged notes are set aside quietly; AI outages sti
   res = await post({ POSTS_CACHE: KV, ASSETS, AI, ...GB_OPEN }, NOTE);
   assert.equal(res.res.status, 200);
   const flagged = [...KV.store.entries()].find(([k]) => k.startsWith('gb:r:'));
-  assert.match(JSON.parse(flagged[1].value).rejectedFor, /ai: s10/);
+  assert.match(JSON.parse(flagged[1].value).rejectedFor, /ai: s10/i);
 
   // AI says safe
   KV = makeKV();
@@ -439,7 +446,9 @@ test('guestbook admin: Cloudflare Access JWTs are verified (signature, audience,
   assert.equal(await asAdmin(null), 401);
   assert.equal(await asAdmin(await sign({ ...good, aud: ['someone-else'] })), 401, 'wrong audience');
   assert.equal(await asAdmin(await sign({ ...good, iss: 'https://evil.example' })), 401, 'wrong issuer');
-  assert.equal(await asAdmin(await sign({ ...good, exp: now - 1 })), 401, 'expired');
+  assert.equal(await asAdmin(await sign({ ...good, exp: now - 120 })), 401, 'expired (beyond a minute of clock skew)');
+  assert.equal(await asAdmin(await sign({ ...good, exp: undefined })), 401, 'no expiry is not "never expires"');
+  assert.equal(await asAdmin(await sign({ ...good, nbf: now + 600 })), 401, 'not valid yet');
   const other = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['sign', 'verify']);
   assert.equal(await asAdmin(await sign(good, other.privateKey)), 401, 'forged signature');
   assert.equal((await call('/admin/guestbook', env, { 'Cf-Access-Jwt-Assertion': await sign(good) })).body, 'asset', 'page loads for a signed-in admin');
@@ -496,4 +505,111 @@ test('guestbook alert email: real recipient, encoded subject, CRLF lines', async
   assert.match(raw, /\r\nDate: Wed, 28 Oct 2026 12:00:00 GMT\r\n/);
   assert.ok(raw.includes('hi\r\nthere'), 'body lines use CRLF');
   assert.ok(!/[^\r]\n/.test(raw), 'no bare LF anywhere');
+});
+
+
+// ─── Hardening from the production review ───
+
+test('access: an unknown key id refetches the certs once; a failed certs fetch is not cached', async () => {
+  const mk = () => crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['sign', 'verify']);
+  const [k1, k2] = [await mk(), await mk()];
+  const jwkOf = async (k, kid) => ({ ...(await crypto.subtle.exportKey('jwk', k.publicKey)), kid, alg: 'RS256' });
+  const team = 'mubbie.cloudflareaccess.com';
+  const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
+  const sign = async (key, kid, alg = 'RS256') => {
+    const now = Math.floor(Date.now() / 1000);
+    const head = `${b64({ alg, kid })}.${b64({ aud: ['aud-1'], iss: `https://${team}`, exp: now + 600 })}`;
+    const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key.privateKey, new TextEncoder().encode(head));
+    return `${head}.${Buffer.from(sig).toString('base64url')}`;
+  };
+  const env = { POSTS_CACHE: makeKV(), ASSETS, ACCESS_TEAM_DOMAIN: team, ACCESS_AUD: 'aud-1' };
+  const status = async (jwt) => (await call('/api/guestbook/admin', env, { 'Cf-Access-Jwt-Assertion': jwt })).res.status;
+
+  // certs endpoint down: refused, and nothing cached
+  upstream = async () => new Response('oops', { status: 500 });
+  assert.equal(await status(await sign(k1, 'k1')), 401);
+  // back up with k1: works on the next try (the failure wasn't cached as "no keys")
+  upstream = async () => Response.json({ keys: [await jwkOf(k1, 'k1')] });
+  assert.equal(await status(await sign(k1, 'k1')), 200);
+  assert.equal(await status(await sign(k1, 'k1', 'HS256')), 401, 'only RS256');
+  // Access rotates to k2: the first k2 token (within a minute of the last fetch) is refused
+  // without hammering the endpoint; once a minute passes, the unknown kid triggers a refetch
+  upstream = async () => Response.json({ keys: [await jwkOf(k1, 'k1'), await jwkOf(k2, 'k2')] });
+  const realNow = Date.now;
+  try {
+    Date.now = () => realNow() + 2 * 60 * 1000;
+    assert.equal(await status(await sign(k2, 'k2')), 200, 'rotated key accepted after refetch');
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test('guestbook: approving two notes back to back publishes both (one key per note)', async () => {
+  upstream = turnstileOk;
+  const env = { POSTS_CACHE: makeKV(), ASSETS, ...GB_OPEN, ADMIN_TOKEN: 'sesame' };
+  const admin = (body) => call('/api/guestbook/admin', env, { 'Content-Type': 'application/json', Authorization: 'Bearer sesame' }, body ? { method: 'POST', body: JSON.stringify(body) } : {});
+  await post(env, { ...NOTE, message: 'first' });
+  await post(env, { ...NOTE, message: 'second' }, { 'CF-Connecting-IP': '203.0.113.8' });
+  const { body: queue } = await admin(null);
+  for (const n of queue.pending) assert.equal((await admin({ action: 'approve', id: n.id })).res.status, 200);
+  const pub = (await call('/api/guestbook', env)).body.map((n) => n.message);
+  assert.deepEqual(pub.sort(), ['first', 'second'], 'both published');
+  assert.ok([...env.POSTS_CACHE.store.keys()].every((k) => !k.startsWith('gb:p:')), 'nothing left pending');
+});
+
+test('guestbook admin POST: JSON only, same origin only, object bodies only', async () => {
+  const env = { POSTS_CACHE: makeKV(), ASSETS, ADMIN_TOKEN: 'sesame' };
+  const send = (body, headers = {}) => call('/api/guestbook/admin', env, { Authorization: 'Bearer sesame', 'Content-Type': 'application/json', ...headers }, { method: 'POST', body });
+  assert.equal((await send('null')).res.status, 400, 'null body is a 400, not a crash');
+  assert.equal((await send('{"action":"delete","id":"x"}', { 'Content-Type': 'text/plain' })).res.status, 415, 'no form posts');
+  assert.equal((await send('{"action":"delete","id":"x"}', { Origin: 'https://evil.example' })).res.status, 403, 'no cross-site requests');
+  assert.equal((await send('{"action":"delete","id":"x"}', { Origin: 'https://mubbie.dev' })).res.status, 200);
+  assert.equal((await send('{"action":"toString","id":"x"}')).res.status, 400, 'only real actions');
+  const put = await call('/api/guestbook/admin', env, { Authorization: 'Bearer sesame' }, { method: 'PUT' });
+  assert.equal(put.res.status, 405);
+  assert.equal(put.res.headers.get('Allow'), 'GET, POST');
+});
+
+test('guestbook: closed without the visitor-id salt; AI verdicts as text or object both count', async () => {
+  upstream = turnstileOk;
+  const { TURNSTILE_SITE_KEY, TURNSTILE_SECRET } = GB_OPEN;
+  assert.equal((await post({ POSTS_CACHE: makeKV(), ASSETS, TURNSTILE_SITE_KEY, TURNSTILE_SECRET }, NOTE)).res.status, 503, 'no salt → closed');
+  for (const response of ['unsafe\nS10', { safe: false, categories: ['S10'] }]) {
+    const KV = makeKV();
+    const AI = { run: async () => ({ response }) };
+    await post({ POSTS_CACHE: KV, ASSETS, ...GB_OPEN, AI }, NOTE);
+    const rejected = [...KV.store.entries()].find(([k]) => k.startsWith('gb:r:'));
+    assert.ok(rejected, `flagged: ${JSON.stringify(response)}`);
+    assert.match(JSON.parse(rejected[1].value).rejectedFor, /S10/);
+  }
+});
+
+test('worker: a KV failure answers with JSON, not a platform error page', async () => {
+  const broken = { list: async () => { throw new Error('kv down'); }, get: async () => { throw new Error('kv down'); } };
+  const origError = console.error;
+  console.error = () => {};
+  try {
+    const { res, body } = await call('/api/guestbook', { POSTS_CACHE: broken, ASSETS });
+    assert.equal(res.status, 500);
+    assert.deepEqual(body, { error: 'server-error' });
+    assert.equal(res.headers.get('Cache-Control'), 'no-store');
+  } finally {
+    console.error = origError;
+  }
+});
+
+test('xkcd: only positive whole numbers reach upstream; upstream errors stay private', async () => {
+  for (const num of ['0', '-5', '12abc', '1e3', '9999999']) {
+    assert.equal((await call(`/api/xkcd?num=${num}`, { ASSETS })).res.status, 400, num);
+  }
+  assert.equal(upstreamCalls.length, 0);
+  const origError = console.error;
+  console.error = () => {};
+  try {
+    upstream = async () => { throw new Error('secret internal detail'); };
+    const { body } = await call('/api/xkcd?num=1', { ASSETS });
+    assert.deepEqual(body, { error: 'upstream-unavailable' });
+  } finally {
+    console.error = origError;
+  }
 });

@@ -13,50 +13,63 @@
 // (length, links, emails, phone numbers) → spam phrases → AI screening (Llama Guard,
 // when the AI binding exists) → pending queue. Nothing is public until approved.
 //
-// Storage (the existing KV namespace, under gb:):
-//   gb:p:<id>        pending note (one key each, so concurrent submits never collide)
-//   gb:approved      the public list (written only by the admin, so no races)
+// Storage (the existing KV namespace, under gb:). One key per note, so no two writes ever
+// touch the same key and a stale KV read can't drop a note:
+//   gb:p:<id>        pending note
+//   gb:a:<id>        published note
 //   gb:r:<id>        auto-rejected or rejected note, kept 30 days for a look, then gone
 //   gb:rate:<hash>   submissions this hour from one visitor
 //   gb:block:<hash>  blocked visitor
-// Visitors are identified by a salted SHA-256 of their IP; the raw IP is never stored.
+// Ids sort newest first. Visitors are identified by a salted SHA-256 of their IP; the raw
+// IP is never stored.
 //
-// Config (all optional; missing pieces fail closed):
-//   TURNSTILE_SITE_KEY (var) + TURNSTILE_SECRET (secret)  → guestbook accepts notes
-//   AI binding                                             → AI screening
+// Config (missing pieces fail closed):
+//   TURNSTILE_SITE_KEY (var) + TURNSTILE_SECRET + GUESTBOOK_SALT (secrets) → accepts notes
+//   AI binding                                              → AI screening
 //   GUESTBOOK_EMAIL send_email binding + NOTIFY_FROM, NOTIFY_TO (vars) → email when a note waits
-//   ACCESS_TEAM_DOMAIN + ACCESS_AUD (vars)                 → admin via Cloudflare Access
-//   ADMIN_TOKEN (secret)                                   → admin via bearer token instead
+//   ACCESS_TEAM_DOMAIN + ACCESS_AUD (vars)                  → admin via Cloudflare Access
+//   ADMIN_TOKEN (secret)                                    → admin via bearer token (local dev)
+
+import { json, methodNotAllowed, text, bearerMatches } from './http.js';
+import { verifyAccessJwt } from './access.js';
 
 const MAX_NAME = 40;
 const MAX_MESSAGE = 500;
 const RATE_LIMIT = 3; // notes per visitor per hour
 const RATE_WINDOW_SECONDS = 3600;
 const REJECTED_TTL_SECONDS = 30 * 24 * 3600;
-const MAX_APPROVED = 200;
+const MAX_PUBLISHED = 200; // shown publicly, newest first
+const MAX_ADMIN_LIST = 200; // per pile on the review page, so a spam wave can't break it
 const MAX_BODY_BYTES = 16 * 1024; // a note is ~2 KB at most; refuse anything bigger unread
+const KV_BULK_GET = 100; // KV's limit for one bulk get
 const AI_MODEL = '@cf/meta/llama-guard-3-8b';
+const SITE_ORIGIN = 'https://mubbie.dev';
+const THANKS = 'Thanks! Notes appear after a quick review.';
 
 // Common spam; abuse is caught by the AI screen and, failing that, by review
 const SPAM_PHRASES = ['crypto', 'bitcoin', 'casino', 'viagra', 'cialis', 'forex', 'seo service', 'backlink', 'escort', 'onlyfans', 'telegram @', 'whatsapp +'];
 
-// ─── Helpers ───
+const RULE_MESSAGES = {
+  'name-required': 'Add a name (a nickname is fine).',
+  'message-required': 'Write a note first.',
+  'name-too-long': `Keep the name under ${MAX_NAME} characters.`,
+  'message-too-long': `Keep the note under ${MAX_MESSAGE} characters.`,
+  'links-not-allowed': 'No links, please. It keeps the spam out.',
+  'emails-not-allowed': 'No email addresses, please. Keep everyone\'s info private.',
+  'phone-numbers-not-allowed': 'No phone numbers, please. Keep everyone\'s info private.',
+};
 
-function json(data, status = 200, headers = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers },
-  });
-}
+const isOpen = (env) => Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET && env.GUESTBOOK_SALT);
 
-async function sha256(text) {
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+// ─── Text checks ───
+
+async function sha256(input) {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
   return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 function visitorHash(request, env) {
-  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  return sha256(`${env.GUESTBOOK_SALT || 'mubbie.dev guestbook'}:${ip}`);
+  return sha256(`${env.GUESTBOOK_SALT}:${request.headers.get('CF-Connecting-IP') || 'unknown'}`);
 }
 
 // Newest first when KV lists keys in lexicographic order
@@ -67,19 +80,19 @@ function newId(now) {
 // Drop control characters (except newlines), invisible characters (zero-width spaces,
 // joiners, BOM), and bidi overrides that can make text display reversed (name spoofing).
 // Then collapse runs of blank lines.
-function clean(text) {
-  return String(text)
+function clean(input) {
+  return String(input)
     .replace(/[\u0000-\u0009\u000B-\u001F\u007F-\u009F]/g, '')
-    .replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF\u00AD]/g, '')
+    .replace(/[​-‏‪-‮⁠-⁩﻿­]/g, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
 // Characters, as people count them: an emoji is one, not two
-const charCount = (text) => [...text].length;
+const charCount = (s) => [...s].length;
 
-// The hard rules. Returns a reason string, or null when the note may proceed.
-export function ruleViolation(name, message) {
+// The hard rules. Returns a reason code, or null when the note may proceed.
+function ruleViolation(name, message) {
   if (!name) return 'name-required';
   if (!message) return 'message-required';
   if (charCount(name) > MAX_NAME) return 'name-too-long';
@@ -93,18 +106,9 @@ export function ruleViolation(name, message) {
   return null;
 }
 
-const RULE_MESSAGES = {
-  'name-required': 'Add a name (a nickname is fine).',
-  'message-required': 'Write a note first.',
-  'name-too-long': `Keep the name under ${MAX_NAME} characters.`,
-  'message-too-long': `Keep the note under ${MAX_MESSAGE} characters.`,
-  'links-not-allowed': 'No links, please. It keeps the spam out.',
-  'emails-not-allowed': 'No email addresses, please. Keep everyone\'s info private.',
-  'phone-numbers-not-allowed': 'No phone numbers, please. Keep everyone\'s info private.',
-};
+const spamPhrase = (name, message) => SPAM_PHRASES.find((p) => `${name} ${message}`.normalize('NFKC').toLowerCase().includes(p));
 
 async function verifyTurnstile(token, request, env) {
-  if (!token) return false;
   const body = new FormData();
   body.append('secret', env.TURNSTILE_SECRET);
   body.append('response', token);
@@ -112,29 +116,37 @@ async function verifyTurnstile(token, request, env) {
   if (ip) body.append('remoteip', ip);
   try {
     const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body, signal: AbortSignal.timeout(5000) });
-    const data = await res.json();
-    return data.success === true;
+    return (await res.json()).success === true;
   } catch {
     return false;
   }
 }
 
-// Llama Guard answers "safe", or "unsafe" plus category codes (e.g. "unsafe\nS10").
+// Llama Guard says "safe", or "unsafe" plus category codes ("unsafe\nS10"). Depending on the
+// API version the answer is that text, or an object { safe, categories }; accept both.
 // If the model is unavailable the note still goes to review, so nothing slips through.
-async function aiScreen(text, env) {
+async function aiScreen(input, env) {
   if (!env.AI) return { checked: false };
   try {
-    const out = await env.AI.run(AI_MODEL, { messages: [{ role: 'user', content: text }] });
-    const verdict = String(out?.response ?? '').trim().toLowerCase();
-    if (verdict.startsWith('unsafe')) return { checked: true, unsafe: true, categories: verdict.split(/\s+/).slice(1).join(',') };
+    const { response } = await env.AI.run(AI_MODEL, { messages: [{ role: 'user', content: input }] });
+    if (response && typeof response === 'object') {
+      return response.safe === false
+        ? { checked: true, unsafe: true, categories: [].concat(response.categories || []).join(',') }
+        : { checked: true, unsafe: false };
+    }
+    const verdict = String(response ?? '').trim();
+    if (/^unsafe/i.test(verdict)) return { checked: true, unsafe: true, categories: verdict.split(/\s+/).slice(1).join(',') };
     return { checked: true, unsafe: false };
-  } catch {
+  } catch (err) {
+    console.error('ai screen failed:', err);
     return { checked: false };
   }
 }
 
+// ─── Email alert ───
+
 // Header text as RFC 2047 UTF-8, so a name like "Zoë 😀" survives the subject line
-const encodeHeader = (text) => `=?UTF-8?B?${btoa(String.fromCharCode(...new TextEncoder().encode(text)))}?=`;
+const encodeHeader = (s) => `=?UTF-8?B?${btoa(String.fromCharCode(...new TextEncoder().encode(s)))}?=`;
 
 // The alert as a raw MIME message (exported for tests)
 export function alertEmail(note, env) {
@@ -162,105 +174,70 @@ async function notify(note, env) {
     const { EmailMessage } = await import('cloudflare:email');
     // the recipient must match the binding's verified destination_address
     await env.GUESTBOOK_EMAIL.send(new EmailMessage(env.NOTIFY_FROM, env.NOTIFY_TO, alertEmail(note, env)));
-  } catch {
+  } catch (err) {
     // a failed email never blocks a submission; the note is safely queued
+    console.error('guestbook alert failed:', err);
   }
 }
 
-// ─── Admin auth: Cloudflare Access JWT, or a bearer token ───
+// ─── Storage ───
 
-let accessKeys = null;
-let accessKeysFetched = 0;
-
-function b64urlToBytes(s) {
-  const pad = '='.repeat((4 - (s.length % 4)) % 4);
-  const bin = atob((s + pad).replace(/-/g, '+').replace(/_/g, '/'));
-  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
-}
-
-async function verifyAccessJwt(token, env) {
-  try {
-    const [h, p, sig] = token.split('.');
-    const header = JSON.parse(new TextDecoder().decode(b64urlToBytes(h)));
-    const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(p)));
-    const now = Math.floor(Date.now() / 1000);
-    const auds = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-    if (!auds.includes(env.ACCESS_AUD) || payload.exp < now) return false;
-    if (payload.iss !== `https://${env.ACCESS_TEAM_DOMAIN}`) return false;
-
-    if (!accessKeys || Date.now() - accessKeysFetched > 3600_000) {
-      const res = await fetch(`https://${env.ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`, { signal: AbortSignal.timeout(5000) });
-      accessKeys = (await res.json()).keys || [];
-      accessKeysFetched = Date.now();
-    }
-    const jwk = accessKeys.find((k) => k.kid === header.kid);
-    if (!jwk) return false;
-    const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
-    return crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64urlToBytes(sig), new TextEncoder().encode(`${h}.${p}`));
-  } catch {
-    return false;
-  }
-}
-
-export async function isAdmin(request, env) {
-  if (env.ADMIN_TOKEN) {
-    const given = new TextEncoder().encode(request.headers.get('Authorization') || '');
-    const expected = new TextEncoder().encode(`Bearer ${env.ADMIN_TOKEN}`);
-    if (given.byteLength === expected.byteLength && crypto.subtle.timingSafeEqual(given, expected)) return true;
-  }
-  const jwt = request.headers.get('Cf-Access-Jwt-Assertion');
-  if (jwt && env.ACCESS_TEAM_DOMAIN && env.ACCESS_AUD) return verifyAccessJwt(jwt, env);
-  return false;
-}
-
-// ─── KV access ───
-
-async function readApproved(kv) {
-  const list = await kv.get('gb:approved', 'json');
-  return Array.isArray(list) ? list : [];
-}
-
-async function listByPrefix(kv, prefix) {
-  const notes = [];
+// Notes under a prefix, newest first, read in bulk (one KV call per 100 keys, not per note)
+async function listNotes(kv, prefix, max) {
+  const names = [];
   let cursor;
   do {
-    const page = await kv.list({ prefix, cursor });
-    for (const k of page.keys) {
-      const note = await kv.get(k.name, 'json');
-      if (note) notes.push(note);
-    }
+    const page = await kv.list({ prefix, cursor, limit: Math.min(1000, max - names.length) });
+    names.push(...page.keys.map((k) => k.name));
     cursor = page.list_complete ? null : page.cursor;
-  } while (cursor);
+  } while (cursor && names.length < max);
+
+  const notes = [];
+  for (let i = 0; i < names.length; i += KV_BULK_GET) {
+    const batch = await kv.get(names.slice(i, i + KV_BULK_GET), 'json');
+    // a key listed but already deleted (KV lists lag) comes back null; skip it
+    for (const name of names.slice(i, i + KV_BULK_GET)) if (batch.get(name)) notes.push(batch.get(name));
+  }
   return notes;
+}
+
+const publicNote = ({ name, message, createdAt }) => ({ name, message, createdAt });
+
+// ─── Admin auth ───
+
+async function isAdmin(request, env) {
+  if (bearerMatches(request, env.ADMIN_TOKEN)) return true;
+  const jwt = request.headers.get('Cf-Access-Jwt-Assertion');
+  return Boolean(jwt) && verifyAccessJwt(jwt, env);
 }
 
 // ─── Handlers ───
 
 export async function handleGuestbook(request, env, ctx) {
-  const url = new URL(request.url);
+  const { pathname } = new URL(request.url);
   const kv = env.POSTS_CACHE;
   if (!kv) return json({ error: 'unavailable' }, 503);
 
-  if (url.pathname === '/api/guestbook/config') {
-    return json({ open: Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET), siteKey: env.TURNSTILE_SITE_KEY || null });
+  if (pathname === '/api/guestbook/config') {
+    return json({ open: isOpen(env), siteKey: env.TURNSTILE_SITE_KEY || null });
   }
-
-  if (url.pathname === '/api/guestbook/admin') {
+  if (pathname === '/api/guestbook/admin') {
     if (!(await isAdmin(request, env))) return json({ error: 'unauthorized' }, 401);
     return handleAdmin(request, env, kv);
   }
-
-  if (url.pathname !== '/api/guestbook') return json({ error: 'not-found' }, 404);
+  if (pathname !== '/api/guestbook') return json({ error: 'not-found' }, 404);
 
   if (request.method === 'GET') {
-    const notes = (await readApproved(kv)).map(({ name, message, createdAt }) => ({ name, message, createdAt }));
-    return json(notes, 200, { 'Cache-Control': 'public, max-age=60' });
+    const notes = await listNotes(kv, 'gb:a:', MAX_PUBLISHED);
+    return json(notes.map(publicNote), 200, { 'Cache-Control': 'public, max-age=60' });
   }
+  if (request.method !== 'POST') return methodNotAllowed('GET, POST');
+  return submitNote(request, env, ctx, kv);
+}
 
-  if (request.method !== 'POST') return json({ error: 'method-not-allowed' }, 405);
-
-  // Closed until the bot check is configured
-  if (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET) return json({ error: 'closed', message: 'The guestbook opens soon.' }, 503);
+async function submitNote(request, env, ctx, kv) {
+  // Closed until the bot check (and the salt that keeps visitor ids private) is configured
+  if (!isOpen(env)) return json({ error: 'closed', message: 'The guestbook opens soon.' }, 503);
 
   // Refuse oversized bodies before reading them
   if (parseInt(request.headers.get('Content-Length') || '0', 10) > MAX_BODY_BYTES) return json({ error: 'too-large' }, 413);
@@ -280,16 +257,15 @@ export async function handleGuestbook(request, env, ctx) {
   const name = clean(body.name ?? '').replace(/\n/g, ' ');
   const message = clean(body.message ?? '');
 
-  if (typeof body.token !== 'string' || !(await verifyTurnstile(body.token, request, env))) {
+  if (typeof body.token !== 'string' || !body.token || !(await verifyTurnstile(body.token, request, env))) {
     return json({ error: 'bot-check-failed', message: 'Couldn\'t verify you\'re human. Try again?' }, 403);
   }
 
   const who = await visitorHash(request, env);
-  if (await kv.get(`gb:block:${who}`)) {
-    // don't tell a blocked visitor; their notes just never appear
-    return json({ ok: true, message: 'Thanks! Notes appear after a quick review.' });
-  }
+  // don't tell a blocked visitor; their notes just never appear
+  if (await kv.get(`gb:block:${who}`)) return json({ ok: true, message: THANKS });
 
+  // KV counters are best effort under concurrency; each attempt also costs a fresh Turnstile pass
   const rateKey = `gb:rate:${who}`;
   const count = parseInt((await kv.get(rateKey)) || '0', 10);
   if (count >= RATE_LIMIT) return json({ error: 'rate-limited', message: 'That\'s a lot of notes. Try again in an hour.' }, 429);
@@ -304,7 +280,7 @@ export async function handleGuestbook(request, env, ctx) {
 
   // Spam phrases and AI-flagged notes go straight to the rejected pile (30 days, then gone).
   // The visitor sees the same thanks either way, so trolls learn nothing.
-  const spam = SPAM_PHRASES.find((p) => `${name} ${message}`.normalize('NFKC').toLowerCase().includes(p));
+  const spam = spamPhrase(name, message);
   const ai = spam ? { checked: false } : await aiScreen(`${name}: ${message}`, env);
   if (spam || ai.unsafe) {
     note.rejectedFor = spam ? `spam: ${spam}` : `ai: ${ai.categories || 'unsafe'}`;
@@ -314,19 +290,51 @@ export async function handleGuestbook(request, env, ctx) {
     await kv.put(`gb:p:${note.id}`, JSON.stringify(note));
     ctx.waitUntil(notify(note, env));
   }
-  return json({ ok: true, message: 'Thanks! Notes appear after a quick review.' });
+  return json({ ok: true, message: THANKS });
 }
+
+const ADMIN_ACTIONS = {
+  async approve(kv, id, note) {
+    if (!note) return json({ error: 'not-found' }, 404);
+    const { rejectedFor, ...published } = note;
+    await kv.put(`gb:a:${id}`, JSON.stringify(published));
+    await Promise.all([kv.delete(`gb:p:${id}`), kv.delete(`gb:r:${id}`)]);
+    return json({ ok: true });
+  },
+  async reject(kv, id, note) {
+    if (!note) return json({ error: 'not-found' }, 404);
+    await kv.put(`gb:r:${id}`, JSON.stringify({ ...note, rejectedFor: 'you' }), { expirationTtl: REJECTED_TTL_SECONDS });
+    await Promise.all([kv.delete(`gb:p:${id}`), kv.delete(`gb:a:${id}`)]);
+    return json({ ok: true });
+  },
+  // remove a note from every pile
+  async delete(kv, id) {
+    await Promise.all(['p', 'a', 'r'].map((pile) => kv.delete(`gb:${pile}:${id}`)));
+    return json({ ok: true });
+  },
+  // hide the note and everything its sender writes from now on
+  async block(kv, id, note) {
+    if (!note?.visitor) return json({ error: 'not-found' }, 404);
+    await kv.put(`gb:block:${note.visitor}`, '1');
+    await kv.put(`gb:r:${id}`, JSON.stringify({ ...note, rejectedFor: 'blocked' }), { expirationTtl: REJECTED_TTL_SECONDS });
+    await Promise.all([kv.delete(`gb:p:${id}`), kv.delete(`gb:a:${id}`)]);
+    return json({ ok: true });
+  },
+};
 
 async function handleAdmin(request, env, kv) {
   if (request.method === 'GET') {
-    const [pending, approved, rejected] = await Promise.all([
-      listByPrefix(kv, 'gb:p:'),
-      readApproved(kv),
-      listByPrefix(kv, 'gb:r:'),
-    ]);
+    const [pending, approved, rejected] = await Promise.all(
+      ['gb:p:', 'gb:a:', 'gb:r:'].map((prefix) => listNotes(kv, prefix, MAX_ADMIN_LIST)),
+    );
     return json({ pending, approved, rejected, aiScreening: Boolean(env.AI), emailAlerts: Boolean(env.GUESTBOOK_EMAIL && env.NOTIFY_FROM && env.NOTIFY_TO) });
   }
-  if (request.method !== 'POST') return json({ error: 'method-not-allowed' }, 405);
+  if (request.method !== 'POST') return methodNotAllowed('GET, POST');
+
+  // Only the review page may change things: JSON from this site, never a cross-site form post
+  const origin = request.headers.get('Origin');
+  if (origin && origin !== SITE_ORIGIN && origin !== new URL(request.url).origin) return json({ error: 'forbidden' }, 403);
+  if (!(request.headers.get('Content-Type') || '').startsWith('application/json')) return json({ error: 'json-required' }, 415);
 
   let body;
   try {
@@ -334,61 +342,24 @@ async function handleAdmin(request, env, kv) {
   } catch {
     return json({ error: 'bad-request' }, 400);
   }
-  const { action, id } = body;
+  const { action, id } = body && typeof body === 'object' ? body : {};
   if (!/^[\w-]{1,40}$/.test(String(id || ''))) return json({ error: 'bad-id' }, 400);
+  if (!Object.hasOwn(ADMIN_ACTIONS, action)) return json({ error: 'unknown-action' }, 400);
 
-  const pendingKey = `gb:p:${id}`;
-  const rejectedKey = `gb:r:${id}`;
-  const note = (await kv.get(pendingKey, 'json')) || (await kv.get(rejectedKey, 'json'));
-  const approved = await readApproved(kv);
-
-  if (action === 'approve') {
-    if (!note) return json({ error: 'not-found' }, 404);
-    const published = { ...note };
-    delete published.rejectedFor;
-    const next = [published, ...approved.filter((n) => n.id !== id)].slice(0, MAX_APPROVED);
-    await kv.put('gb:approved', JSON.stringify(next));
-    await kv.delete(pendingKey);
-    await kv.delete(rejectedKey);
-    return json({ ok: true });
-  }
-  if (action === 'reject') {
-    if (!note) return json({ error: 'not-found' }, 404);
-    await kv.put(rejectedKey, JSON.stringify({ ...note, rejectedFor: 'you' }), { expirationTtl: REJECTED_TTL_SECONDS });
-    await kv.delete(pendingKey);
-    return json({ ok: true });
-  }
-  if (action === 'delete') {
-    // remove a published note (or purge one from any pile)
-    await kv.put('gb:approved', JSON.stringify(approved.filter((n) => n.id !== id)));
-    await kv.delete(pendingKey);
-    await kv.delete(rejectedKey);
-    return json({ ok: true });
-  }
-  if (action === 'block') {
-    const target = note || approved.find((n) => n.id === id);
-    if (!target?.visitor) return json({ error: 'not-found' }, 404);
-    await kv.put(`gb:block:${target.visitor}`, '1');
-    await kv.put(rejectedKey, JSON.stringify({ ...target, rejectedFor: 'blocked' }), { expirationTtl: REJECTED_TTL_SECONDS });
-    await kv.delete(pendingKey);
-    await kv.put('gb:approved', JSON.stringify(approved.filter((n) => n.id !== id)));
-    return json({ ok: true });
-  }
-  return json({ error: 'unknown-action' }, 400);
+  const note = (await kv.get(`gb:p:${id}`, 'json')) || (await kv.get(`gb:r:${id}`, 'json')) || (await kv.get(`gb:a:${id}`, 'json'));
+  return ADMIN_ACTIONS[action](kv, id, note);
 }
 
 // The review page holds no data (the admin API does). With Cloudflare Access configured,
-// only signed-in admins may load it. In token-only mode a browser can't send the token
-// on a plain visit, so the page loads and asks for it; every API call still checks.
+// only signed-in admins may load it. In token-only mode (local dev) a browser can't send
+// the token on a plain visit, so the page loads and asks for it; every API call still checks.
 export async function handleAdminPage(request, env) {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return methodNotAllowed('GET, HEAD');
   const accessOn = Boolean(env.ACCESS_TEAM_DOMAIN && env.ACCESS_AUD);
-  if (!accessOn && !env.ADMIN_TOKEN) {
-    return new Response('The guestbook admin is not configured yet.', { status: 401, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
-  }
-  if (accessOn && !(await isAdmin(request, env))) {
-    return new Response('Not authorized. Sign in through Cloudflare Access.', { status: 401, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
-  }
-  const res = await env.ASSETS.fetch(new Request(new URL('/admin/guestbook', request.url), request));
+  if (!accessOn && !env.ADMIN_TOKEN) return text('The guestbook admin is not configured yet.', 401);
+  if (accessOn && !(await isAdmin(request, env))) return text('Not authorized. Sign in through Cloudflare Access.', 401);
+
+  const res = await env.ASSETS.fetch(new Request(new URL('/admin/guestbook', request.url), { method: request.method, headers: request.headers }));
   // Replace (not add to) the asset's caching: an admin page must never be cached anywhere
   const headers = new Headers(res.headers);
   headers.set('Cache-Control', 'no-store');

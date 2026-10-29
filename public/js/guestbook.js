@@ -9,7 +9,7 @@ import { openEmacs } from './terminal/editor.js';
 const TURNSTILE_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
 let configPromise = null;
-export function getConfig() {
+function getConfig() {
   configPromise ??= fetch('/api/guestbook/config')
     .then((r) => (r.ok ? r.json() : { open: false }))
     .catch(() => ({ open: false }));
@@ -56,7 +56,7 @@ const TEMPLATE = [
 const NAME_CARET = TEMPLATE.indexOf('Name: ') + 'Name: '.length;
 
 // Pull the name and message out of the buffer, ignoring ;; comment lines
-export function parseNote(text) {
+function parseNote(text) {
   const lines = text.split('\n').filter((l) => !l.startsWith(';;'));
   const nameLine = lines.find((l) => /^name:/i.test(l)) || '';
   const at = lines.findIndex((l) => /^message:/i.test(l));
@@ -67,7 +67,7 @@ export function parseNote(text) {
 }
 
 // Open the editor to write a note. onDone(text) is called with a one-line result for the terminal.
-export async function signGuestbook({ onDone = () => {} } = {}) {
+export async function signGuestbook({ onDone = () => {}, onExit = () => {} } = {}) {
   const config = await getConfig();
   if (!config.open) {
     onDone({ ok: false, text: 'the guestbook opens soon. come back in a bit!' });
@@ -80,6 +80,8 @@ export async function signGuestbook({ onDone = () => {} } = {}) {
   let token = null;
   let widgetId = null;
   let sending = false;
+  let closeTimer = null;
+  let editorClosed = false;
   // Sending before the bot check finishes waits for it instead of failing
   let tokenWaiters = [];
   const setToken = (t) => {
@@ -126,7 +128,7 @@ export async function signGuestbook({ onDone = () => {} } = {}) {
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
           message(data.message || 'Thanks! Notes appear after a quick review.', { sticky: true });
-          setTimeout(() => exit('sent'), 1400);
+          closeTimer = setTimeout(() => exit('sent'), 1400);
           onDone({ ok: true, text: 'note sent. it shows up after a quick review. thank you!' });
         } else {
           message(data.message || 'Something went wrong. Try again?');
@@ -140,12 +142,24 @@ export async function signGuestbook({ onDone = () => {} } = {}) {
         sending = false;
       }
     },
-    onExit: () => document.getElementById('terminal-input')?.focus(),
+    onExit: () => {
+      editorClosed = true;
+      clearTimeout(closeTimer);
+      // the bot check's widget (and its refresh timers) goes with the editor
+      try {
+        if (widgetId !== null) window.turnstile?.remove(widgetId);
+      } catch { /* cleanup never blocks closing the editor */ }
+      onExit();
+    },
   });
-  if (!editor) return; // another editor is already open
+  if (!editor) {
+    onDone({ ok: false, text: 'an editor is already open. finish there first.' });
+    return;
+  }
 
   try {
     const turnstile = await loadTurnstile();
+    if (editorClosed) return; // closed while the script was loading
     widgetId = turnstile.render(widget, {
       sitekey: config.siteKey,
       appearance: 'interaction-only',

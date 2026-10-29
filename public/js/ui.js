@@ -25,6 +25,8 @@ export function initBackToTop() {
 
   btn.addEventListener('click', () => {
     scrollToTop();
+    // the button hides itself at the top; keep keyboard focus there, not on the hidden button
+    document.querySelector('.skip-link')?.focus({ preventScroll: true });
   });
 
   window.addEventListener('scroll', () => {

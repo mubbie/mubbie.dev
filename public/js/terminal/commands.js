@@ -1,11 +1,6 @@
 // ─── Terminal command data & definitions ───
 
-// ─── Filesystem & files ───
-
-export const FILESYSTEM = {
-  '~': ['projects/', 'writing/', 'currently/', 'races/', 'bucketlist/', 'connect/'],
-  '/dev': ['secrets.txt', 'fuel', 'goals', 'mood', 'about.txt', 'editor'],
-};
+// ─── Files (the directories themselves live in fs.js) ───
 
 export const FILES = {
   '/dev/secrets.txt': 'uncharted 4 is the greatest game ever made',
@@ -74,7 +69,7 @@ export const NEOFETCH_LINES = [
 
 // ─── Command registry ───
 // Single source of truth: name, aliases, help text.
-// Adding a command? Add one entry here + a handler in index.js. That's it.
+// Adding a command? Add one entry here + a handler in commands/ (the file for its theme).
 
 export const COMMAND_DEFS = [
   { name: 'help',     aliases: ['?'],                   usage: 'help',               help: 'show this list' },

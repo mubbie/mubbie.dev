@@ -75,16 +75,19 @@ export function expandHistory(line, entries) {
     if (hit === undefined) error = `${match}: event not found`;
     return hit ?? match;
   });
-  return error ? { error } : { line: out, expanded: out !== line };
+  return error ? { error } : { line: out };
 }
 
-// $VAR and ${VAR}, not inside single quotes (like a real shell)
+// $VAR and ${VAR}, not inside single quotes (like a real shell). An apostrophe inside
+// double quotes ("it's $USER") is just a character, and an unpaired one quotes nothing.
 export function expandVars(text, env) {
   let out = '';
   let inSingle = false;
+  let inDouble = false;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
-    if (ch === "'") { inSingle = !inSingle; out += ch; continue; }
+    if (ch === '"' && !inSingle) inDouble = !inDouble;
+    if (ch === "'" && !inDouble && (inSingle || text.indexOf("'", i + 1) >= 0)) { inSingle = !inSingle; out += ch; continue; }
     if (ch === '$' && !inSingle) {
       const m = /^\$(?:\{(\w+|\?)\}|(\w+|\?))/.exec(text.slice(i));
       if (m) {

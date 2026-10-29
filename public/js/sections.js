@@ -6,7 +6,7 @@ import { initFooter, initFooterMeta } from './footer.js';
 import { initHangout } from './hangout.js';
 import { initRaceTabs } from './race-tabs.js';
 import { initScrollReveal, initBackToTop, initShortcutHint } from './ui.js';
-import { renderCurrently, renderDock, renderRaces, renderRail, renderBucketList, fetchWriting } from './render-data.js';
+import { renderCurrently, renderDock, renderRaces, renderRail, renderBucketList, renderWriting } from './render-data.js';
 
 export function initSections() {
   initGreeting();
@@ -39,5 +39,7 @@ export function initSections() {
     .then(renderBucketList)
     .catch(() => showFallback('bucket-list', 'could not load bucket list.'));
 
-  fetchWriting();
+  fetchJSON('/api/posts?limit=4')
+    .then(renderWriting)
+    .catch(() => showFallback('writing-list', 'could not load posts.'));
 }
