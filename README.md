@@ -26,8 +26,9 @@ npm run test:browser        # Playwright: desktop Chrome/Safari/Firefox + iPhone
 
 ## Guestbook
 
-Visitors leave notes with `guestbook sign` (or `emacs guestbook`, or the button on the
-page). Nothing is public until approved at `/admin/guestbook`.
+A terminal easter egg: nothing on the page or in `help` mentions it. Visitors who find it
+read notes with `guestbook` and leave one with `guestbook sign` (or `emacs guestbook`).
+Nothing is public until approved at `/admin/guestbook`.
 
 Spam and abuse checks, in order: Cloudflare Turnstile → block list → 3 notes/hour per
 visitor → no links, emails or phone numbers → spam phrases → Llama Guard (Workers AI) →

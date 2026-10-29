@@ -24,7 +24,7 @@ const DIRS = {
   '/': { dirs: ['dev', 'home'], files: () => [] },
   '/dev': { dirs: [], files: () => FILESYSTEM['/dev'] },
   '/home': { dirs: ['mubbie'], files: () => [] },
-  [HOME]: { dirs: ['projects', 'writing', 'currently', 'races', 'bucketlist', 'connect'], files: () => ['about.txt', 'bucketlist.md', 'guestbook.txt'] },
+  [HOME]: { dirs: ['projects', 'writing', 'currently', 'races', 'bucketlist', 'connect'], files: () => ['about.txt', 'bucketlist.md'] },
   [`${HOME}/projects`]: { dirs: [], files: () => texts('.project-card h3') },
   [`${HOME}/writing`]: { dirs: [], files: () => texts('.writing-item h3') },
   [`${HOME}/currently`]: { dirs: ['tools'], files: () => texts('.currently-label') },
@@ -137,12 +137,6 @@ export function readFile(cwd, input) {
       return note ? `${box} ${text}  ${note}` : `${box} ${text}`;
     });
     return { text: lines.join('\n') };
-  }
-  if (path === `${HOME}/guestbook.txt`) {
-    // The approved notes the guestbook section shows
-    const notes = [...document.querySelectorAll('.guestbook-note')].map((el) =>
-      `${el.querySelector('.guestbook-msg')?.textContent || ''}\n  ${el.querySelector('.guestbook-who')?.textContent || ''}`);
-    return { text: notes.length ? notes.join('\n') : '# no notes yet. be the first: guestbook sign' };
   }
   if (parent === `${HOME}/currently`) {
     // cat reading → "Designing Data-Intensive Applications"

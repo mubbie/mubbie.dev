@@ -1,4 +1,5 @@
-// ─── Guestbook (visitor side): read approved notes, sign in an Emacs buffer ───
+// ─── Guestbook (visitor side): an easter egg. Read notes with `guestbook`, sign with
+// `guestbook sign` or `emacs guestbook`. Nothing on the page mentions it.
 //
 // Notes are written in the Emacs editor and sent with C-c C-c (or the send button).
 // Cloudflare Turnstile checks for bots; the server reviews everything before it's public.
@@ -156,56 +157,4 @@ export async function signGuestbook({ onDone = () => {} } = {}) {
   } catch {
     editor.message('Couldn\'t load the bot check. Refresh and try again?', { sticky: true });
   }
-}
-
-// ─── The guestbook section on the page ───
-
-export async function initGuestbookSection() {
-  const list = document.getElementById('guestbook-notes');
-  const sign = document.getElementById('guestbook-sign');
-  if (!list) return;
-
-  if (sign) {
-    sign.addEventListener('click', () => signGuestbook({
-      onDone: ({ text }) => {
-        const status = document.getElementById('guestbook-status');
-        if (status) status.textContent = `# ${text}`;
-      },
-    }));
-    getConfig().then((c) => {
-      if (!c.open) {
-        sign.textContent = 'opens soon';
-        sign.disabled = true;
-      }
-    });
-  }
-
-  try {
-    renderNotes(list, (await fetchNotes()).slice(0, 5));
-  } catch {
-    renderNotes(list, []);
-  }
-}
-
-function renderNotes(list, notes) {
-  list.replaceChildren();
-  if (!notes.length) {
-    const empty = document.createElement('div');
-    empty.className = 'guestbook-empty';
-    empty.textContent = '# no notes yet. be the first.';
-    list.appendChild(empty);
-    return;
-  }
-  notes.forEach((n) => {
-    const item = document.createElement('div');
-    item.className = 'guestbook-note';
-    const msg = document.createElement('div');
-    msg.className = 'guestbook-msg';
-    msg.textContent = `"${n.message}"`;
-    const who = document.createElement('div');
-    who.className = 'guestbook-who';
-    who.textContent = `· ${n.name}, ${formatDate(n.createdAt)}`;
-    item.append(msg, who);
-    list.appendChild(item);
-  });
 }
