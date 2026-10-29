@@ -54,7 +54,7 @@ npm run test:browser        # Playwright: desktop Chrome/Safari/Firefox + iPhone
 
 ## Guestbook
 
-A terminal easter egg: nothing on the page or in `help` mentions it. Visitors who find it
+Terminal only: nothing on the page mentions it, but it's listed in `help`. Visitors
 read notes with `guestbook` and leave one with `guestbook sign` (or `emacs guestbook`).
 Nothing is public until approved at `/admin/guestbook`. Each note is its own KV key
 (`gb:p:` pending, `gb:a:` published, `gb:r:` rejected), so no two writes ever collide.

@@ -1,4 +1,4 @@
-// ─── Guestbook (visitor side): an easter egg. Read notes with `guestbook`, sign with
+// ─── Guestbook (visitor side), terminal only. Read notes with `guestbook`, sign with
 // `guestbook sign` or `emacs guestbook`. Nothing on the page mentions it.
 //
 // Notes are written in the Emacs editor and sent with C-c C-c (or the send button).

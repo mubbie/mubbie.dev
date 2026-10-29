@@ -94,7 +94,7 @@ export function webCommands({ out, focusInput }) {
         .catch(out.guard(() => out.addLine(null, null, 'could not fetch xkcd. try again later.', true)));
     },
 
-    // Hidden: not in help. Read notes, or sign (also: emacs guestbook)
+    // Read notes, or sign (also: emacs guestbook)
     guestbook(trimmed, arg) {
       const sub = arg.trim().toLowerCase();
       if (sub === 'sign') {

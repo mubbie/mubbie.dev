@@ -512,14 +512,14 @@ async function mockGuestbook(page, { open = true, notes = [], onPost } = {}) {
   }));
 }
 
-test('guestbook: a hidden easter egg (nothing on the page, not in help or ls)', async ({ page }) => {
+test('guestbook: terminal only (nothing on the page or in ls, listed in help)', async ({ page }) => {
   await mockGuestbook(page, { notes: [{ name: 'Ada', message: 'love the dock', createdAt: '2026-10-28T12:00:00Z' }] });
   await load(page);
   expect(await page.locator('body').innerText()).not.toMatch(/guestbook/i);
   expect(await page.locator('#guestbook, .guestbook-note, #guestbook-sign').count()).toBe(0);
-  expect(await run(page, 'help')).not.toContain('guestbook');
   expect(await run(page, 'ls')).not.toContain('guestbook');
-  // …but it's there for whoever finds it
+  // …but the terminal knows it
+  expect(await run(page, 'help')).toContain('guestbook [sign]');
   expect(await run(page, 'man guestbook')).toContain('guestbook sign');
   await run(page, 'guestbook');
   await expect(page.locator('#terminal-history')).toContainText('"love the dock"');
@@ -942,7 +942,7 @@ test('terminal: every command produces the expected output', async ({ page }) =>
 test('terminal: help lists all visible commands', async ({ page }, testInfo) => {
   await load(page);
   await run(page, 'help');
-  await expect(page.locator('.terminal-help-row')).toHaveCount(36);
+  await expect(page.locator('.terminal-help-row')).toHaveCount(37);
   const hint = page.locator('.terminal-help-hint');
   if (isMobile(testInfo)) await expect(hint).toHaveText('tap the prompt, type a command, and hit enter.');
   else await expect(hint).toContainText('to autocomplete');

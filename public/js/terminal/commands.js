@@ -108,6 +108,7 @@ export const COMMAND_DEFS = [
   { name: 'which',    aliases: ['type'],                usage: 'which <command>',   help: 'where a command lives' },
   { name: 'cowsay',                                     usage: 'cowsay <text>',     help: 'a cow says it. try: random | cowsay' },
   { name: 'emacs',                                      usage: 'emacs [file]',      help: 'the one true editor. M-x doctor inside' },
+  { name: 'guestbook',                                  usage: 'guestbook [sign]',  help: 'read the guestbook, or sign it' },
   // Pipe filters (documented in man pages; reachable via Tab)
   { name: 'head' },
   { name: 'tail' },
@@ -118,8 +119,6 @@ export const COMMAND_DEFS = [
   { name: 'sl' },
   { name: 'vim',      aliases: ['vi'] },
   { name: 'nano' },
-  // Easter egg: not in help, no hints. `man guestbook` explains it to whoever finds it.
-  { name: 'guestbook' },
   { name: 'true' },
   { name: 'false' },
   // Hidden commands (no help text — won't appear in help table but still tab-complete)
