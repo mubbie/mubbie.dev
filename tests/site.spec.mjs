@@ -803,7 +803,7 @@ const COMMANDS = [
   ['exit', 'no escape'],
   ['quit', 'no escape'],
   ['rm -rf /', 'permission denied'],
-  ['sudo hire-me', 'midoko.dev@gmail.com'],
+  ['sudo hire-me', 'hi@mubbie.dev'],
   ['sudo ls', 'nice try'],
   ['sudo apt install -rf', 'nice try'],
   ['neofetch', 'os: human 1.0'],

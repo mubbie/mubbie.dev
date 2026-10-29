@@ -291,8 +291,8 @@ function createHandlers(out, history, getFortunes, sh) {
       if (lower === 'hire-me' || lower === 'hire me') {
         out.addLine('$', trimmed, null);
         out.addLine(null, null, '[sudo] password for recruiter: ••••••••');
-        out.addOk('authenticated. email queued → midoko.dev@gmail.com');
-        out.addLine(null, null, 'just kidding. drop a note at midoko.dev@gmail.com 👋🏾');
+        out.addOk('authenticated. email queued → hi@mubbie.dev');
+        out.addLine(null, null, 'just kidding. drop a note at hi@mubbie.dev 👋🏾');
       } else if (lower === 'guestbook review') {
         handlersRef.guestbook(trimmed, 'review');
       } else if (isRmRf(lower)) {
