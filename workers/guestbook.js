@@ -34,6 +34,7 @@ const RATE_LIMIT = 3; // notes per visitor per hour
 const RATE_WINDOW_SECONDS = 3600;
 const REJECTED_TTL_SECONDS = 30 * 24 * 3600;
 const MAX_APPROVED = 200;
+const MAX_BODY_BYTES = 16 * 1024; // a note is ~2 KB at most; refuse anything bigger unread
 const AI_MODEL = '@cf/meta/llama-guard-3-8b';
 
 // Common spam; abuse is caught by the AI screen and, failing that, by review
@@ -63,18 +64,28 @@ function newId(now) {
   return `${String(9_999_999_999_999 - now).padStart(13, '0')}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
+// Drop control characters (except newlines), invisible characters (zero-width spaces,
+// joiners, BOM), and bidi overrides that can make text display reversed (name spoofing).
+// Then collapse runs of blank lines.
 function clean(text) {
-  // drop control characters except newlines; collapse runs of blank lines
-  return String(text ?? '').replace(/[\u0000-\u0009\u000B-\u001F\u007F]/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  return String(text)
+    .replace(/[\u0000-\u0009\u000B-\u001F\u007F-\u009F]/g, '')
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF\u00AD]/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
+
+// Characters, as people count them: an emoji is one, not two
+const charCount = (text) => [...text].length;
 
 // The hard rules. Returns a reason string, or null when the note may proceed.
 export function ruleViolation(name, message) {
   if (!name) return 'name-required';
   if (!message) return 'message-required';
-  if (name.length > MAX_NAME) return 'name-too-long';
-  if (message.length > MAX_MESSAGE) return 'message-too-long';
-  const both = `${name}\n${message}`;
+  if (charCount(name) > MAX_NAME) return 'name-too-long';
+  if (charCount(message) > MAX_MESSAGE) return 'message-too-long';
+  // Fold lookalikes first, so "ｗｗｗ．spam．com" (full-width) reads as www.spam.com
+  const both = `${name}\n${message}`.normalize('NFKC');
   // emails first: "a@b.co" also looks like a link, but the email message is the useful one
   if (/[\w.+-]+@[\w-]+\.[\w.]+/.test(both)) return 'emails-not-allowed';
   if (/https?:\/\/|www\.|\b[\w-]+\.(com|net|org|io|dev|xyz|ru|cn|info|biz|co|me|ly)\b/i.test(both)) return 'links-not-allowed';
@@ -240,16 +251,25 @@ export async function handleGuestbook(request, env, ctx) {
   // Closed until the bot check is configured
   if (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET) return json({ error: 'closed', message: 'The guestbook opens soon.' }, 503);
 
+  // Refuse oversized bodies before reading them
+  if (parseInt(request.headers.get('Content-Length') || '0', 10) > MAX_BODY_BYTES) return json({ error: 'too-large' }, 413);
   let body;
   try {
-    body = await request.json();
+    const raw = await request.text();
+    if (raw.length > MAX_BODY_BYTES) return json({ error: 'too-large' }, 413);
+    body = JSON.parse(raw);
   } catch {
     return json({ error: 'bad-request' }, 400);
   }
-  const name = clean(body.name).replace(/\n/g, ' ');
-  const message = clean(body.message);
+  // A JSON object with string fields, nothing else ("null", arrays, numbers, objects)
+  if (!body || typeof body !== 'object' || Array.isArray(body)
+      || typeof (body.name ?? '') !== 'string' || typeof (body.message ?? '') !== 'string') {
+    return json({ error: 'bad-request' }, 400);
+  }
+  const name = clean(body.name ?? '').replace(/\n/g, ' ');
+  const message = clean(body.message ?? '');
 
-  if (!(await verifyTurnstile(body.token, request, env))) {
+  if (typeof body.token !== 'string' || !(await verifyTurnstile(body.token, request, env))) {
     return json({ error: 'bot-check-failed', message: 'Couldn\'t verify you\'re human. Try again?' }, 403);
   }
 
@@ -262,17 +282,18 @@ export async function handleGuestbook(request, env, ctx) {
   const rateKey = `gb:rate:${who}`;
   const count = parseInt((await kv.get(rateKey)) || '0', 10);
   if (count >= RATE_LIMIT) return json({ error: 'rate-limited', message: 'That\'s a lot of notes. Try again in an hour.' }, 429);
-  await kv.put(rateKey, String(count + 1), { expirationTtl: RATE_WINDOW_SECONDS });
 
+  // A note that breaks the rules doesn't use up one of your tries
   const violation = ruleViolation(name, message);
   if (violation) return json({ error: violation, message: RULE_MESSAGES[violation] }, 400);
+  await kv.put(rateKey, String(count + 1), { expirationTtl: RATE_WINDOW_SECONDS });
 
   const now = Date.now();
   const note = { id: newId(now), name, message, createdAt: new Date(now).toISOString(), visitor: who };
 
   // Spam phrases and AI-flagged notes go straight to the rejected pile (30 days, then gone).
   // The visitor sees the same thanks either way, so trolls learn nothing.
-  const spam = SPAM_PHRASES.find((p) => `${name} ${message}`.toLowerCase().includes(p));
+  const spam = SPAM_PHRASES.find((p) => `${name} ${message}`.normalize('NFKC').toLowerCase().includes(p));
   const ai = spam ? { checked: false } : await aiScreen(`${name}: ${message}`, env);
   if (spam || ai.unsafe) {
     note.rejectedFor = spam ? `spam: ${spam}` : `ai: ${ai.categories || 'unsafe'}`;

@@ -33,15 +33,22 @@ function createFrame(label) {
   echo.setAttribute('aria-live', 'polite');
   const keys = el('div', 'editor-keys');
   overlay.append(buffer, modeLine, echo, keys);
+  // The page behind is unreachable while editing: no Tab focus, no clicks, hidden from screen readers
+  const inerted = [...document.body.children].filter((child) => !child.inert);
+  inerted.forEach((child) => { child.inert = true; });
   document.body.appendChild(overlay);
   document.body.classList.add('editor-open');
-  return { overlay, buffer, modeLine, echo, keys };
+  return { overlay, buffer, modeLine, echo, keys, inerted };
 }
 
 function closeFrame(frame) {
   frame.overlay.remove();
+  frame.inerted.forEach((child) => { child.inert = false; });
   document.body.classList.remove('editor-open');
 }
+
+// One editor at a time: a second would get every keystroke too
+const editorOpen = () => Boolean(document.querySelector('.editor-overlay'));
 
 // On-screen keys for phones (no Ctrl, Meta or Esc on a phone keyboard)
 function addKey(frame, label, onPress) {
@@ -133,6 +140,7 @@ const MX_COMMANDS = ['doctor', 'butterfly', 'tetris', 'version', 'kill-emacs'];
 // ─── Emacs ───
 
 export function openEmacs({ name = '*scratch*', text = SCRATCH, readOnly = false, mode = 'Lisp Interaction', onSubmit = null, submitLabel = 'submit', widget = null, caret = null, onExit = () => {} } = {}) {
+  if (editorOpen()) return null;
   const frame = createFrame('Emacs');
   const { buffer, modeLine, echo } = frame;
   frame.overlay.classList.add('editor-emacs');
@@ -365,6 +373,7 @@ export function openEmacs({ name = '*scratch*', text = SCRATCH, readOnly = false
 // ─── Vim: easy to get in ───
 
 export function openVim({ onExit = () => {} } = {}) {
+  if (editorOpen()) return null;
   const frame = createFrame('Vim');
   const { buffer, modeLine, echo } = frame;
   frame.overlay.classList.add('editor-vim');

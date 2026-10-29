@@ -445,3 +445,39 @@ test('guestbook admin: Cloudflare Access JWTs are verified (signature, audience,
   assert.equal((await call('/admin/guestbook', env, { 'Cf-Access-Jwt-Assertion': await sign(good) })).body, 'asset', 'page loads for a signed-in admin');
   assert.equal((await call('/admin/guestbook', env)).res.status, 401, 'page refused without Access');
 });
+
+test('guestbook hardening: malformed bodies, non-strings, and oversized requests are refused cleanly', async () => {
+  upstream = turnstileOk;
+  const env = { POSTS_CACHE: makeKV(), ASSETS, ...GB_OPEN };
+  const raw = (body, headers = {}) => call('/api/guestbook', env, { 'Content-Type': 'application/json', 'CF-Connecting-IP': '192.0.2.1', ...headers }, { method: 'POST', body });
+  for (const body of ['null', '[]', '"text"', '42', 'not json{']) {
+    assert.equal((await raw(body)).res.status, 400, body);
+  }
+  for (const patch of [{ name: 123 }, { message: 456 }, { name: { a: 1 } }, { message: ['x'] }]) {
+    assert.equal((await post(env, { ...NOTE, ...patch })).res.status, 400, JSON.stringify(patch));
+  }
+  assert.equal((await post(env, { ...NOTE, token: 42 })).res.status, 403, 'token must be a string');
+  assert.equal((await raw(JSON.stringify({ ...NOTE, pad: 'z'.repeat(20_000) }))).res.status, 413);
+  assert.equal(env.POSTS_CACHE.store.size, 0, 'nothing stored, rate limit untouched');
+});
+
+test('guestbook hardening: invisible and direction-override characters are stripped; emoji count once; lookalikes are folded', async () => {
+  upstream = turnstileOk;
+  const KV = makeKV();
+  const env = { POSTS_CACHE: KV, ASSETS, ...GB_OPEN };
+  assert.equal((await post(env, { ...NOTE, name: '​​﻿' })).body.error, 'name-required', 'an invisible name is no name');
+  await post(env, { ...NOTE, name: 'Ada‮ecilam‍' });
+  const stored = JSON.parse([...KV.store.entries()].find(([k]) => k.startsWith('gb:p:'))[1].value);
+  assert.equal(stored.name, 'Adaecilam', 'bidi override and joiners removed');
+  assert.equal((await post({ ...env, POSTS_CACHE: makeKV() }, { ...NOTE, message: '😀'.repeat(400) })).res.status, 200, '400 emoji is 400 characters');
+  assert.equal((await post({ ...env, POSTS_CACHE: makeKV() }, { ...NOTE, message: '😀'.repeat(501) })).body.error, 'message-too-long');
+  assert.equal((await post({ ...env, POSTS_CACHE: makeKV() }, { ...NOTE, message: 'go to ｗｗｗ．spam．com' })).body.error, 'links-not-allowed', 'full-width lookalikes');
+});
+
+test('guestbook hardening: notes that break the rules do not use up the hourly limit', async () => {
+  upstream = turnstileOk;
+  const env = { POSTS_CACHE: makeKV(), ASSETS, ...GB_OPEN };
+  for (let i = 0; i < 5; i++) assert.equal((await post(env, { ...NOTE, message: 'see www.oops.com' })).res.status, 400);
+  for (let i = 0; i < 3; i++) assert.equal((await post(env, NOTE)).res.status, 200, `good note ${i + 1} still allowed`);
+  assert.equal((await post(env, NOTE)).res.status, 429);
+});

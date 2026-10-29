@@ -79,6 +79,16 @@ export async function signGuestbook({ onDone = () => {} } = {}) {
   let token = null;
   let widgetId = null;
   let sending = false;
+  // Sending before the bot check finishes waits for it instead of failing
+  let tokenWaiters = [];
+  const setToken = (t) => {
+    token = t;
+    if (t) { tokenWaiters.forEach((resolve) => resolve(t)); tokenWaiters = []; }
+  };
+  const waitForToken = (ms) => (token ? Promise.resolve(token) : new Promise((resolve) => {
+    tokenWaiters.push(resolve);
+    setTimeout(() => resolve(token), ms);
+  }));
 
   const editor = openEmacs({
     name: 'guestbook.txt',
@@ -92,9 +102,19 @@ export async function signGuestbook({ onDone = () => {} } = {}) {
       const note = parseNote(text);
       if (!note.name) { message('Add your name after "Name:" (a nickname is fine).'); return; }
       if (!note.message) { message('Write your note after "Message:".'); return; }
-      if (note.message.length > 500) { message(`That's ${note.message.length} characters. Keep it under 500.`); return; }
-      if (!token) { message('Checking you\'re human… try again in a second.'); return; }
+      // count characters the way people do (an emoji is one), same as the server
+      const chars = [...note.message].length;
+      if (chars > 500) { message(`That's ${chars} characters. Keep it under 500.`); return; }
       sending = true;
+      if (!token) {
+        message('Checking you\'re human…', { sticky: true });
+        await waitForToken(8000);
+        if (!token) {
+          sending = false;
+          message('The bot check didn\'t finish. Try again in a moment?');
+          return;
+        }
+      }
       message('Sending…', { sticky: true });
       try {
         const res = await fetch('/api/guestbook', {
@@ -110,7 +130,7 @@ export async function signGuestbook({ onDone = () => {} } = {}) {
         } else {
           message(data.message || 'Something went wrong. Try again?');
           // a used token can't be reused; get a fresh one
-          token = null;
+          setToken(null);
           if (window.turnstile && widgetId !== null) window.turnstile.reset(widgetId);
         }
       } catch {
@@ -121,6 +141,7 @@ export async function signGuestbook({ onDone = () => {} } = {}) {
     },
     onExit: () => document.getElementById('terminal-input')?.focus(),
   });
+  if (!editor) return; // another editor is already open
 
   try {
     const turnstile = await loadTurnstile();
@@ -128,9 +149,9 @@ export async function signGuestbook({ onDone = () => {} } = {}) {
       sitekey: config.siteKey,
       appearance: 'interaction-only',
       theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark',
-      callback: (t) => { token = t; },
-      'expired-callback': () => { token = null; },
-      'error-callback': () => { token = null; },
+      callback: (t) => setToken(t),
+      'expired-callback': () => setToken(null),
+      'error-callback': () => setToken(null),
     });
   } catch {
     editor.message('Couldn\'t load the bot check. Refresh and try again?', { sticky: true });

@@ -45,12 +45,18 @@ export function parseLine(line) {
   return sequence.filter((p) => p.stages.some(Boolean));
 }
 
-// A pipeline with an empty stage ("ls |", "| wc") is a syntax error, like bash
-export function syntaxError(sequence) {
-  for (const p of sequence) {
-    if (p.stages.some((s) => !s)) return "syntax error near unexpected token `|'";
-  }
+// Empty commands next to an operator are syntax errors, like bash:
+// "ls |", "| wc", "&& ls", "a && && b", a bare ";" or "|"
+export function syntaxError(line) {
+  const m = /(^|&&|\|\||[|;])\s*(&&|\|\||[|;])/.exec(stripQuoted(line));
+  if (m) return `syntax error near unexpected token \`${m[2]}'`;
+  if (/(&&|\|\||\|)\s*$/.test(stripQuoted(line).trim())) return `syntax error near unexpected token \`${/(&&|\|\||\|)\s*$/.exec(stripQuoted(line).trim())[1]}'`;
   return null;
+}
+
+// Blank out quoted text so operators inside quotes don't count
+function stripQuoted(line) {
+  return line.replace(/"[^"]*"|'[^']*'/g, (q) => 'x'.repeat(q.length));
 }
 
 // Bash history expansion: !! (last), !n (nth, 1-based oldest first), !-n, !prefix.
@@ -100,17 +106,25 @@ export function unquote(text) {
 
 // ─── Filters: commands that read lines from a pipe ───
 
+// -N or -n N; anything else that looks like a count is an error, like coreutils
 function parseCount(args, fallback = 10) {
   const n = args.find((a) => /^-\d+$/.test(a));
   if (n) return parseInt(n.slice(1), 10);
   const i = args.indexOf('-n');
-  if (i >= 0 && /^\d+$/.test(args[i + 1] || '')) return parseInt(args[i + 1], 10);
+  if (i >= 0) {
+    if (/^\d+$/.test(args[i + 1] || '')) return parseInt(args[i + 1], 10);
+    return { error: `invalid number of lines: '${args[i + 1] ?? ''}'` };
+  }
+  const bad = args.find((a) => a.startsWith('-'));
+  if (bad) return { error: `invalid option: ${bad}` };
   return fallback;
 }
 
 export const FILTERS = {
   // smart case: lowercase pattern matches any case; any capital makes it exact
   grep(lines, args) {
+    const bad = args.find((a) => /^-/.test(a) && !/^-[ivcn]+$/.test(a));
+    if (bad) return { error: `invalid option: ${bad}. usage: … | grep [-i] [-v] [-c] [-n] <pattern>` };
     const flags = args.filter((a) => /^-[ivcn]+$/.test(a)).join('');
     const pattern = unquote(args.filter((a) => !/^-[ivcn]+$/.test(a)).join(' '));
     if (!pattern) return { error: 'usage: … | grep [-i] [-v] [-c] [-n] <pattern>' };
@@ -125,10 +139,12 @@ export const FILTERS = {
     return { lines: hits, failed: hits.length === 0 };
   },
   head(lines, args) {
-    return { lines: lines.slice(0, parseCount(args)) };
+    const n = parseCount(args);
+    return typeof n === 'object' ? n : { lines: lines.slice(0, n) };
   },
   tail(lines, args) {
     const n = parseCount(args);
+    if (typeof n === 'object') return n;
     return { lines: n ? lines.slice(-n) : [] };
   },
   wc(lines, args) {
@@ -222,9 +238,12 @@ function editDistance(a, b) {
 }
 
 export function suggest(word, candidates) {
+  // punctuation ("!", "$") isn't a typo of a command name
+  if (!/^[a-z][\w-]*$/i.test(word)) return null;
   let best = null;
   let bestDist = Infinity;
   for (const c of candidates) {
+    if (!/^[a-z]/i.test(c)) continue;
     const d = editDistance(word, c);
     if (d < bestDist) { best = c; bestDist = d; }
   }

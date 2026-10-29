@@ -114,7 +114,8 @@ function createHandlers(out, history, getFortunes, sh) {
         return;
       }
       const r = FILTERS[name](file.text.split('\n'), words.filter((w) => w !== fileArg));
-      out.addLine('$', trimmed, r.lines.join('\n'));
+      if (r.error) out.addLine('$', trimmed, `${name}: ${r.error}`, true);
+      else out.addLine('$', trimmed, r.lines.join('\n'));
     };
   }
 
@@ -156,8 +157,9 @@ function createHandlers(out, history, getFortunes, sh) {
     },
 
     cd(trimmed, arg) {
-      // "cd -" goes back; it isn't a flag
-      const target = arg.trim() === '-' ? '-' : rejectFlags(out, trimmed, 'cd', arg);
+      // "cd -" goes back; "cd -- dir" ends option parsing (both aren't flags)
+      const rawArg = arg.trim().replace(/^--(\s+|$)/, '');
+      const target = rawArg === '-' ? '-' : rejectFlags(out, trimmed, 'cd', rawArg);
       if (target === null) return;
       let dest;
       if (!target || target === '~') dest = HOME;
@@ -623,7 +625,13 @@ function createHandlers(out, history, getFortunes, sh) {
         out.addLine('$', trimmed, `export: ${m[1]}: read-only variable (nice try)`, true);
         return;
       }
-      sh.env[m[1]] = unquote(m[2]);
+      const value = unquote(m[2]);
+      // $A$A doubling would otherwise grow until the tab freezes
+      if (value.length > 10000) {
+        out.addLine('$', trimmed, `export: ${m[1]}: value too long (max 10000 characters)`, true);
+        return;
+      }
+      sh.env[m[1]] = value;
       out.addLine('$', trimmed, null);
     },
 
@@ -908,7 +916,8 @@ export function initTerminal() {
     cwd: HOME,
     prevCwd: HOME,
     visitedDev: false,
-    env: {
+    // no prototype: "__proto__" or "constructor" are just names here
+    env: Object.assign(Object.create(null), {
       USER: 'mubbie',
       HOME,
       SHELL: '/bin/mubsh',
@@ -916,7 +925,7 @@ export function initTerminal() {
       TERM: 'xterm-256color',
       LANG: 'en_US.UTF-8',
       '?': '0',
-    },
+    }),
   };
   Object.defineProperty(sh.env, 'PWD', { get: () => displayPath(sh.cwd), enumerable: true });
 
@@ -1128,18 +1137,18 @@ export function initTerminal() {
     // !! / !n / !prefix, before anything else (like bash)
     const expansion = expandHistory(typed, cmdHistory.getAll());
     if (expansion.error) {
-      cmdHistory.push(typed);
+      // bash doesn't save a line whose expansion failed
       base.addLine(prompt, typed, expansion.error, true);
       sh.env['?'] = '1';
       return;
     }
     const line = expansion.line;
-    cmdHistory.push(line);
+    if (line.length <= 2000) cmdHistory.push(line);
 
     // the echoed line is what actually ran
     const ctx = { prompt, line, echoed: false };
-    const sequence = parseLine(line);
-    const bad = syntaxError(sequence);
+    const bad = syntaxError(line);
+    const sequence = bad ? [] : parseLine(line);
     if (bad) {
       base.addLine(prompt, line, bad, true);
       sh.env['?'] = '2';
@@ -1233,7 +1242,7 @@ export function initTerminal() {
     }
     if (result.candidates.length > 1) {
       if (lastTab === inputEl.value) {
-        base.addLine(promptText(), inputEl.value, result.candidates.join('  '));
+        base.addLine(promptText(), inputEl.value, result.candidates.map((c) => c.replace(/^.*\/(?=.)/, '')).join('  '));
         lastTab = null;
       } else {
         lastTab = inputEl.value;
@@ -1275,10 +1284,15 @@ export function initTerminal() {
       if (e.key === 'Enter') {
         e.preventDefault();
         const match = search.index >= 0 ? cmdHistory.get(search.index) : '';
+        if (!match) {
+          // nothing found: give back what was typed before searching
+          endSearch(false);
+          return;
+        }
         search = null;
         updatePrompt();
         setInput('');
-        if (match) processCommand(match);
+        processCommand(match);
         startHintCycle();
       } else if (ctrl && key === 'r') {
         e.preventDefault();

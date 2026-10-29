@@ -119,6 +119,8 @@ header {
 }
 
 .terminal-history-line {
+  /* a long unbroken word wraps like it would in a real terminal */
+  overflow-wrap: anywhere;
   line-height: 1.8;
   white-space: pre-wrap;
 }
@@ -1259,6 +1261,7 @@ a.race-item:hover {
 .guestbook-msg {
   color: var(--text);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .guestbook-who,

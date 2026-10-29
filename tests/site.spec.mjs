@@ -582,6 +582,82 @@ test('guestbook: emacs guestbook + C-c C-c, the Emacs way', async ({ page }, tes
   await expect(page.locator('#terminal-history')).toContainText('note sent');
 });
 
+test('shell hardening: what a session of trying to break it turned up', async ({ page }) => {
+  await load(page);
+  // empty commands next to operators are syntax errors, not silently skipped or run
+  for (const bad of ['|', '&&', ';', '&& ls', 'echo a && && echo b', 'ls &&']) {
+    expect(await run(page, bad), bad).toContain('syntax error');
+  }
+  expect((await run(page, 'echo a && && echo b')).split('\n').slice(1).join('\n')).not.toContain('b');
+  expect(await run(page, 'echo "a && b; c | d"')).toContain('a && b; c | d'); // still fine inside quotes
+  // punctuation isn't treated as a typo of "?"
+  expect(await run(page, '!')).not.toContain('did you mean');
+  expect(await run(page, '$')).not.toContain('did you mean');
+  // a failed expansion isn't saved, so !! still means the last real command
+  await run(page, 'whoami');
+  await run(page, '!nonexistent');
+  expect(await run(page, '!!')).toContain('mubbie idoko');
+  // cd -- dir works; bad counts and flags are errors
+  await run(page, 'cd -- races');
+  await expect(promptOf(page)).toHaveText(/^~\/mubbie\/races \$/);
+  await run(page, 'cd ~');
+  expect(await run(page, 'head -n abc bucketlist.md')).toContain('invalid number of lines');
+  expect(await run(page, 'ls | grep -z x')).toContain('invalid option');
+  // variables: prototype names are ordinary; runaway growth is capped
+  await run(page, 'export __proto__=proto');
+  expect(await run(page, 'echo $__proto__')).toContain('proto');
+  await run(page, 'export A=aaaaaaaaaa');
+  let last = '';
+  for (let i = 0; i < 12; i++) last = await run(page, 'export A=$A$A');
+  expect(last).toContain('value too long');
+  // long words wrap instead of scrolling the terminal sideways
+  await run(page, 'echo ' + 'x'.repeat(3000));
+  expect(await page.locator('#terminal-history').evaluate((h) => h.scrollWidth <= h.clientWidth + 1)).toBe(true);
+});
+
+test('shell hardening: Ctrl+R with no match gives your line back', async ({ page }, testInfo) => {
+  test.skip(isMobile(testInfo), 'hardware keyboard');
+  await load(page);
+  const input = page.locator('#terminal-input');
+  await input.focus();
+  await input.fill('my draft');
+  await input.press('Control+r');
+  await input.pressSequentially('zzznomatch');
+  await input.press('Enter');
+  await expect(input).toHaveValue('my draft');
+  await expect(promptOf(page)).toHaveText(/^~\/mubbie \$/);
+});
+
+test('editors: one at a time, and the page behind is unreachable while open', async ({ page }) => {
+  await mockGuestbook(page);
+  await load(page);
+  await run(page, 'emacs');
+  await expect(page.locator('.editor-overlay')).toHaveCount(1);
+  // the guestbook button behind the editor can't be reached
+  expect(await page.locator('#guestbook-sign').evaluate((b) => b.closest('[inert]') !== null)).toBe(true);
+  await page.locator('#guestbook-sign').evaluate((b) => b.click()); // even a scripted click
+  await page.waitForTimeout(300);
+  await expect(page.locator('.editor-overlay')).toHaveCount(1);
+  // (on desktop the chord buttons are hidden unless there's something to send)
+  await page.locator('.editor-key', { hasText: 'C-x C-c' }).evaluate((b) => b.click());
+  await expect(page.locator('.editor-overlay')).toHaveCount(0);
+  expect(await page.locator('#guestbook-sign').evaluate((b) => b.closest('[inert]') === null)).toBe(true);
+  expect(await page.evaluate(() => document.body.classList.contains('editor-open'))).toBe(false);
+});
+
+test('guestbook: hostile notes render as plain text, and long words wrap', async ({ page }) => {
+  await mockGuestbook(page, { notes: [
+    { name: '<img src=x onerror="window.__pwned=1">', message: '<script>window.__pwned=2</script>', createdAt: '2026-10-28T12:00:00Z' },
+    { name: 'long', message: 'W'.repeat(480), createdAt: '2026-10-28T12:00:00Z' },
+  ] });
+  await load(page);
+  await expect(page.locator('.guestbook-note')).toHaveCount(2);
+  expect(await page.locator('#guestbook').evaluate((g) => g.querySelectorAll('img, script').length)).toBe(0);
+  expect(await page.evaluate(() => window.__pwned)).toBeUndefined();
+  await expect(page.locator('.guestbook-msg').first()).toHaveText('"<script>window.__pwned=2</script>"');
+  expect(await page.locator('.guestbook-msg').nth(1).evaluate((m) => m.scrollWidth <= m.clientWidth + 1)).toBe(true);
+});
+
 test('terminal: every alias runs its command', async ({ page }) => {
   // Reduced motion keeps `hack` (matrix) from taking over the screen mid-loop
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -594,6 +670,10 @@ test('terminal: every alias runs its command', async ({ page }) => {
   expect(aliases.length).toBeGreaterThan(10);
   for (const [alias, name] of aliases) {
     const out = await run(page, alias);
+    // aliases that open an editor (vi): close it, since the terminal is unreachable behind it
+    if (await page.locator('.editor-overlay').count()) {
+      await page.locator('.editor-key', { hasText: /:q|C-x C-c/ }).first().evaluate((b) => b.click());
+    }
     expect.soft(out, `${alias} → ${name}`).not.toContain('command not found');
     // clear and its aliases wipe the history; everything else echoes the command line
     if (name !== 'clear') expect.soft(out, `${alias} → ${name}`).toContain(alias);
