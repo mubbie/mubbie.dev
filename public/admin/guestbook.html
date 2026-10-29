@@ -30,6 +30,7 @@
     .gb-empty { color: var(--text-dim); font-size: 13px; padding: 8px 0 16px; }
     .gb-status { font-size: 12px; color: var(--text-dim); margin-bottom: 24px; }
     .gb-token { display: flex; gap: 8px; margin-bottom: 24px; }
+    .gb-token[hidden] { display: none; } /* display: flex would otherwise override hidden */
     .gb-token input { flex: 1; font: inherit; font-size: 13px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
     details summary { cursor: pointer; color: var(--text-dim); font-size: 13px; margin: 24px 0 12px; }
   </style>
