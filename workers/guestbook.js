@@ -219,7 +219,7 @@ export async function handleGuestbook(request, env, ctx) {
   if (!kv) return json({ error: 'unavailable' }, 503);
 
   if (pathname === '/api/guestbook/config') {
-    return json({ open: isOpen(env), siteKey: env.TURNSTILE_SITE_KEY || null });
+    return json({ open: isOpen(env), siteKey: isOpen(env) ? env.TURNSTILE_SITE_KEY : null });
   }
   if (pathname === '/api/guestbook/admin') {
     if (!(await isAdmin(request, env))) return json({ error: 'unauthorized' }, 401);
