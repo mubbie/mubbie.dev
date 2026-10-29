@@ -174,28 +174,6 @@
       load();
     }
 
-    document.getElementById('token-form').hidden = false;
-        status.textContent = 'locked. sign in through Cloudflare Access, or unlock with the admin token.';
-        return;
-      }
-      document.getElementById('token-form').hidden = true;
-      const data = await res.json();
-      status.textContent = [
-        data.pending.length + ' waiting',
-        'AI screening ' + (data.aiScreening ? 'on' : 'off'),
-        'email alerts ' + (data.emailAlerts ? 'on' : 'off'),
-      ].join(' · ');
-      fill('pending', data.pending, [['approve', 'approve', 'approve'], ['reject', 'reject'], ['block sender', 'block', 'danger']], 'all caught up.');
-      fill('approved', data.approved, [['delete', 'delete', 'danger'], ['block sender', 'block', 'danger']], 'nothing published yet.');
-      fill('rejected', data.rejected, [['approve anyway', 'approve'], ['delete now', 'delete', 'danger']], 'nothing here.');
-    }
-
-    async function act(action, id) {
-      if ((action === 'block' || action === 'delete') && !confirm(action === 'block' ? 'Block this sender? Their future notes will be hidden.' : 'Delete this note for good?')) return;
-      await fetch(API, { method: 'POST', headers: headers(), credentials: 'same-origin', body: JSON.stringify({ action, id }) });
-      load();
-    }
-
     document.getElementById('token-form').addEventListener('submit', (e) => {
       e.preventDefault();
       token = document.getElementById('token').value.trim();

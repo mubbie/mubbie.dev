@@ -5,7 +5,7 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
-    "test": "node --test --no-warnings tests/worker.test.mjs",
+    "test": "node --test --no-warnings tests/worker.test.mjs tests/html.test.mjs",
     "test:integration": "node --test --no-warnings tests/integration.test.mjs",
     "test:browser": "playwright test"
   },
