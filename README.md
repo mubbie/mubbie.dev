@@ -41,10 +41,10 @@ Setup (everything is optional and fails closed):
    Put its site key in `wrangler.jsonc` → `vars.TURNSTILE_SITE_KEY`, then
    `npx wrangler secret put TURNSTILE_SECRET`. Until both are set the guestbook says
    "opens soon".
-2. **Review notes:** protect `mubbie.dev/admin/*` and `mubbie.dev/api/guestbook/admin*` with a
-   Cloudflare Access application (email one-time code), and add `ACCESS_TEAM_DOMAIN`
-   (e.g. `you.cloudflareaccess.com`) and `ACCESS_AUD` (the application's audience tag) to
-   `vars`. Or, simpler: `npx wrangler secret put ADMIN_TOKEN` and paste it on the review page.
+2. **Review notes:** on, via Cloudflare Access. The Zero Trust app "mubbie.dev guestbook admin"
+   guards `mubbie.dev/admin/*` and `mubbie.dev/api/guestbook/admin*`, allowing only the owner's
+   email; the Worker also checks the sign-in against `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD`
+   (vars). An `ADMIN_TOKEN` secret works too, but Access sits in front, so it isn't needed.
 3. **Email alerts:** on. Alerts go from `NOTIFY_FROM` to `NOTIFY_TO` (vars in `wrangler.jsonc`) through the `send_email` binding. Email Routing must stay on for mubbie.dev, with the destination verified.
 
 Locally, `.dev.vars.example` has Cloudflare's Turnstile test keys, which always pass.
