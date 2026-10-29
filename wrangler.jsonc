@@ -20,7 +20,7 @@
   },
   // Public, not secret. Paired with the TURNSTILE_SECRET secret; without both the guestbook stays closed.
   "vars": {
-    "TURNSTILE_SITE_KEY": ""
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFqZRZk7emqQPEBa"
   },
   // Workers AI: Llama Guard screens guestbook notes (free tier). Without it, notes still get human review.
   "ai": {
