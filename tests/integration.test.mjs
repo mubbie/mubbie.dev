@@ -127,13 +127,16 @@ test('guestbook: config, public list, and a locked admin', async () => {
   assert.ok(Array.isArray(notes));
   assert.ok(notes.every((n) => typeof n.name === 'string' && typeof n.message === 'string' && !('visitor' in n)), 'no visitor hashes in public notes');
 
+  // Locked = refused by the Worker (401), or sent to the Cloudflare Access login first
+  const accessLogin = (res) => [302, 303].includes(res.status) && /\.cloudflareaccess\.com\/cdn-cgi\/access\/login\//.test(res.headers.get('Location') || '');
   // The admin API never answers without credentials
-  assert.equal((await get('/api/guestbook/admin')).status, 401);
-  // The review page always goes through the Worker's auth check, never straight from assets:
-  // either refused, or (token mode, where the page asks for the token) marked no-store by the Worker
+  const api = await get('/api/guestbook/admin');
+  assert.ok(api.status === 401 || accessLogin(api), `admin API: ${api.status}`);
+  // The review page always goes through an auth check, never straight from assets:
+  // refused, sent to Access, or (token mode, where the page asks for the token) marked no-store
   for (const path of ['/admin/guestbook', '/admin/guestbook.html']) {
     const page = await get(path);
-    assert.ok(page.status === 401 || page.headers.get('Cache-Control') === 'no-store', `${path}: ${page.status} ${page.headers.get('Cache-Control')}`);
+    assert.ok(page.status === 401 || accessLogin(page) || page.headers.get('Cache-Control') === 'no-store', `${path}: ${page.status} ${page.headers.get('Cache-Control')}`);
   }
 });
 
