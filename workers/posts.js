@@ -37,9 +37,11 @@ async function fetchUpstream(url, userAgent) {
 
 async function fetchPosts() {
   const body = await fetchUpstream(`${SUBSTACK_BASE}?limit=${POSTS_MAX_LIMIT}`, 'mubbie.dev writing list');
-  if (!Array.isArray(body)) throw new UpstreamError('bad-shape');
+  // Substack used to return a bare array; since Nov 2026 it wraps it as { posts: [...] }
+  const list = Array.isArray(body) ? body : body?.posts;
+  if (!Array.isArray(list)) throw new UpstreamError('bad-shape');
   // Keep only what the site uses; full posts (body_html etc.) run to ~500 KB
-  return body.map(({ title, slug, canonical_url, post_date, wordcount }) => ({ title, slug, canonical_url, post_date, wordcount }));
+  return list.map(({ title, slug, canonical_url, post_date, wordcount }) => ({ title, slug, canonical_url, post_date, wordcount }));
 }
 
 // One cache entry holds the latest POSTS_MAX_LIMIT posts; every ?limit is a slice of it.
