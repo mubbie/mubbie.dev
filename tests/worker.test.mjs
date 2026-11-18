@@ -158,6 +158,14 @@ test('posts: no cache + Substack failure → 502, never cached', async () => {
   assert.equal(body.error, 'upstream-unavailable');
 });
 
+test('posts: accepts Substack\'s wrapped { posts: [...] } shape', async () => {
+  upstream = async () => Response.json({ posts: [POST, { ...POST, title: 'U' }] });
+  const { res, body } = await call('/api/posts?limit=2', { POSTS_CACHE: makeKV(), ASSETS });
+  assert.equal(res.status, 200);
+  assert.deepEqual(body.map((p) => p.title), ['T', 'U']);
+  assert.equal(body[0].body_html, undefined, 'fields still trimmed');
+});
+
 test('posts: unexpected Substack shape → 502', async () => {
   upstream = async () => Response.json({ not: 'an array' });
   const { res } = await call('/api/posts', { POSTS_CACHE: makeKV(), ASSETS });
